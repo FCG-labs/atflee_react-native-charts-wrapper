@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content">
+
+    <com.lihang.ShadowLayout
+        android:id="@+id/mShadowLayout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        app:hl_cornerRadius="10dp"
+        app:hl_shadowColor="#2a000000"
+        app:hl_shadowLimit="5dp"
+        app:hl_shadowOffsetY="2dp"
+        app:hl_shadowOffsetX="2dp"
+        >
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginHorizontal="8dp"
+            android:layout_marginVertical="4dp"
+            >
+
+            <TextView
+                android:id="@+id/x_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="5/20"
+                android:textSize="12sp"
+                android:textColor="#ED6922"
+                android:ellipsize="end"
+                android:textAppearance="?android:attr/textAppearanceSmall" />
+
+            <TextView
+                android:id="@+id/y_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="1825kcal"
+                android:textSize="12sp"
+                android:textColor="#101010"
+                android:textStyle="bold"
+                android:ellipsize="end"
+                android:textAppearance="?android:attr/textAppearanceSmall" />
+
+            <ImageView
+                android:id="@+id/image_emotion"
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:src="@drawable/emotion1"
+                android:layout_gravity="center"
+                />
+        </LinearLayout>
+
+    </com.lihang.ShadowLayout>
+
+</LinearLayout>
