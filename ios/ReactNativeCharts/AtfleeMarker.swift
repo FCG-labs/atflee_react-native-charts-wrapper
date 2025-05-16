@@ -15,6 +15,7 @@ open class AtfleeMarker: MarkerView {
     
     open var color: UIColor?
     open var font: UIFont?
+    open var titleFont: UIFont?
     open var textColor: UIColor?
     open var textWeight: String?
     open var minimumSize = CGSize(width: 10, height: 10)
@@ -34,10 +35,11 @@ open class AtfleeMarker: MarkerView {
     fileprivate let imageSize = 16.0
 
     // ───────────────── init 그대로 ─────────────────
-    public init(color: UIColor, font: UIFont, textColor: UIColor, textAlign: NSTextAlignment, textWeight: String) {
+    public init(color: UIColor, font: UIFont, textColor: UIColor, textAlign: NSTextAlignment, textWeight: String,titleFont: UIFont) {
         super.init(frame: .zero)
         self.color = color
         self.font = font
+        self.titleFont = titleFont
         self.textColor = textColor
         self.textWeight = textWeight
         
@@ -228,11 +230,18 @@ open class AtfleeMarker: MarkerView {
         // 날짜(타이틀)
         label = chartView?.xAxis.valueFormatter?.stringForValue(entry.x, axis: chartView?.xAxis) ?? ""
         labelTitle = label as NSString
+        
+        if let object = entry.data as? JSON {
+            if object["markerTitle"].exists() {
+                labelTitle = object["markerTitle"].stringValue  as NSString
+            }
+        }
 
         _drawTitleAttributes.removeAll()
-        _drawTitleAttributes[NSAttributedString.Key.font] = self.font
+        _drawTitleAttributes[NSAttributedString.Key.font] = self.titleFont
         _drawTitleAttributes[NSAttributedString.Key.paragraphStyle] = _paragraphStyle
         _drawTitleAttributes[NSAttributedString.Key.foregroundColor] = #colorLiteral(red: 0.9515632987, green: 0.4954123497, blue: 0.1712778509, alpha: 1)
+        let titleSize = labelTitle?.size(withAttributes: _drawAttributes) ?? CGSize.zero
         
         //
         if let object = entry.data as? JSON {
@@ -288,7 +297,6 @@ open class AtfleeMarker: MarkerView {
         _drawAttributes[.font] = labelFont
 
         // 전체 크기
-        let titleSize = labelTitle?.size(withAttributes: _drawAttributes) ?? CGSize.zero
         let labelSize = labelns?.size(withAttributes: _drawAttributes) ?? CGSize.zero
         let maxWidth = max(titleSize.width, labelSize.width)
         let maxHeight = max(titleSize.height, labelSize.height)
