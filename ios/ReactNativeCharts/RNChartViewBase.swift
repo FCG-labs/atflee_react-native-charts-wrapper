@@ -483,10 +483,10 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             let marker = AtfleeMarker(
                 color: RCTConvert.uiColor(json["markerColor"].intValue),
                 font: markerFont,
-                titleFont: titleFont,
                 textColor: RCTConvert.uiColor(json["textColor"].intValue),
                 textAlign: RCTConvert.nsTextAlignment(json["textAlign"].stringValue),
-                textWeight: (json["textWeight"].string ?? "normal").lowercased()
+                textWeight: (json["textWeight"].string ?? "normal").lowercased(),
+                titleFont: titleFont
             )
             chart.marker = marker
             marker.chartView = chart
