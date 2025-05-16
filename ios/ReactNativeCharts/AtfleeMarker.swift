@@ -88,31 +88,45 @@ open class AtfleeMarker: MarkerView {
     open override func draw(context: CGContext, point: CGPoint) {
         context.saveGState()
         
-        var offset = self.offsetForDrawing(atPoint: point)
-        var size = self.bounds.size
-        
-        // 실제로 draw할 좌상단 좌표 계산
-        var origin = CGPoint(x: point.x + offset.x, y: point.y + offset.y)
-        
-        // 차트 경계 체크
+        // 기존 위치 계산 방식
+        var pt = CGPoint(x: point.x - _size.width/2, y: point.y - _size.height - 10)
+
+        // 엣지 보정
         if let chart = self.chartView {
-            // 좌측 경계
-            if origin.x < 0 { origin.x = 0 }
-            // 우측 경계
-            if origin.x + size.width > chart.bounds.size.width {
-                origin.x = chart.bounds.size.width - size.width
+            // 좌/우 경계
+            if pt.x < 0 { pt.x = 0 }
+            if pt.x + _size.width > chart.bounds.size.width {
+                pt.x = chart.bounds.size.width - _size.width
             }
             // 상단 경계
-            if origin.y < 0 { origin.y = 0 }
-            // 하단 경계 (마커가 아래로 벗어나면)
-            if origin.y + size.height > chart.bounds.size.height {
-                origin.y = chart.bounds.size.height - size.height
-            }
+            if pt.y < 0 { pt.y = 0 }
+            // 하단은 필요없음 (마커는 보통 위에 그리기 때문)
+        }
+
+        UIGraphicsPushContext(context)
+        
+        // 타이틀
+        if (labelTitle != nil && labelTitle!.length > 0) {
+            labelTitle?.draw(in: pt, withAttributes: _drawTitleAttributes)
         }
         
-        // 최종 그리기
-        context.translateBy(x: origin.x, y: origin.y)
-        self.layer.render(in: context)
+        // 단위
+        if (labelns != nil && labelns!.length > 0) {
+            labelns?.draw(in: pt, withAttributes: _drawAttributes)
+        }
+        
+        // 아이콘
+        if imageEmotion != nil {
+            let rc = CGRect(
+                origin: CGPoint(
+                    x: pt.x + (pt.width - imageSize) / 2,
+                    y: pt.y + (pt.height - imageSize) / 2 + 8 // TODO: 8 대신 글자 height 계산
+                ), size: CGSize(width: imageSize, height: imageSize))
+            imageEmotion?.draw(in: rc)
+        }
+        
+        UIGraphicsPopContext()
+        
         context.restoreGState()
     }
     
