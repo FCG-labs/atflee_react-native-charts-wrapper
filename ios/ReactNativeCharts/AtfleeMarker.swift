@@ -93,54 +93,55 @@ open class AtfleeMarker: MarkerView {
     
     open override func draw(context: CGContext, point: CGPoint) {
         context.saveGState()
-    
-        // 1. fade 진행률(0~1) 계산
+
+        // ① Fade-in 진행률 계산
         var alpha: CGFloat = 1
         var progress: CGFloat = 1
-        if let fadeStart = fadeStart {
-            let elapsed = CACurrentMediaTime() - fadeStart
+        if let start = fadeStart {
+            let elapsed = CACurrentMediaTime() - start
             progress = min(max(CGFloat(elapsed / fadeDuration), 0), 1)
             alpha = progress
+
+            // fade 중이면 다음 프레임 요청
             if progress < 1, let chart = chartView {
                 DispatchQueue.main.async { chart.setNeedsDisplay() }
             }
         }
-        
-        // 2. "부드럽게 올라갈 픽셀값" 지정 (ex: 16px, 24px 등 실험하며 튜닝)
-        let maxYOffset: CGFloat = 20 // 20px 아래에서 출발해서 위로 자연스럽게
+
+        // ② Rise 효과: 초기엔 아래에서 시작해 점차 제자리로
+        let maxYOffset: CGFloat = 20
         let yRise = maxYOffset * (1 - progress)
-        
-        // 3. pt 계산(엣지 보정 포함, y위치에 yRise만큼 더함)
-        let width = _size.width, height = _size.height
-        var pt = CGPoint(x: point.x - width/2, y: point.y - height - 10 + yRise)
-        if let chart = chartView {
-            if pt.x < 0 { pt.x = 0 }
-            if pt.x + width > chart.bounds.size.width { pt.x = chart.bounds.size.width - width }
-            if pt.y < 0 { pt.y = 0 }
-        }
-        let rect = CGRect(origin: pt, size: _size)
-        
+
+        // ③ 기존 배경 rect 계산 → Y축에 rise 반영
+        var rect = drawRect(context: context, point: point)
+        rect.origin.y += yRise
+
+        // ④ 컨텍스트에 alpha 적용
         context.setAlpha(alpha)
         UIGraphicsPushContext(context)
-        
-        // 아래는 기존 마커 draw 구조 그대로
-        drawCenterRect(context: context, rect: rect)
+
+        // ⑤ 기존 타이틀 텍스트
         if let title = labelTitle, title.length > 0 {
             title.draw(in: rect, withAttributes: _drawTitleAttributes)
         }
+
+        // ⑥ 기존 단위 텍스트
         if let lbl = labelns, lbl.length > 0 {
             lbl.draw(in: rect, withAttributes: _drawAttributes)
         }
+
+        // ⑦ 이모티콘 아이콘
         if let img = imageEmotion {
             let iconRect = CGRect(
                 origin: CGPoint(
-                    x: rect.origin.x + (rect.width  - imageSize) / 2,
+                    x: rect.origin.x + (rect.width - imageSize) / 2,
                     y: rect.origin.y + (rect.height - imageSize) / 2 + 8
                 ),
                 size: CGSize(width: imageSize, height: imageSize)
             )
             img.draw(in: iconRect)
         }
+
         UIGraphicsPopContext()
         context.restoreGState()
     }
