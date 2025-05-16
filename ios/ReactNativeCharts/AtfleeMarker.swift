@@ -236,6 +236,8 @@ open class AtfleeMarker: MarkerView {
         if label.isEmpty {
             imageEmotion = nil
             _size.height -= imageSize
+
+            arrowImage = UIImage(named: "arrow_right_circle")
         } else {
             switch label {
             case "1":
