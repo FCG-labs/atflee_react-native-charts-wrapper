@@ -10,6 +10,7 @@ import DGCharts
 open class AtfleeMarker: MarkerView {
     private var fadeStart: CFTimeInterval?
     private let fadeDuration: CFTimeInterval = 0.25
+    fileprivate var arrowImage: UIImage?     // 이제 RN에서 주입된 이미지
     
     open var color: UIColor?
     open var font: UIFont?
@@ -41,6 +42,7 @@ open class AtfleeMarker: MarkerView {
         
         _paragraphStyle = NSParagraphStyle.default.mutableCopy() as? NSMutableParagraphStyle
         _paragraphStyle?.alignment = textAlign
+        _paragraphStyle?.lineSpacing = 6     // ★ 원하는 패딩(px)만큼
     }
     
     public required init?(coder aDecoder: NSCoder) {
@@ -58,13 +60,13 @@ open class AtfleeMarker: MarkerView {
         
         // ② 엣지 보정: 좌/우/상 경계 안으로
         if let chart = chartView {
-            if pt.x < 0 {
+            if pt.x < 8 {
                 pt.x = 8
             }
             if pt.x + width > chart.bounds.size.width {
                 pt.x = chart.bounds.size.width - width - 8
             }
-            if pt.y < 0 {
+            if pt.y < 8 {
                 pt.y = 8
             }
         }
@@ -81,7 +83,7 @@ open class AtfleeMarker: MarkerView {
 
         let roundRect = UIBezierPath(roundedRect: rect, byRoundingCorners:.allCorners, cornerRadii: CGSize(width: 7.0, height: 7.0))
         context.setFillColor(UIColor.white.cgColor)
-        context.setShadow(offset: CGSize(width: 1.0, height: 5.0), blur: 8.0)
+        context.setShadow(offset: CGSize(width: 1.0, height: 5.0), blur: 7.5)
 //        context.setBlendMode(.multiply)
         context.addPath(roundRect.cgPath)
         context.fillPath()
@@ -93,53 +95,88 @@ open class AtfleeMarker: MarkerView {
     
     open override func draw(context: CGContext, point: CGPoint) {
         context.saveGState()
-
-        // ① Fade-in 진행률 계산
-        var alpha: CGFloat = 1
+        
+        // 페이드 인 진행률 계산
         var progress: CGFloat = 1
         if let start = fadeStart {
-            let elapsed = CACurrentMediaTime() - start
-            progress = min(max(CGFloat(elapsed / fadeDuration), 0), 1)
-            alpha = progress
-
-            // fade 중이면 다음 프레임 요청
+            progress = min(max(CGFloat((CACurrentMediaTime() - start) / fadeDuration), 0), 1)
             if progress < 1, let chart = chartView {
                 DispatchQueue.main.async { chart.setNeedsDisplay() }
             }
         }
+        let alpha = progress
+        let yRise = 20 * (1 - progress)
 
-        // ② Rise 효과: 초기엔 아래에서 시작해 점차 제자리로
-        let maxYOffset: CGFloat = 20
-        let yRise = maxYOffset * (1 - progress)
+        let chartHeight = chartView?.bounds.height ?? 0
+        let showMarkerAbove = point.y > chartHeight * 0.35
 
-        // ③ 기존 배경 rect 계산 → Y축에 rise 반영
-        var rect = drawRect(context: context, point: point)
-        rect.origin.y += yRise
+        var markerPt = point
+        let markerHeight = _size.height
 
-        // ④ 컨텍스트에 alpha 적용
         context.setAlpha(alpha)
+        if showMarkerAbove {
+            // 기존: tick 위에 marker
+            markerPt.y = point.y - markerHeight * 0.8
+            context.translateBy(x: 0, y: yRise)
+        } else {
+            // 신규: tick 아래에 marker
+            markerPt.y = point.y + markerHeight * 1.35
+            context.translateBy(x: 0, y: -yRise)
+        }
+
+        let rect = drawRect(context: context, point: markerPt)
+
+        print("drawRect result origin:", rect.origin, "size:", rect.size)
+
         UIGraphicsPushContext(context)
 
-        // ⑤ 기존 타이틀 텍스트
+        // 패딩값 정의
+        let bgPadding: CGFloat = 8
+        let paddedRect = rect.insetBy(dx: bgPadding, dy: bgPadding)
+        
+        // 타이틀 로그
         if let title = labelTitle, title.length > 0 {
-            title.draw(in: rect, withAttributes: _drawTitleAttributes)
+            print("labelTitle:", title)
+            
+            title.draw(in: paddedRect, withAttributes: _drawTitleAttributes)
+        } else {
+            print("labelTitle is nil or empty")
         }
 
-        // ⑥ 기존 단위 텍스트
+        // 단위 로그
         if let lbl = labelns, lbl.length > 0 {
-            lbl.draw(in: rect, withAttributes: _drawAttributes)
+            print("labelns:", lbl)
+            lbl.draw(in: paddedRect, withAttributes: _drawAttributes)
+        } else {
+            print("labelns is nil or empty")
         }
 
-        // ⑦ 이모티콘 아이콘
+        // 아이콘 로그
         if let img = imageEmotion {
+            print("imageEmotion present")
             let iconRect = CGRect(
                 origin: CGPoint(
-                    x: rect.origin.x + (rect.width - imageSize) / 2,
-                    y: rect.origin.y + (rect.height - imageSize) / 2 + 8
+                    x: rect.origin.x + (rect.width - CGFloat(imageSize)) / 2,
+                    y: rect.origin.y + (rect.height - CGFloat(imageSize)) / 2 + 8
                 ),
-                size: CGSize(width: imageSize, height: imageSize)
+                size: CGSize(width: CGFloat(imageSize), height: CGFloat(imageSize))
             )
             img.draw(in: iconRect)
+        } else {
+            print("imageEmotion is nil")
+        }
+
+        // 화살표 이미지 로그
+        if let img = arrowImage {
+            let arrowSize: CGFloat = 8
+            let bgPadding: CGFloat = 8
+            let arrowRect = CGRect(
+                x: rect.maxX - bgPadding - arrowSize,
+                y: rect.midY - arrowSize/2,
+                width: arrowSize,
+                height: arrowSize
+            )
+            img.draw(in: arrowRect)
         }
 
         UIGraphicsPopContext()
@@ -154,7 +191,9 @@ open class AtfleeMarker: MarkerView {
 
     open override func refreshContent(entry: ChartDataEntry, highlight: Highlight) {
         // 시작 시각을 기록
-        fadeStart = CACurrentMediaTime()
+        if fadeStart == nil {
+            fadeStart = CACurrentMediaTime()
+        }
 
         var label : String
         var decimalPlaces = "0"
@@ -219,7 +258,7 @@ open class AtfleeMarker: MarkerView {
         let labelSize = labelns?.size(withAttributes: _drawAttributes) ?? CGSize.zero
         let maxWidth = max(titleSize.width, labelSize.width)
         let maxHeight = max(titleSize.height, labelSize.height)
-        _labelSize = CGSize(width: maxWidth, height: maxHeight)
+        _labelSize = CGSize(width: maxWidth, height: maxHeight + 8)
         _size.width = _labelSize.width + self.insets.left + self.insets.right
         _size.height = _labelSize.height + self.insets.top + self.insets.bottom
         _size.width = max(minimumSize.width, _size.width)
@@ -252,6 +291,11 @@ open class AtfleeMarker: MarkerView {
                 _size.height -= imageSize
             }
         }
+    }
+    
+    open override func removeFromSuperview() {
+      super.removeFromSuperview()
+      fadeStart = nil
     }
 }
 

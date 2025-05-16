@@ -26,6 +26,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
     private  var syncY = false
 
+    private var onMarkerClick: RCTBubblingEventBlock?
+
     override open func reactSetFrame(_ frame: CGRect)
     {
         super.reactSetFrame(frame);
@@ -527,6 +529,35 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
     @objc public func chartViewDidEndPanning(_ chartView: ChartViewBase) {
         sendEvent("chartPanEnd")
+    }
+
+    @objc func setMarkerIcon(_ source: [String: Any], for chartView: ChartViewBase) {
+        // Convert dict → RCTImageSource
+        let imgSource = RCTConvert.imageSource(source)
+        // 비동기로 이미지 로드
+        bridge
+        .module(for: RCTImageLoader.self)
+        .loadImage(
+            with: imgSource,
+            size: CGSize.zero,
+            scale: UIScreen.main.scale,
+            clipped: false,
+            resizeMode: .stretch,
+            progressBlock: nil
+        ) { error, image in
+            guard error == nil, let uiImage = image as? UIImage,
+                let marker = chart.marker as? AtfleeMarker else { return }
+            marker.arrowImage = uiImage
+            chart.setNeedsDisplay()
+        }
+    }
+
+    @objc public func markerClick(_ chartView: ChartViewBase, entry: ChartDataEntry, highlight: Highlight) {
+        if self.onMarkerClick == nil {
+            return
+        } else {
+            self.onMarkerClick!(EntryToDictionaryUtils.entryToDictionary(entry))
+        }
     }
 
     func sendEvent(_ action:String) {
