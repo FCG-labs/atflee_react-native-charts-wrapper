@@ -56,13 +56,13 @@ open class AtfleeMarker: MarkerView {
         // ② 엣지 보정: 좌/우/상 경계 안으로
         if let chart = chartView {
             if pt.x < 0 {
-                pt.x = 0
+                pt.x = 8
             }
             if pt.x + width > chart.bounds.size.width {
-                pt.x = chart.bounds.size.width - width
+                pt.x = chart.bounds.size.width - width - 8
             }
             if pt.y < 0 {
-                pt.y = 0
+                pt.y = 8
             }
         }
         
