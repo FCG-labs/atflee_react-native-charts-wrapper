@@ -88,45 +88,47 @@ open class AtfleeMarker: MarkerView {
     open override func draw(context: CGContext, point: CGPoint) {
         context.saveGState()
         
-        // 기존 위치 계산 방식
         var pt = CGPoint(x: point.x - _size.width/2, y: point.y - _size.height - 10)
 
-        // 엣지 보정
         if let chart = self.chartView {
-            // 좌/우 경계
             if pt.x < 0 { pt.x = 0 }
             if pt.x + _size.width > chart.bounds.size.width {
                 pt.x = chart.bounds.size.width - _size.width
             }
-            // 상단 경계
             if pt.y < 0 { pt.y = 0 }
-            // 하단은 필요없음 (마커는 보통 위에 그리기 때문)
         }
 
+        let rect = CGRect(origin: pt, size: _size)
         UIGraphicsPushContext(context)
-        
-        // 타이틀
-        if (labelTitle != nil && labelTitle!.length > 0) {
-            labelTitle?.draw(in: pt, withAttributes: _drawTitleAttributes)
+
+        // Draw 배경
+        drawCenterRect(context: context, rect: rect)
+
+        // Draw 타이틀
+        if labelTitle?.length ?? 0 > 0 {
+            let titleRect = CGRect(x: pt.x, y: pt.y + 4, width: _size.width, height: 20)
+            labelTitle?.draw(in: titleRect, withAttributes: _drawTitleAttributes)
         }
-        
-        // 단위
-        if (labelns != nil && labelns!.length > 0) {
-            labelns?.draw(in: pt, withAttributes: _drawAttributes)
+
+        // Draw 단위
+        if labelns?.length ?? 0 > 0 {
+            let labelRect = CGRect(x: pt.x, y: pt.y + 28, width: _size.width, height: 20)
+            labelns?.draw(in: labelRect, withAttributes: _drawAttributes)
         }
-        
-        // 아이콘
-        if imageEmotion != nil {
-            let rc = CGRect(
+
+        // Draw 아이콘
+        if let image = imageEmotion {
+            let iconRect = CGRect(
                 origin: CGPoint(
-                    x: pt.x + (pt.width - imageSize) / 2,
-                    y: pt.y + (pt.height - imageSize) / 2 + 8 // TODO: 8 대신 글자 height 계산
-                ), size: CGSize(width: imageSize, height: imageSize))
-            imageEmotion?.draw(in: rc)
+                    x: pt.x + (_size.width - imageSize) / 2,
+                    y: pt.y + _size.height - imageSize - 4
+                ),
+                size: CGSize(width: imageSize, height: imageSize)
+            )
+            image.draw(in: iconRect)
         }
-        
+
         UIGraphicsPopContext()
-        
         context.restoreGState()
     }
     
