@@ -78,9 +78,9 @@ open class AtfleeMarker: MarkerView {
     func drawCenterRect(context: CGContext, rect: CGRect) {
         context.saveGState()
         let roundRect = UIBezierPath(roundedRect: rect, byRoundingCorners:.allCorners,
-                                     cornerRadii: CGSize(width: 7, height: 7))
+                                     cornerRadii: CGSize(width: 8, height: 8))
         context.setFillColor(UIColor.white.cgColor)
-        context.setShadow(offset: CGSize(width: 1.0, height: 5.0), blur: 7.5)
+        context.setShadow(offset: CGSize(width: 1.0, height: 4.0), blur: 7.5)
 //        context.setBlendMode(.multiply)
         context.addPath(roundRect.cgPath)
         context.fillPath()
@@ -121,7 +121,7 @@ open class AtfleeMarker: MarkerView {
 
         let rect = drawRect(context: context, point: markerPt)
 
-        print("drawRect result origin:", rect.origin, "size:", rect.size)
+        // print("drawRect result origin:", rect.origin, "size:", rect.size)
 
         UIGraphicsPushContext(context)
 
@@ -131,16 +131,16 @@ open class AtfleeMarker: MarkerView {
         
         // 타이틀 로그
         if let title = labelTitle, title.length > 0 {
-            print("labelTitle:", title)
+            // print("labelTitle:", title)
             
             title.draw(in: paddedRect, withAttributes: _drawTitleAttributes)
         } else {
-            print("labelTitle is nil or empty")
+            // print("labelTitle is nil or empty")
         }
 
         // 단위 로그
         if let lbl = labelns, lbl.length > 0 {
-            print("labelns:", lbl)
+            // print("labelns:", lbl)
 //            lbl.draw(in: paddedRect, withAttributes: _drawAttributes)
             
             // 1️⃣ 텍스트 위치 계산
@@ -169,12 +169,12 @@ open class AtfleeMarker: MarkerView {
                 img.draw(in: arrowRect)
             }
         } else {
-            print("labelns is nil or empty")
+            // print("labelns is nil or empty")
         }
 
         // 아이콘 로그
         if let img = imageEmotion {
-            print("imageEmotion present")
+            // print("imageEmotion present")
             let iconRect = CGRect(
                 origin: CGPoint(
                     x: rect.origin.x + (rect.width - CGFloat(imageSize)) / 2,
@@ -184,7 +184,7 @@ open class AtfleeMarker: MarkerView {
             )
             img.draw(in: iconRect)
         } else {
-            print("imageEmotion is nil")
+            // print("imageEmotion is nil")
         }
 
         UIGraphicsPopContext()
@@ -200,6 +200,24 @@ open class AtfleeMarker: MarkerView {
         if fadeStart == nil {
             fadeStart = CACurrentMediaTime()
         }
+
+        print("🟦 [AtfleeMarker] refreshContent called!")
+        print("entry.x: \(entry.x), entry.y: \(entry.y)")
+        
+        if let data = entry.data {
+            print("entry.data: \(data)")
+        } else {
+            print("entry.data: nil")
+        }
+        
+        // entry의 타입/상속분기(Candle 등)도 확인
+        if let candleEntry = entry as? CandleChartDataEntry {
+            print("Candle Entry - open: \(candleEntry.open), close: \(candleEntry.close), high: \(candleEntry.high), low: \(candleEntry.low)")
+        }
+        
+        print("highlight.x: \(highlight.x), highlight.y: \(highlight.y), stackIndex: \(highlight.stackIndex)")
+        
+
 
         
         var label : String
@@ -260,11 +278,14 @@ open class AtfleeMarker: MarkerView {
         _drawAttributes[NSAttributedString.Key.foregroundColor] = self.textColor
 
         let isBold = textWeight == "bold"
-        let baseFontSize = self.font.pointSize
+        let baseFont: UIFont = self.font ?? UIFont.systemFont(ofSize: 12.0)
+        let fontSize = baseFont.pointSize
+
         let labelFont: UIFont = isBold
-            ? UIFont.boldSystemFont(ofSize: baseFontSize)
-            : self.font
-        _drawAttributes[NSAttributedString.Key.font] = labelFont
+            ? UIFont.boldSystemFont(ofSize: fontSize)
+            : baseFont
+
+        _drawAttributes[.font] = labelFont
 
         // 전체 크기
         let titleSize = labelTitle?.size(withAttributes: _drawAttributes) ?? CGSize.zero
