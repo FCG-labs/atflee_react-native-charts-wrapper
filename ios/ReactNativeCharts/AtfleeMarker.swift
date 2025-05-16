@@ -117,6 +117,31 @@ open class AtfleeMarker: MarkerView {
         context.restoreGState()
     }
     
+    open override func offsetForDrawing(atPoint point: CGPoint) -> CGPoint {
+        var offset = super.offsetForDrawing(atPoint: point)
+        let chart = self.chartView
+
+        let width = self.bounds.size.width
+        let height = self.bounds.size.height
+
+        var newX = point.x + offset.x
+        var newY = point.y + offset.y
+
+        if newX < 0 {
+            newX = 0
+        }
+        if let chart = chart, newX + width > chart.bounds.size.width {
+            newX = chart.bounds.size.width - width
+        }
+        if newY < 0 {
+            newY = 0
+        }
+        if let chart = chart, newY + height > chart.bounds.size.height {
+            newY = chart.bounds.size.height - height
+        }
+        return CGPoint(x: newX - point.x, y: newY - point.y)
+    }
+
     open override func refreshContent(entry: ChartDataEntry, highlight: Highlight) {
         var label : String
         var decimalPlaces = "0"
