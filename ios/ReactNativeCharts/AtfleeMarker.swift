@@ -88,58 +88,38 @@ open class AtfleeMarker: MarkerView {
     open override func draw(context: CGContext, point: CGPoint) {
         context.saveGState()
         
-        let rect = drawRect(context: context, point: point)
+        var offset = self.offsetForDrawing(atPoint: point)
+        var size = self.bounds.size
         
-        UIGraphicsPushContext(context)
+        // 실제로 draw할 좌상단 좌표 계산
+        var origin = CGPoint(x: point.x + offset.x, y: point.y + offset.y)
         
-        // 타이틀
-        if (labelTitle != nil && labelTitle!.length > 0) {
-            labelTitle?.draw(in: rect, withAttributes: _drawTitleAttributes)
+        // 차트 경계 체크
+        if let chart = self.chartView {
+            // 좌측 경계
+            if origin.x < 0 { origin.x = 0 }
+            // 우측 경계
+            if origin.x + size.width > chart.bounds.size.width {
+                origin.x = chart.bounds.size.width - size.width
+            }
+            // 상단 경계
+            if origin.y < 0 { origin.y = 0 }
+            // 하단 경계 (마커가 아래로 벗어나면)
+            if origin.y + size.height > chart.bounds.size.height {
+                origin.y = chart.bounds.size.height - size.height
+            }
         }
         
-        // 단위
-        if (labelns != nil && labelns!.length > 0) {
-            labelns?.draw(in: rect, withAttributes: _drawAttributes)
-        }
-        
-        // 아이콘
-        if imageEmotion != nil {
-            let rc = CGRect(
-                origin: CGPoint(
-                    x: rect.origin.x + (rect.width - imageSize) / 2,
-                    y: rect.origin.y + (rect.height - imageSize) / 2 + 8 // TODO: 8 대신 글자 height 계산
-                ), size: CGSize(width: imageSize, height: imageSize))
-            imageEmotion?.draw(in: rc)
-        }
-        
-        UIGraphicsPopContext()
-        
+        // 최종 그리기
+        context.translateBy(x: origin.x, y: origin.y)
+        self.layer.render(in: context)
         context.restoreGState()
     }
     
     open override func offsetForDrawing(atPoint point: CGPoint) -> CGPoint {
-        var offset = super.offsetForDrawing(atPoint: point)
-        let chart = self.chartView
-
-        let width = self.bounds.size.width
-        let height = self.bounds.size.height
-
-        var newX = point.x + offset.x
-        var newY = point.y + offset.y
-
-        if newX < 0 {
-            newX = 0
-        }
-        if let chart = chart, newX + width > chart.bounds.size.width {
-            newX = chart.bounds.size.width - width
-        }
-        if newY < 0 {
-            newY = 0
-        }
-        if let chart = chart, newY + height > chart.bounds.size.height {
-            newY = chart.bounds.size.height - height
-        }
-        return CGPoint(x: newX - point.x, y: newY - point.y)
+        let size = self.bounds.size
+        // 기본 위치: 데이터 포인트 위에, 마커가 중심을 기준으로 배치
+        return CGPoint(x: -size.width / 2, y: -size.height)
     }
 
     open override func refreshContent(entry: ChartDataEntry, highlight: Highlight) {
