@@ -18,6 +18,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
     open var onChange:RCTBubblingEventBlock?
 
+    open var onMarkerClick: RCTBubblingEventBlock?
+
     private var group: String?
 
     private  var identifier: String?
@@ -26,14 +28,21 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
     private  var syncY = false
 
-    private var onMarkerClick: RCTBubblingEventBlock?
+    
+    private lazy var tapGR: UITapGestureRecognizer = {
+        let gr = UITapGestureRecognizer(target: self, action: #selector(handleChartTap(_:)))
+        gr.cancelsTouchesInView = false
+        return gr
+      }()
 
     override open func reactSetFrame(_ frame: CGRect)
     {
         super.reactSetFrame(frame);
 
         let chartFrame = CGRect(x: 0, y: 0, width: frame.width, height: frame.height)
+        chart.setExtraOffsets(left: 35, top: 5, right: 5, bottom: 5)
         chart.reactSetFrame(chartFrame)
+        chart.addGestureRecognizer(tapGR)
     }
 
     var chart: ChartViewBase {
@@ -512,7 +521,6 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             return
         } else {
             self.onSelect!(EntryToDictionaryUtils.entryToDictionary(entry))
-
         }
     }
 
@@ -523,6 +531,24 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             self.onSelect!(nil)
 
         }
+    }
+    
+    @objc private func handleChartTap(_ gr: UITapGestureRecognizer) {
+        let pt = gr.location(in: chart)
+        var payload: [String: Any] = ["inside": false]
+
+        if let marker = chart.marker as? AtfleeMarker,
+           marker.lastBgRect.contains(pt),
+           let entry = marker.lastEntry {
+          payload = [
+            "inside": true,
+            "x": entry.x,
+            "y": entry.y
+          ]
+        }
+
+        // JS로 이벤트 전송
+        onMarkerClick?(payload)
     }
 
     @objc public func chartScaled(_ chartView: ChartViewBase, scaleX: CoreGraphics.CGFloat, scaleY: CoreGraphics.CGFloat) {
@@ -535,14 +561,6 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
     @objc public func chartViewDidEndPanning(_ chartView: ChartViewBase) {
         sendEvent("chartPanEnd")
-    }
-
-    @objc public func markerClick(_ chartView: ChartViewBase, entry: ChartDataEntry, highlight: Highlight) {
-        if self.onMarkerClick == nil {
-            return
-        } else {
-            self.onMarkerClick!(EntryToDictionaryUtils.entryToDictionary(entry))
-        }
     }
 
     func sendEvent(_ action:String) {

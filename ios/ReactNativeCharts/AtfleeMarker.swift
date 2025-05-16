@@ -12,6 +12,7 @@ open class AtfleeMarker: MarkerView {
     private var fadeStart: CFTimeInterval?
     private let fadeDuration: CFTimeInterval = 0.25
     fileprivate var arrowImage: UIImage?     // 이제 RN에서 주입된 이미지
+    fileprivate(set) var lastEntry: ChartDataEntry?
     
     open var color: UIColor?
     open var font: UIFont?
@@ -322,7 +323,7 @@ open class AtfleeMarker: MarkerView {
             if let _ = arrowImage {
                 let arrowSize: CGFloat = 20   // draw에서 쓴 arrowSize와 맞춰야함
                 let arrowPadding: CGFloat = 6
-                _size.width += arrowSize + arrowPadding
+                _size.width = max(_size.width, _size.width + arrowSize + arrowPadding)
             }
         } else {
             switch label {
@@ -341,6 +342,8 @@ open class AtfleeMarker: MarkerView {
                 _size.height -= imageSize
             }
         }
+
+        self.lastEntry = entry
     }
     
     open override func removeFromSuperview() {
