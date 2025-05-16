@@ -480,7 +480,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 color: RCTConvert.uiColor(json["markerColor"].intValue),
                 font: markerFont,
                 textColor: RCTConvert.uiColor(json["textColor"].intValue),
-                textAlign: RCTConvert.nsTextAlignment(json["textAlign"].stringValue)
+                textAlign: RCTConvert.nsTextAlignment(json["textAlign"].stringValue),
+                textWeight: (json["textWeight"].string ?? "normal").lowercased()
             )
             chart.marker = marker
             marker.chartView = chart

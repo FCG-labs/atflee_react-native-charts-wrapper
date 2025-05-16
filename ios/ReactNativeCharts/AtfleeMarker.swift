@@ -16,6 +16,7 @@ open class AtfleeMarker: MarkerView {
     open var color: UIColor?
     open var font: UIFont?
     open var textColor: UIColor?
+    open var textWeight: String?
     open var minimumSize = CGSize(width: 10, height: 10)
     
     fileprivate var insets = UIEdgeInsets(top: 8.0,left: 8.0,bottom: 20.0,right: 8.0)
@@ -33,11 +34,12 @@ open class AtfleeMarker: MarkerView {
     fileprivate let imageSize = 16.0
 
     // ───────────────── init 그대로 ─────────────────
-    public init(color: UIColor, font: UIFont, textColor: UIColor, textAlign: NSTextAlignment) {
+    public init(color: UIColor, font: UIFont, textColor: UIColor, textAlign: NSTextAlignment, textWeight: String) {
         super.init(frame: .zero)
         self.color = color
         self.font = font
         self.textColor = textColor
+        self.textWeight = textWeight
         
         _paragraphStyle = NSParagraphStyle.default.mutableCopy() as? NSMutableParagraphStyle
         _paragraphStyle?.alignment = textAlign
@@ -139,7 +141,33 @@ open class AtfleeMarker: MarkerView {
         // 단위 로그
         if let lbl = labelns, lbl.length > 0 {
             print("labelns:", lbl)
-            lbl.draw(in: paddedRect, withAttributes: _drawAttributes)
+//            lbl.draw(in: paddedRect, withAttributes: _drawAttributes)
+            
+            // 1️⃣ 텍스트 위치 계산
+            var attrs = _drawAttributes
+            // labelns의 width 측정 (폰트, 속성 적용)
+            let labelSize = lbl.size(withAttributes: attrs)
+
+            // labelns 위치: paddedRect에서 x좌표, y는 가운데 정렬
+            let lblX = paddedRect.origin.x
+            let lblY = paddedRect.midY - labelSize.height/2
+            let lblRect = CGRect(
+                x: lblX,
+                y: lblY,
+                width: labelSize.width,
+                height: labelSize.height
+            )
+            lbl.draw(in: lblRect, withAttributes: attrs)
+
+            // 2️⃣ arrowImage가 있다면 lbl 오른쪽에 바로 붙여서 그리기
+            if let img = arrowImage {
+                let arrowSize: CGFloat = 20
+                let arrowPadding: CGFloat = 6
+                let arrowX = lblRect.maxX + arrowPadding
+                let arrowY = paddedRect.maxY - arrowSize
+                let arrowRect = CGRect(x: arrowX, y: arrowY, width: arrowSize, height: arrowSize)
+                img.draw(in: arrowRect)
+            }
         } else {
             print("labelns is nil or empty")
         }
@@ -159,18 +187,6 @@ open class AtfleeMarker: MarkerView {
             print("imageEmotion is nil")
         }
 
-        // 화살표 이미지 로그
-        if let img = arrowImage {
-            let arrowSize: CGFloat = 8
-            let bgPadding: CGFloat = 8
-            let arrowRect = CGRect(
-                x: rect.maxX - bgPadding - arrowSize,
-                y: rect.midY - arrowSize/2,
-                width: arrowSize,
-                height: arrowSize
-            )
-            img.draw(in: arrowRect)
-        }
         UIGraphicsPopContext()
         context.restoreGState()
     }
@@ -185,20 +201,47 @@ open class AtfleeMarker: MarkerView {
             fadeStart = CACurrentMediaTime()
         }
 
-        // ⬇︎ 이하 모든 원본 로직 그대로 …
+        
         var label : String
         var decimalPlaces = "0"
         var markerUnit = ""
         var markerString = ""
 
+        // 날짜(타이틀)
         label = chartView?.xAxis.valueFormatter?.stringForValue(entry.x, axis: chartView?.xAxis) ?? ""
         labelTitle = label as NSString
-        _drawTitleAttributes.removeAll()
-        _drawTitleAttributes[.font] = self.font
-        _drawTitleAttributes[.paragraphStyle] = _paragraphStyle
-        _drawTitleAttributes[.foregroundColor] = #colorLiteral(red: 0.9516, green: 0.4954, blue: 0.1713, alpha: 1)
 
-        if let object = entry.data as? JSON { /* … 원본 처리 그대로 … */ }
+        _drawTitleAttributes.removeAll()
+        _drawTitleAttributes[NSAttributedString.Key.font] = self.font
+        _drawTitleAttributes[NSAttributedString.Key.paragraphStyle] = _paragraphStyle
+        _drawTitleAttributes[NSAttributedString.Key.foregroundColor] = #colorLiteral(red: 0.9515632987, green: 0.4954123497, blue: 0.1712778509, alpha: 1)
+        
+        //
+        if let object = entry.data as? JSON {
+            // 단위
+            if object["markerUnit"].exists() {
+                markerUnit = object["markerUnit"].stringValue;
+                if highlight.stackIndex != -1 && object["markerUnit"].array != nil {
+                    markerUnit = object["markerUnit"].arrayValue[highlight.stackIndex].stringValue
+                }
+            }
+            
+            // marker 글자
+            if object["markerUnit"].exists() {
+                markerString = object["marker"].stringValue;
+                if highlight.stackIndex != -1 && object["marker"].array != nil {
+                    markerString = object["marker"].arrayValue[highlight.stackIndex].stringValue
+                }
+            }
+            
+            // decimal places
+            if object["decimalPlaces"].exists() {
+                decimalPlaces = object["decimalPlaces"].stringValue;
+                if highlight.stackIndex != -1 && object["decimalPlaces"].array != nil {
+                    decimalPlaces = object["decimalPlaces"].arrayValue[highlight.stackIndex].stringValue
+                }
+            }
+        }
 
         if let candleEntry = entry as? CandleChartDataEntry {
             label = "\n" + candleEntry.close.description
@@ -209,18 +252,26 @@ open class AtfleeMarker: MarkerView {
                 label = "\n" + markerString
             }
         }
+        
         labelns = label as NSString
+        
         _drawAttributes.removeAll()
-        _drawAttributes[.font] = self.font
-        _drawAttributes[.paragraphStyle] = _paragraphStyle
-        _drawAttributes[.foregroundColor] = self.textColor
+        _drawAttributes[NSAttributedString.Key.paragraphStyle] = _paragraphStyle
+        _drawAttributes[NSAttributedString.Key.foregroundColor] = self.textColor
+
+        let isBold = textWeight == "bold"
+        let baseFontSize = self.font.pointSize
+        let labelFont: UIFont = isBold
+            ? UIFont.boldSystemFont(ofSize: baseFontSize)
+            : self.font
+        _drawAttributes[NSAttributedString.Key.font] = labelFont
 
         // 전체 크기
         let titleSize = labelTitle?.size(withAttributes: _drawAttributes) ?? CGSize.zero
         let labelSize = labelns?.size(withAttributes: _drawAttributes) ?? CGSize.zero
         let maxWidth = max(titleSize.width, labelSize.width)
         let maxHeight = max(titleSize.height, labelSize.height)
-        _labelSize = CGSize(width: maxWidth, height: maxHeight + 8)
+        _labelSize = CGSize(width: maxWidth, height: maxHeight + 8) // 패딩줬기때문에 라벨 하단 짤려서 넣어줘야함
         _size.width = _labelSize.width + self.insets.left + self.insets.right
         _size.height = _labelSize.height + self.insets.top + self.insets.bottom
         _size.width = max(minimumSize.width, _size.width)
@@ -236,8 +287,14 @@ open class AtfleeMarker: MarkerView {
         if label.isEmpty {
             imageEmotion = nil
             _size.height -= imageSize
-
+            
             arrowImage = UIImage(named: "arrow_right_circle")
+            
+            if let _ = arrowImage {
+                let arrowSize: CGFloat = 20   // draw에서 쓴 arrowSize와 맞춰야함
+                let arrowPadding: CGFloat = 6
+                _size.width += arrowSize + arrowPadding
+            }
         } else {
             switch label {
             case "1":
