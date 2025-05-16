@@ -45,29 +45,32 @@ open class AtfleeMarker: MarkerView {
     }
     
     
-    func drawRect(context: CGContext, point: CGPoint) -> CGRect{
-        let chart = super.chartView
-        let width = _size.width
+    open func drawRect(context: CGContext, point: CGPoint) -> CGRect {
+        let width  = _size.width
         let height = _size.height
-        var pt = CGPoint(
-            x: point.x - width/2,
-            y: point.y - height - 10)
         
-        // 이모티콘이 없을 경우 항상 차트위에 출력
-        if imageEmotion == nil {
-            pt = CGPoint(x: pt.x, y: 0)
+        // 포인트 위 중앙에 표시될 원래 pt
+        var pt = CGPoint(x: point.x - width/2,
+                         y: point.y - height - 10)
+        
+        // ② 엣지 보정: 좌/우/상 경계 안으로
+        if let chart = chartView {
+            if pt.x < 0 {
+                pt.x = 0
+            }
+            if pt.x + width > chart.bounds.size.width {
+                pt.x = chart.bounds.size.width - width
+            }
+            if pt.y < 0 {
+                pt.y = 0
+            }
         }
         
-        let rect = CGRect(origin: pt, size: _size)
-        drawCenterRect(context: context, rect: rect)
+        let bgRect = CGRect(origin: pt, size: _size)
+        drawCenterRect(context: context, rect: bgRect)
         
-        let marginTop = 6.0
-        
-        return CGRect(
-            origin: CGPoint(
-                x: pt.x,
-                y: pt.y + marginTop),
-            size:_size)
+        // ③ 자식(draw) 로직은 bgRect 그대로 씁니다
+        return bgRect
     }
     
     func drawCenterRect(context: CGContext, rect: CGRect) {
@@ -88,46 +91,33 @@ open class AtfleeMarker: MarkerView {
     open override func draw(context: CGContext, point: CGPoint) {
         context.saveGState()
         
-        var pt = CGPoint(x: point.x - _size.width/2, y: point.y - _size.height - 10)
-
-        if let chart = self.chartView {
-            if pt.x < 0 { pt.x = 0 }
-            if pt.x + _size.width > chart.bounds.size.width {
-                pt.x = chart.bounds.size.width - _size.width
-            }
-            if pt.y < 0 { pt.y = 0 }
-        }
-
-        let rect = CGRect(origin: pt, size: _size)
+        // 배경 그리고, 그 위에 그릴 Rect 받기
+        let rect = drawRect(context: context, point: point)
+        
         UIGraphicsPushContext(context)
-
-        // Draw 배경
-        drawCenterRect(context: context, rect: rect)
-
-        // Draw 타이틀
-        if labelTitle?.length ?? 0 > 0 {
-            let titleRect = CGRect(x: pt.x, y: pt.y + 4, width: _size.width, height: 20)
-            labelTitle?.draw(in: titleRect, withAttributes: _drawTitleAttributes)
+        
+        // 타이틀
+        if let title = labelTitle, title.length > 0 {
+            title.draw(in: rect, withAttributes: _drawTitleAttributes)
         }
-
-        // Draw 단위
-        if labelns?.length ?? 0 > 0 {
-            let labelRect = CGRect(x: pt.x, y: pt.y + 28, width: _size.width, height: 20)
-            labelns?.draw(in: labelRect, withAttributes: _drawAttributes)
+        
+        // 단위
+        if let lbl = labelns, lbl.length > 0 {
+            lbl.draw(in: rect, withAttributes: _drawAttributes)
         }
-
-        // Draw 아이콘
-        if let image = imageEmotion {
+        
+        // 아이콘
+        if let img = imageEmotion {
             let iconRect = CGRect(
                 origin: CGPoint(
-                    x: pt.x + (_size.width - imageSize) / 2,
-                    y: pt.y + _size.height - imageSize - 4
+                    x: rect.origin.x + (rect.width  - imageSize) / 2,
+                    y: rect.origin.y + (rect.height - imageSize) / 2 + 8
                 ),
                 size: CGSize(width: imageSize, height: imageSize)
             )
-            image.draw(in: iconRect)
+            img.draw(in: iconRect)
         }
-
+        
         UIGraphicsPopContext()
         context.restoreGState()
     }
