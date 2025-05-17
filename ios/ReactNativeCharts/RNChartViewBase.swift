@@ -508,41 +508,29 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     }
 
     @objc public func chartValueSelected(_ chartView: ChartViewBase, entry: ChartDataEntry, highlight: Highlight) {
+        guard let onSelect = self.onSelect else { return }
         
-        // 1) Highlight에서 터치 위치 얻기
         let touchPoint = CGPoint(x: CGFloat(highlight.xPx), y: CGFloat(highlight.yPx))
-
-        // 2) 마커 박스 내부인지 확인
-        var inside = false
-        if let marker = chartView.marker as? AtfleeMarker,
-           !marker.lastBgRect.isEmpty,
-           marker.lastBgRect != .zero,
-           marker.lastBgRect.contains(touchPoint) {
-            inside = true
-        }
-        onMarkerClick?([
-            "inside": inside,
-            "x": entry.x,
-            "y": entry.y,
-            "touchPoint": touchPoint
-        ])
+        var isMarkerTapped = false
         
-        if self.onSelect == nil {
-            return
+        if let marker = chartView.marker as? AtfleeMarker,
+            !marker.lastBgRect.isEmpty,
+            marker.lastBgRect != .zero,
+            marker.lastBgRect.contains(touchPoint) {
+                isMarkerTapped = true
+            }
+        
+        if isMarkerTapped {
+            onSelect(EntryToDictionaryUtils.entryToDictionary(entry))
         } else {
-            self.onSelect!(EntryToDictionaryUtils.entryToDictionary(entry))
+            onSelect(nil)  // 마커 외부 터치 시 nil 전달
         }
     }
 
     @objc public func chartValueNothingSelected(_ chartView: ChartViewBase) {
-        if self.onSelect == nil {
-            return
-        } else {
-            self.onSelect!(nil)
-
-        }
+        self.onSelect?(nil)  // 아무것도 선택되지 않음
     }
-
+    
     @objc public func chartScaled(_ chartView: ChartViewBase, scaleX: CoreGraphics.CGFloat, scaleY: CoreGraphics.CGFloat) {
         sendEvent("chartScaled")
     }
