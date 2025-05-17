@@ -12,6 +12,11 @@ open class AtfleeMarker: MarkerView {
     private var fadeStart: CFTimeInterval?
     private let fadeDuration: CFTimeInterval = 0.25
     fileprivate var arrowImage: UIImage?     // 이제 RN에서 주입된 이미지
+    
+    /// 1. 마지막으로 표시된 마커 배경의 프레임
+    fileprivate(set) var lastBgRect: CGRect = .zero
+
+    /// 2. 마지막으로 선택된 데이터 엔트리
     fileprivate(set) var lastEntry: ChartDataEntry?
     
     open var color: UIColor?
@@ -123,6 +128,7 @@ open class AtfleeMarker: MarkerView {
         }
 
         let rect = drawRect(context: context, point: markerPt)
+        self.lastBgRect = rect
 
         // print("drawRect result origin:", rect.origin, "size:", rect.size)
 

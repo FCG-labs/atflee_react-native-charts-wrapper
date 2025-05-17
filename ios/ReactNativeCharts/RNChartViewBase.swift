@@ -28,13 +28,6 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
     private  var syncY = false
 
-    
-    private lazy var tapGR: UITapGestureRecognizer = {
-        let gr = UITapGestureRecognizer(target: self, action: #selector(handleChartTap(_:)))
-        gr.cancelsTouchesInView = false
-        return gr
-      }()
-
     override open func reactSetFrame(_ frame: CGRect)
     {
         super.reactSetFrame(frame);
@@ -42,7 +35,6 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         let chartFrame = CGRect(x: 0, y: 0, width: frame.width, height: frame.height)
         chart.setExtraOffsets(left: 35, top: 5, right: 5, bottom: 5)
         chart.reactSetFrame(chartFrame)
-        chart.addGestureRecognizer(tapGR)
     }
 
     var chart: ChartViewBase {
@@ -516,7 +508,25 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     }
 
     @objc public func chartValueSelected(_ chartView: ChartViewBase, entry: ChartDataEntry, highlight: Highlight) {
+        
+        // 1) Highlight에서 터치 위치 얻기
+        let touchPoint = CGPoint(x: CGFloat(highlight.xPx), y: CGFloat(highlight.yPx))
 
+        // 2) 마커 박스 내부인지 확인
+        var inside = false
+        if let marker = chartView.marker as? AtfleeMarker,
+           !marker.lastBgRect.isEmpty,
+           marker.lastBgRect != .zero,
+           marker.lastBgRect.contains(touchPoint) {
+            inside = true
+        }
+        onMarkerClick?([
+            "inside": inside,
+            "x": entry.x,
+            "y": entry.y,
+            "touchPoint": touchPoint
+        ])
+        
         if self.onSelect == nil {
             return
         } else {
@@ -531,24 +541,6 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             self.onSelect!(nil)
 
         }
-    }
-    
-    @objc private func handleChartTap(_ gr: UITapGestureRecognizer) {
-        let pt = gr.location(in: chart)
-        var payload: [String: Any] = ["inside": false]
-
-        if let marker = chart.marker as? AtfleeMarker,
-           marker.lastBgRect.contains(pt),
-           let entry = marker.lastEntry {
-          payload = [
-            "inside": true,
-            "x": entry.x,
-            "y": entry.y
-          ]
-        }
-
-        // JS로 이벤트 전송
-        onMarkerClick?(payload)
     }
 
     @objc public func chartScaled(_ chartView: ChartViewBase, scaleX: CoreGraphics.CGFloat, scaleY: CoreGraphics.CGFloat) {
