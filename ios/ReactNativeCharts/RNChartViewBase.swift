@@ -12,6 +12,25 @@ import SwiftyJSON
 
 // In react native, because object-c is unaware of swift protocol extension. use baseClass as workaround
 
+// 파일 상단 또는 RNChartViewBase 클래스 외부에 정의
+final class OverlayMarkerButton: UIButton {
+    var clickHandler: (() -> Void)?
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        addTarget(self, action: #selector(handleTap), for: .touchUpInside)
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        addTarget(self, action: #selector(handleTap), for: .touchUpInside)
+    }
+
+    @objc private func handleTap() {
+        clickHandler?()
+    }
+}
+
 @objcMembers
 open class RNChartViewBase: UIView, ChartViewDelegate {
     open var onSelect:RCTBubblingEventBlock?
@@ -508,39 +527,43 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     }
 
     @objc public func chartValueSelected(_ chartView: ChartViewBase, entry: ChartDataEntry, highlight: Highlight) {
-        guard let onSelect = self.onSelect else { return }
         
-        let touchPoint = CGPoint(x: CGFloat(highlight.xPx), y: CGFloat(highlight.yPx))
-        var isMarkerTapped = false
+        chartView.subviews
+            .filter { $0.tag == 999 }
+            .forEach { $0.removeFromSuperview() }
         
-        if let marker = chartView.marker as? AtfleeMarker,
-            !marker.lastBgRect.isEmpty,
-            marker.lastBgRect != .zero,
-            marker.lastBgRect.contains(touchPoint) {
-                isMarkerTapped = true
-            }
-        
-        if isMarkerTapped {
-            onSelect(EntryToDictionaryUtils.entryToDictionary(entry))
+        if self.onSelect == nil {
+            return
         } else {
-            onSelect(nil)  // 마커 외부 터치 시 nil 전달
+            self.onSelect!(EntryToDictionaryUtils.entryToDictionary(entry))
         }
     }
 
     @objc public func chartValueNothingSelected(_ chartView: ChartViewBase) {
         self.onSelect?(nil)  // 아무것도 선택되지 않음
+        
+        chartView.subviews
+            .filter { $0.tag == 999 }
+            .forEach { $0.removeFromSuperview() }
     }
     
     @objc public func chartScaled(_ chartView: ChartViewBase, scaleX: CoreGraphics.CGFloat, scaleY: CoreGraphics.CGFloat) {
         sendEvent("chartScaled")
+        chartView.subviews
+            .filter { $0.tag == 999 }
+            .forEach { $0.removeFromSuperview() }
     }
 
     @objc public func chartTranslated(_ chartView: ChartViewBase, dX: CoreGraphics.CGFloat, dY: CoreGraphics.CGFloat) {
         sendEvent("chartTranslated")
+        chartView.subviews
+            .filter { $0.tag == 999 }
+            .forEach { $0.removeFromSuperview() }
     }
 
     @objc public func chartViewDidEndPanning(_ chartView: ChartViewBase) {
         sendEvent("chartPanEnd")
+        // 이건 좌우스크롤 highlightPerDragEnabled과 연관있으므로, 오버레이 터치 삭제하면 안됨
     }
 
     func sendEvent(_ action:String) {

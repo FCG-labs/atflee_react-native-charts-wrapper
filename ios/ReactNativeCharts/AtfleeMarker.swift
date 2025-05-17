@@ -53,6 +53,7 @@ open class AtfleeMarker: MarkerView {
         _paragraphStyle?.alignment = textAlign
         _paragraphStyle?.lineSpacing = 6     // ★ 원하는 패딩(px)만큼
     }
+    
     public required init?(coder aDecoder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
     // ───────────────── drawRect / drawCenterRect 그대로 ─────────────────
@@ -198,6 +199,10 @@ open class AtfleeMarker: MarkerView {
 
         UIGraphicsPopContext()
         context.restoreGState()
+        
+        if let entry = self.lastEntry {
+            createOverlayButtonIfNeeded(entry)
+        }
     }
     // ────────────────────────────────────────────────────────────────
 
@@ -209,25 +214,6 @@ open class AtfleeMarker: MarkerView {
         if fadeStart == nil {
             fadeStart = CACurrentMediaTime()
         }
-
-        print("🟦 [AtfleeMarker] refreshContent called!")
-        print("entry.x: \(entry.x), entry.y: \(entry.y)")
-        
-        if let data = entry.data {
-            print("entry.data: \(data)")
-        } else {
-            print("entry.data: nil")
-        }
-        
-        // entry의 타입/상속분기(Candle 등)도 확인
-        if let candleEntry = entry as? CandleChartDataEntry {
-            print("Candle Entry - open: \(candleEntry.open), close: \(candleEntry.close), high: \(candleEntry.high), low: \(candleEntry.low)")
-        }
-        
-        print("highlight.x: \(highlight.x), highlight.y: \(highlight.y), stackIndex: \(highlight.stackIndex)")
-        
-
-
         
         var label : String
         var decimalPlaces = "0"
@@ -353,7 +339,49 @@ open class AtfleeMarker: MarkerView {
     }
     
     open override func removeFromSuperview() {
-      super.removeFromSuperview()
-      fadeStart = nil
+        resetState()
+        super.removeFromSuperview()
+    }
+
+    private func createOverlayButtonIfNeeded(_ entry: ChartDataEntry) {
+        guard let chartView = chartView else { return }
+
+
+        let overlayButton = OverlayMarkerButton(frame: lastBgRect)
+        overlayButton.tag = 999
+            overlayButton.backgroundColor = .clear  // 디버깅 시 색상 지정 가능
+            
+        // 디버그용
+//        overlayButton.backgroundColor = .yellow
+//        overlayButton.layer.borderColor = UIColor.red.cgColor
+//        overlayButton.layer.borderWidth = 1.0
+
+        overlayButton.clickHandler = { [weak chartView] in
+            guard let chartView = chartView,
+                let base = chartView.superview as? RNChartViewBase,
+                let onMarkerClick = base.onMarkerClick else { return }
+
+            let dict: [AnyHashable: Any] = [
+                "x": entry.x,
+                "y": entry.y,
+                "data": EntryToDictionaryUtils.entryToDictionary(entry)
+            ]
+            
+            onMarkerClick(dict)
+            self.resetState()
+        }
+
+        chartView.addSubview(overlayButton)
+    }
+    
+    func resetState() {
+        fadeStart = nil
+        lastEntry = nil
+        lastBgRect = .zero
+        
+        chartView?.highlightValue(nil, callDelegate: false)
+        chartView?.subviews
+            .filter { $0.tag == 999 }
+            .forEach { $0.removeFromSuperview() }
     }
 }
