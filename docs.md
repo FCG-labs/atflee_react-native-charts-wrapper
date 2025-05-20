@@ -147,7 +147,7 @@
 | ------------------- | ------------------- | ------- | ---- |
 | `drawValueAboveBar` | `bool`              |         |      |
 | `drawBarShadow`     | `bool`              |         |      |
-| `barRadius`         | `number`            |         | Pixel radius of bar corners. Android only unless implemented for iOS. |
+| `barRadius`         | `number`            |         | Pixel radius of bar corners. When greater than `0`, a rounded bar renderer is used. Android only unless implemented for iOS. |
 | `data`              | `DataTypes.barData` |         |      |
 
 ## BubbleChart
@@ -177,7 +177,7 @@
 | `drawValueAboveBar` | `bool`              |         |      |
 | `highlightFullBarEnabled` | `bool`         |         |      |
 | `drawBarShadow`     | `bool`              |         |      |
-| `barRadius`         | `number`            |         | Pixel radius of bar corners. Android only unless implemented for iOS. |
+| `barRadius`         | `number`            |         | Pixel radius of bar corners. When greater than `0`, a rounded bar renderer is used. Android only unless implemented for iOS. |
 
 ## HorizontalBarChart
 
@@ -187,7 +187,7 @@
 | ------------------- | ------------------- | ------- | ---- |
 | `drawValueAboveBar` | `bool`              |         |      |
 | `drawBarShadow`     | `bool`              |         |      |
-| `barRadius`         | `number`            |         | Pixel radius of bar corners. Android only unless implemented for iOS. |
+| `barRadius`         | `number`            |         | Pixel radius of bar corners. When greater than `0`, a rounded bar renderer is used. Android only unless implemented for iOS. |
 | `data`              | `DataTypes.barData` |         |      |
 
 ## LineChart
