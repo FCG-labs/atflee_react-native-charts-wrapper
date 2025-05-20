@@ -43,4 +43,11 @@ public class BarChartManager extends BarLineChartBaseManager<BarChart, BarEntry>
     public void setHighlightFullBarEnabled(BarChart chart, boolean enabled) {
         chart.setHighlightFullBarEnabled(enabled);
     }
+
+    @ReactProp(name = "barRadius")
+    public void setBarRadius(BarChart chart, float radius) {
+        if (chart instanceof AtfleeBarChart) {
+            ((AtfleeBarChart) chart).setRadius(radius);
+        }
+    }
 }

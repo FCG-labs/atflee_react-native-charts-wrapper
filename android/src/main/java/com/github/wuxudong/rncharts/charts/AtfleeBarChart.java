@@ -33,4 +33,11 @@ public class AtfleeBarChart extends BarChart {
         getXAxis().setSpaceMin(0.5f);
         getXAxis().setSpaceMax(0.5f);
     }
+
+    public void setRadius(float radius) {
+        if (mRenderer instanceof AtfleeBarChartRenderer) {
+            ((AtfleeBarChartRenderer) mRenderer).setRadius(radius);
+            invalidate();
+        }
+    }
 }

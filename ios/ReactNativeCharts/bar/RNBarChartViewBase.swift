@@ -24,4 +24,23 @@ class RNBarChartViewBase: RNBarLineChartViewBase {
     func setHighlightFullBarEnabled(_ enabled: Bool) {
         barChart.highlightFullBarEnabled = enabled
     }
+
+    func setBarRadius(_ radius: NSNumber) {
+        let value = CGFloat(truncating: radius)
+        if let horizontal = chart as? HorizontalBarChartView {
+            if let renderer = horizontal.renderer as? RoundedHorizontalBarChartRenderer {
+                renderer.setRadius(value)
+            } else {
+                horizontal.renderer = RoundedHorizontalBarChartRenderer(dataProvider: horizontal, animator: horizontal.chartAnimator, viewPortHandler: horizontal.viewPortHandler, radius: value)
+            }
+            horizontal.setNeedsDisplay()
+        } else if let vertical = chart as? BarChartView {
+            if let renderer = vertical.renderer as? RoundedBarChartRenderer {
+                renderer.setRadius(value)
+            } else {
+                vertical.renderer = RoundedBarChartRenderer(dataProvider: vertical, animator: vertical.chartAnimator, viewPortHandler: vertical.viewPortHandler, radius: value)
+            }
+            vertical.setNeedsDisplay()
+        }
+    }
 }
