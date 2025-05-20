@@ -6,6 +6,9 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.view.ViewGroup;
+import android.view.View.MeasureSpec;
+import com.lihang.ShadowLayout;
 
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactContext;
@@ -30,6 +33,7 @@ public class RNAtfleeMarkerView extends MarkerView {
     private final ImageView imageEmotion;
     private Entry lastEntry;
     private final ImageView imageArrow;
+    private final ShadowLayout mShadowLayout;
     private boolean showArrow = true;
 
     /**
@@ -49,7 +53,8 @@ public class RNAtfleeMarkerView extends MarkerView {
         tvContent = findViewById(R.id.y_value);
         imageEmotion = findViewById(R.id.image_emotion);
 
-        View clickable = findViewById(R.id.mShadowLayout);
+        mShadowLayout = findViewById(R.id.mShadowLayout);
+        View clickable = mShadowLayout;
         if (clickable != null) {
             clickable.setOnClickListener(new OnClickListener() {
                 @Override
@@ -139,6 +144,34 @@ public class RNAtfleeMarkerView extends MarkerView {
         // arrow image always prepared
         imageArrow.setImageResource(R.drawable.arrow_right_circle);
         imageArrow.setVisibility(showArrow ? VISIBLE : GONE);
+
+        // Measure views to adjust ShadowLayout size
+        tvTitle.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.UNSPECIFIED);
+        tvContent.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.UNSPECIFIED);
+        int width = Math.max(tvTitle.getMeasuredWidth(), tvContent.getMeasuredWidth());
+        int height = tvTitle.getMeasuredHeight() + tvContent.getMeasuredHeight();
+
+        if (imageEmotion.getVisibility() == VISIBLE) {
+            imageEmotion.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.UNSPECIFIED);
+            width = Math.max(width, imageEmotion.getMeasuredWidth());
+            height += imageEmotion.getMeasuredHeight();
+        }
+        if (imageArrow.getVisibility() == VISIBLE) {
+            imageArrow.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.UNSPECIFIED);
+            width = Math.max(width, imageArrow.getMeasuredWidth());
+            height += imageArrow.getMeasuredHeight();
+        }
+
+        width += (int) Utils.convertDpToPixel(16f); // margins inside layout
+        height += (int) Utils.convertDpToPixel(8f); // vertical margins
+
+        ViewGroup.LayoutParams params = mShadowLayout.getLayoutParams();
+        if (params != null) {
+            params.width = width;
+            params.height = height;
+            mShadowLayout.setLayoutParams(params);
+        }
+        mShadowLayout.requestLayout();
 
         super.refreshContent(e, highlight);
     }
