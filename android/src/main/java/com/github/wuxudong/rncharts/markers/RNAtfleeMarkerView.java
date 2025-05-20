@@ -3,16 +3,23 @@ package com.github.wuxudong.rncharts.markers;
 import android.content.Context;
 import android.text.TextUtils;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.ReactContext;
+import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.uimanager.events.RCTEventEmitter;
 import com.github.mikephil.charting.components.MarkerView;
+import com.github.mikephil.charting.charts.Chart;
 import com.github.mikephil.charting.data.CandleEntry;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.utils.MPPointF;
 import com.github.mikephil.charting.utils.Utils;
 import com.github.wuxudong.rncharts.R;
+import com.github.wuxudong.rncharts.utils.EntryToWritableMapUtils;
 
 import java.util.Map;
 
@@ -21,6 +28,7 @@ public class RNAtfleeMarkerView extends MarkerView {
     private final TextView tvTitle;
     private final TextView tvContent;
     private final ImageView imageEmotion;
+    private Entry lastEntry;
 
     public RNAtfleeMarkerView(Context context) {
         super(context, R.layout.atflee_marker);
@@ -28,11 +36,22 @@ public class RNAtfleeMarkerView extends MarkerView {
         tvTitle = findViewById(R.id.x_value);
         tvContent = findViewById(R.id.y_value);
         imageEmotion = findViewById(R.id.image_emotion);
+
+        View clickable = findViewById(R.id.mShadowLayout);
+        if (clickable != null) {
+            clickable.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    handleClick();
+                }
+            });
+        }
     }
 
 
     @Override
     public void refreshContent(Entry e, Highlight highlight) {
+        lastEntry = e;
         String decimalPlaces = "0";
         String markerUnit = "";
         String markerString = "";
@@ -115,6 +134,31 @@ public class RNAtfleeMarkerView extends MarkerView {
 
     public TextView getTvContent() {
         return tvContent;
+    }
+
+    private void handleClick() {
+        if (lastEntry == null) {
+            return;
+        }
+
+        Chart chart = getChartView();
+        if (chart == null) {
+            return;
+        }
+
+        ReactContext reactContext = (ReactContext) getContext();
+        WritableMap event = Arguments.createMap();
+        event.putDouble("x", lastEntry.getX());
+        event.putDouble("y", lastEntry.getY());
+        event.putMap("data", EntryToWritableMapUtils.convertEntryToWritableMap(lastEntry));
+
+        reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
+                chart.getId(),
+                "topMarkerClick",
+                event
+        );
+
+        chart.highlightValue(null);
     }
 
 }
