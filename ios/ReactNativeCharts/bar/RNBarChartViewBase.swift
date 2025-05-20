@@ -28,14 +28,21 @@ class RNBarChartViewBase: RNBarLineChartViewBase {
     }
 
     func setBarRadius(_ radius: NSNumber) {
-        barRadius = CGFloat(truncating: radius)
-
-        if let horizontalChart = chart as? HorizontalBarChartView {
-            horizontalChart.renderer = RoundedHorizontalBarChartRenderer(dataProvider: horizontalChart, animator: horizontalChart.chartAnimator, viewPortHandler: horizontalChart.viewPortHandler, radius: barRadius)
-            horizontalChart.setNeedsDisplay()
-        } else if let verticalChart = chart as? BarChartView {
-            verticalChart.renderer = RoundedBarChartRenderer(dataProvider: verticalChart, animator: verticalChart.chartAnimator, viewPortHandler: verticalChart.viewPortHandler, radius: barRadius)
-            verticalChart.setNeedsDisplay()
+        let value = CGFloat(truncating: radius)
+        if let horizontal = chart as? HorizontalBarChartView {
+            if let renderer = horizontal.renderer as? RoundedHorizontalBarChartRenderer {
+                renderer.setRadius(value)
+            } else {
+                horizontal.renderer = RoundedHorizontalBarChartRenderer(dataProvider: horizontal, animator: horizontal.chartAnimator, viewPortHandler: horizontal.viewPortHandler, radius: value)
+            }
+            horizontal.setNeedsDisplay()
+        } else if let vertical = chart as? BarChartView {
+            if let renderer = vertical.renderer as? RoundedBarChartRenderer {
+                renderer.setRadius(value)
+            } else {
+                vertical.renderer = RoundedBarChartRenderer(dataProvider: vertical, animator: vertical.chartAnimator, viewPortHandler: vertical.viewPortHandler, radius: value)
+            }
+            vertical.setNeedsDisplay()
         }
     }
 }

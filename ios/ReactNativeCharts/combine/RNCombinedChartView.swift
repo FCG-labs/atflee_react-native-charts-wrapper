@@ -55,15 +55,12 @@ class RNCombinedChartView: RNBarLineChartViewBase {
 
     func setBarRadius(_ radius: NSNumber) {
         let value = CGFloat(truncating: radius)
-        if let renderer = _chart.renderer as? CombinedChartRenderer {
-            for item in renderer.renderers {
-                if let barRenderer = item as? RoundedBarChartRenderer {
-                    barRenderer.radius = value
-                } else if let horizRenderer = item as? RoundedHorizontalBarChartRenderer {
-                    horizRenderer.radius = value
-                }
-            }
+        if let renderer = _chart.renderer as? RoundedCombinedChartRenderer {
+            renderer.setRadius(value)
+        } else {
+            _chart.renderer = RoundedCombinedChartRenderer(chart: _chart, animator: _chart.chartAnimator, viewPortHandler: _chart.viewPortHandler, barRadius: value)
         }
+        _chart.setNeedsDisplay()
     }
 
 }

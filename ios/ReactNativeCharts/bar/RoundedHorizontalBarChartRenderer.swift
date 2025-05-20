@@ -1,36 +1,57 @@
 import Foundation
 import DGCharts
 
-open class RoundedHorizontalBarChartRenderer: HorizontalBarChartRenderer {
-    @objc open var radius: CGFloat
+class RoundedHorizontalBarChartRenderer: HorizontalBarChartRenderer {
+    var radius: CGFloat
 
-    public init(dataProvider: BarChartDataProvider, animator: Animator, viewPortHandler: ViewPortHandler, radius: CGFloat) {
+    init(dataProvider: BarChartDataProvider, animator: Animator, viewPortHandler: ViewPortHandler, radius: CGFloat) {
         self.radius = radius
         super.init(dataProvider: dataProvider, animator: animator, viewPortHandler: viewPortHandler)
     }
 
-    open override func drawDataSet(context: CGContext, dataSet: IBarChartDataSet, index: Int) {
+    func setRadius(_ radius: CGFloat) {
+        self.radius = radius
+    }
+
+    override func drawDataSet(context: CGContext, dataSet: IBarChartDataSet, index: Int) {
         guard let dataProvider = dataProvider else { return }
+
         let trans = dataProvider.getTransformer(forAxis: dataSet.axisDependency)
-        var buffer = _buffers[index]
+        let barData = dataProvider.barData
+        let barWidth = barData?.barWidth ?? 0
+        let phaseY = animator.phaseY
+        let phaseX = animator.phaseX
+        let barWidthHalf = barWidth / 2.0
+        var barRect = CGRect()
 
-        context.saveGState()
+        let count = Int(ceil(Double(dataSet.entryCount) * phaseX))
+        for i in 0 ..< count {
+            guard let e = dataSet.entryForIndex(i) as? BarChartDataEntry else { continue }
+            let x = e.x
+            let y = e.y
 
-        for j in stride(from: 0, to: Int(buffer.count), by: 4) {
-            var barRect = CGRect(x: CGFloat(buffer[j]), y: CGFloat(buffer[j + 1]), width: CGFloat(buffer[j + 2] - buffer[j]), height: CGFloat(buffer[j + 3] - buffer[j + 1]))
+            var left = y >= 0.0 ? 0.0 : y
+            var right = y <= 0.0 ? 0.0 : y
+            if right < left { swap(&left, &right) }
+
+            barRect.origin.y = CGFloat(x - barWidthHalf)
+            barRect.size.height = CGFloat(barWidth)
+            barRect.origin.x = CGFloat(left) * CGFloat(phaseY)
+            barRect.size.width = CGFloat(right - left) * CGFloat(phaseY)
+
             trans.rectValueToPixel(&barRect)
 
-            if !viewPortHandler.isInBoundsLeft(barRect.maxY) { continue }
-            if !viewPortHandler.isInBoundsRight(barRect.minY) { break }
+            if !viewPortHandler.isInBoundsTop(barRect.maxY) {
+                continue
+            }
+            if !viewPortHandler.isInBoundsBottom(barRect.minY) {
+                break
+            }
 
-            let color = dataSet.color(atIndex: j / 4)
-            context.setFillColor(color.cgColor)
-
-            let path = UIBezierPath(roundedRect: barRect, byRoundingCorners: [.topLeft, .bottomLeft], cornerRadii: CGSize(width: radius, height: radius))
+            context.setFillColor(dataSet.color(atIndex: i).cgColor)
+            let path = UIBezierPath(roundedRect: barRect, cornerRadius: radius)
             context.addPath(path.cgPath)
             context.fillPath()
         }
-
-        context.restoreGState()
     }
 }
