@@ -21,6 +21,8 @@ public class RNAtfleeMarkerView extends MarkerView {
     private final TextView tvTitle;
     private final TextView tvContent;
     private final ImageView imageEmotion;
+    private final ImageView imageArrow;
+    private boolean showArrow = true;
 
     public RNAtfleeMarkerView(Context context) {
         super(context, R.layout.atflee_marker);
@@ -28,6 +30,7 @@ public class RNAtfleeMarkerView extends MarkerView {
         tvTitle = findViewById(R.id.x_value);
         tvContent = findViewById(R.id.y_value);
         imageEmotion = findViewById(R.id.image_emotion);
+        imageArrow = findViewById(R.id.image_arrow);
     }
 
 
@@ -97,6 +100,10 @@ public class RNAtfleeMarkerView extends MarkerView {
                 imageEmotion.setImageResource(R.drawable.emotion5);
         }
 
+        // arrow image always prepared
+        imageArrow.setImageResource(R.drawable.arrow_right_circle);
+        imageArrow.setVisibility(showArrow ? VISIBLE : GONE);
+
         super.refreshContent(e, highlight);
     }
 
@@ -115,6 +122,10 @@ public class RNAtfleeMarkerView extends MarkerView {
 
     public TextView getTvContent() {
         return tvContent;
+    }
+
+    public void setShowArrow(boolean show) {
+        this.showArrow = show;
     }
 
 }

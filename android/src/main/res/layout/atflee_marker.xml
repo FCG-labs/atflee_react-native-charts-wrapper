@@ -55,6 +55,14 @@
                 android:src="@drawable/emotion1"
                 android:layout_gravity="center"
                 />
+
+            <ImageView
+                android:id="@+id/image_arrow"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/arrow_right_circle"
+                android:layout_gravity="center"
+                />
         </LinearLayout>
 
     </com.lihang.ShadowLayout>
