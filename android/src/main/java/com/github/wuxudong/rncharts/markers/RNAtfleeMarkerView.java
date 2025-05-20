@@ -299,13 +299,19 @@ public class RNAtfleeMarkerView extends MarkerView {
   
     @Override
     public void draw(android.graphics.Canvas canvas) {
-        if (fadeDuration > 0 && fadeStart > 0) {
-            long elapsed = System.currentTimeMillis() - fadeStart;
-            if (elapsed < fadeDuration) {
-                float alpha = (float) elapsed / (float) fadeDuration;
+        if (fadeStart > 0) {
+            if (fadeDuration > 0) {
+                long elapsed = System.currentTimeMillis() - fadeStart;
+                float alpha = Math.min(1f, (float) elapsed / (float) fadeDuration);
                 setAlpha(alpha);
-                // Continue invalidating until fade in completes
-                invalidate();
+
+                if (elapsed < fadeDuration) {
+                    // Keep redrawing until the fade in animation completes
+                    invalidate();
+                } else {
+                    // Animation finished
+                    fadeStart = 0L;
+                }
             } else {
                 setAlpha(1f);
                 fadeStart = 0L;
