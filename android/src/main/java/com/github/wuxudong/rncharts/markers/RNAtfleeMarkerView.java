@@ -36,6 +36,9 @@ public class RNAtfleeMarkerView extends MarkerView {
     private final ShadowLayout mShadowLayout;
     private boolean showArrow = true;
 
+    // overlay button to capture marker clicks
+    private View overlayButton;
+
     /**
      * Animation start timestamp and duration for fade in effect.
      */
@@ -174,6 +177,32 @@ public class RNAtfleeMarkerView extends MarkerView {
         }
         mShadowLayout.requestLayout();
 
+        // Prepare overlay button matching marker position
+        Chart chart = getChartView();
+        if (chart != null && highlight != null) {
+            MPPointF offset = getOffsetForDrawingAtPoint(highlight.getDrawX(), highlight.getDrawY());
+            float left = highlight.getDrawX() + offset.x;
+            float top = highlight.getDrawY() + offset.y;
+
+            if (overlayButton != null && overlayButton.getParent() != null) {
+                ((ViewGroup) overlayButton.getParent()).removeView(overlayButton);
+            }
+
+            overlayButton = new View(getContext());
+            ViewGroup.LayoutParams overlayParams = new ViewGroup.LayoutParams(getWidth(), getHeight());
+            overlayButton.setLayoutParams(overlayParams);
+            overlayButton.setX(left);
+            overlayButton.setY(top);
+            overlayButton.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    handleClick();
+                }
+            });
+
+            ((ViewGroup) chart.getParent()).addView(overlayButton);
+        }
+
         super.refreshContent(e, highlight);
     }
 
@@ -238,6 +267,10 @@ public class RNAtfleeMarkerView extends MarkerView {
 
         chart.highlightValue(null);
         resetState();
+
+        if (overlayButton != null && overlayButton.getParent() != null) {
+            ((ViewGroup) overlayButton.getParent()).removeView(overlayButton);
+        }
     }
   
     @Override
@@ -265,6 +298,9 @@ public class RNAtfleeMarkerView extends MarkerView {
 
     public void resetState() {
         fadeStart = 0L;
+        if (overlayButton != null && overlayButton.getParent() != null) {
+            ((ViewGroup) overlayButton.getParent()).removeView(overlayButton);
+        }
     }
   
     public void setShowArrow(boolean show) {
