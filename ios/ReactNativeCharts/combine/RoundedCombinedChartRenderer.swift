@@ -6,7 +6,6 @@ class RoundedCombinedChartRenderer: DataRenderer {
     private var renderers: [DataRenderer] = []
     private var roundedBarRenderer: RoundedBarChartRenderer?
     var barRadius: CGFloat
-    private var roundedBarRenderer: RoundedBarChartRenderer?
 
     init(chart: CombinedChartView, animator: Animator, viewPortHandler: ViewPortHandler, barRadius: CGFloat) {
         self.chart = chart
@@ -52,7 +51,11 @@ class RoundedCombinedChartRenderer: DataRenderer {
 
     func setRadius(_ radius: CGFloat) {
         barRadius = radius
-        roundedBarRenderer?.setRadius(radius)
+        if let renderer = roundedBarRenderer {
+            renderer.setRadius(radius)
+        } else {
+            configureRenderers()
+        }
     }
 
     override func drawData(context: CGContext) {
