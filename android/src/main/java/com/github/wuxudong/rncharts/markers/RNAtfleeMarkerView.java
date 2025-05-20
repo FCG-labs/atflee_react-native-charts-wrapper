@@ -139,7 +139,7 @@ public class RNAtfleeMarkerView extends MarkerView {
         }
 
         // arrow image always prepared
-        imageArrow.setImageResource(R.drawable.arrow_right_circle);
+        imageArrow.setImageResource(R.drawable.dropdown_circle_right);
         imageArrow.setVisibility(showArrow ? VISIBLE : GONE);
 
         // Measure views to adjust ShadowLayout size
