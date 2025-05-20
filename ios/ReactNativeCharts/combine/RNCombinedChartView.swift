@@ -53,4 +53,8 @@ class RNCombinedChartView: RNBarLineChartViewBase {
         _chart.highlightFullBarEnabled = enabled
     }
 
+    func setBarRadius(_ radius: NSNumber) {
+        // TODO: implement rounded bar rendering for DGCharts
+    }
+
 }

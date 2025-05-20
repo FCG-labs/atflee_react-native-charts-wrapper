@@ -7,8 +7,11 @@ import com.github.mikephil.charting.renderer.CombinedChartRenderer;
 import com.github.mikephil.charting.renderer.LineChartRenderer;
 import com.github.mikephil.charting.renderer.ScatterChartRenderer;
 import com.github.mikephil.charting.utils.ViewPortHandler;
+import com.github.mikephil.charting.renderer.DataRenderer;
 
 public class AtfleeCombinedChartRenderer extends CombinedChartRenderer {
+    private float barRadius = 50f;
+
     public AtfleeCombinedChartRenderer(CombinedChart chart, ChartAnimator animator, ViewPortHandler viewPortHandler) {
         super(chart, animator, viewPortHandler);
     }
@@ -28,8 +31,11 @@ public class AtfleeCombinedChartRenderer extends CombinedChartRenderer {
 
             switch (order) {
                 case BAR:
-                    if (chart.getBarData() != null)
-                        mRenderers.add(new AtfleeBarChartRenderer(chart, mAnimator, mViewPortHandler));
+                    if (chart.getBarData() != null) {
+                        AtfleeBarChartRenderer renderer = new AtfleeBarChartRenderer(chart, mAnimator, mViewPortHandler);
+                        renderer.setRadius(barRadius);
+                        mRenderers.add(renderer);
+                    }
                     break;
                 case BUBBLE:
                     if (chart.getBubbleData() != null)
@@ -47,6 +53,15 @@ public class AtfleeCombinedChartRenderer extends CombinedChartRenderer {
                     if (chart.getScatterData() != null)
                         mRenderers.add(new ScatterChartRenderer(chart, mAnimator, mViewPortHandler));
                     break;
+            }
+        }
+    }
+
+    public void setBarRadius(float radius) {
+        this.barRadius = radius;
+        for (com.github.mikephil.charting.renderer.DataRenderer renderer : mRenderers) {
+            if (renderer instanceof AtfleeBarChartRenderer) {
+                ((AtfleeBarChartRenderer) renderer).setRadius(radius);
             }
         }
     }

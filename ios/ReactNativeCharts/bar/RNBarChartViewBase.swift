@@ -24,4 +24,8 @@ class RNBarChartViewBase: RNBarLineChartViewBase {
     func setHighlightFullBarEnabled(_ enabled: Bool) {
         barChart.highlightFullBarEnabled = enabled
     }
+
+    func setBarRadius(_ radius: NSNumber) {
+        // TODO: implement rounded bar rendering for DGCharts
+    }
 }
