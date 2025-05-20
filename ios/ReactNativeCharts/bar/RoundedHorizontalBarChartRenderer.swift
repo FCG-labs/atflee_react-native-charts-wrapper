@@ -29,7 +29,8 @@ class RoundedHorizontalBarChartRenderer: HorizontalBarChartRenderer {
             guard let e = dataSet.entryForIndex(i) as? BarChartDataEntry else { continue }
             let x = e.x
             let y = e.y
-            let corners: UIRectCorner = y >= 0 ? [.topRight, .bottomRight] : [.topLeft, .bottomLeft]
+            let isPositive = y >= 0
+            let corners: UIRectCorner = isPositive ? [.topRight, .bottomRight] : [.topLeft, .bottomLeft]
 
             var left = y >= 0.0 ? 0.0 : y
             var right = y <= 0.0 ? 0.0 : y
