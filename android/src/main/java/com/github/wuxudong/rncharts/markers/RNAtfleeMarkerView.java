@@ -33,12 +33,10 @@ public class RNAtfleeMarkerView extends MarkerView {
     private final TextView tvContent;
     private final ImageView imageEmotion;
     private Entry lastEntry;
-    private final ImageView imageArrow;
     private final ShadowLayout mShadowLayout;
     private boolean showArrow = true;
     // Transparent overlay to intercept marker clicks
     private View overlayButton = null;
-    private Highlight lastHighlight = null;
 
     private static final int OVERLAY_TAG = 999;
 
@@ -62,7 +60,6 @@ public class RNAtfleeMarkerView extends MarkerView {
         mShadowLayout = findViewById(R.id.mShadowLayout);
         // Default fade duration (milliseconds)
         fadeDuration = 300L;
-        imageArrow = findViewById(R.id.image_arrow);
     }
 
 
@@ -139,39 +136,6 @@ public class RNAtfleeMarkerView extends MarkerView {
                 imageEmotion.setImageResource(R.drawable.emotion5);
         }
 
-        // arrow image always prepared
-        imageArrow.setImageResource(R.drawable.dropdown_circle_right);
-        imageArrow.setVisibility(showArrow ? VISIBLE : GONE);
-
-        // Measure views to adjust ShadowLayout size
-        tvTitle.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.UNSPECIFIED);
-        tvContent.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.UNSPECIFIED);
-        int width = Math.max(tvTitle.getMeasuredWidth(), tvContent.getMeasuredWidth());
-        int height = tvTitle.getMeasuredHeight() + tvContent.getMeasuredHeight();
-
-        if (imageEmotion.getVisibility() == VISIBLE) {
-            imageEmotion.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.UNSPECIFIED);
-            width = Math.max(width, imageEmotion.getMeasuredWidth());
-            height += imageEmotion.getMeasuredHeight();
-        }
-        if (imageArrow.getVisibility() == VISIBLE) {
-            imageArrow.measure(MeasureSpec.UNSPECIFIED, MeasureSpec.UNSPECIFIED);
-            width = Math.max(width, imageArrow.getMeasuredWidth());
-            height += imageArrow.getMeasuredHeight();
-        }
-
-        width += (int) Utils.convertDpToPixel(16f); // margins inside layout
-        height += (int) Utils.convertDpToPixel(8f); // vertical margins
-
-        ViewGroup.LayoutParams params = mShadowLayout.getLayoutParams();
-        if (params != null) {
-            params.width = width;
-            params.height = height;
-            mShadowLayout.setLayoutParams(params);
-        }
-        mShadowLayout.requestLayout();
-
-        lastHighlight = highlight;
 
         Chart chart = getChartView();
         if (chart != null) {
@@ -328,7 +292,6 @@ public class RNAtfleeMarkerView extends MarkerView {
 
     public void resetState() {
         fadeStart = 0L;
-        lastHighlight = null;
         removeOverlayButton();
     }
   
