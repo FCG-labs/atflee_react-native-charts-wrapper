@@ -1,21 +1,28 @@
 import Foundation
 import DGCharts
 
-class RoundedCombinedChartRenderer: CombinedChartRenderer {
+class RoundedCombinedChartRenderer: DataRenderer {
+    private weak var chart: CombinedChartView?
+    private var renderers: [DataRenderer] = []
+    private var roundedBarRenderer: RoundedBarChartRenderer?
     var barRadius: CGFloat
     private var roundedBarRenderer: RoundedBarChartRenderer?
 
     init(chart: CombinedChartView, animator: Animator, viewPortHandler: ViewPortHandler, barRadius: CGFloat) {
+        self.chart = chart
         self.barRadius = barRadius
-        super.init(chart: chart, animator: animator, viewPortHandler: viewPortHandler)
-        configureRenderers(for: chart)
+        super.init(animator: animator, viewPortHandler: viewPortHandler)
+        configureRenderers()
     }
 
-    private func configureRenderers(for chart: CombinedChartView) {
+    private func configureRenderers() {
         renderers.removeAll()
         roundedBarRenderer = nil
 
-        for order in chart.drawOrder {
+        guard let chart = chart else { return }
+
+        for rawValue in chart.drawOrder {
+            guard let order = CombinedChartView.DrawOrder(rawValue: rawValue) else { continue }
             switch order {
             case .bar:
                 if chart.barData != nil {
@@ -45,10 +52,30 @@ class RoundedCombinedChartRenderer: CombinedChartRenderer {
 
     func setRadius(_ radius: CGFloat) {
         barRadius = radius
-        if let renderer = roundedBarRenderer {
-            renderer.setRadius(radius)
-        } else if let chart = chart as? CombinedChartView, radius > 0 {
-            configureRenderers(for: chart)
+        roundedBarRenderer?.setRadius(radius)
+    }
+
+    override func drawData(context: CGContext) {
+        for renderer in renderers {
+            renderer.drawData(context: context)
+        }
+    }
+
+    override func drawValues(context: CGContext) {
+        for renderer in renderers {
+            renderer.drawValues(context: context)
+        }
+    }
+
+    override func drawExtras(context: CGContext) {
+        for renderer in renderers {
+            renderer.drawExtras(context: context)
+        }
+    }
+
+    override func drawHighlighted(context: CGContext, indices: [Highlight]) {
+        for renderer in renderers {
+            renderer.drawHighlighted(context: context, indices: indices)
         }
     }
 }
