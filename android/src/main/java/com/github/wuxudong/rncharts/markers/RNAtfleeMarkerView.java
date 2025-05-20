@@ -230,11 +230,8 @@ public class RNAtfleeMarkerView extends MarkerView {
         event.putDouble("y", lastEntry.getY());
         event.putMap("data", EntryToWritableMapUtils.convertEntryToWritableMap(lastEntry));
 
-        reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
-                chart.getId(),
-                "topMarkerClick",
-                event
-        );
+        reactContext.getJSModule(RCTEventEmitter.class)
+                .receiveEvent(chart.getId(), "topMarkerClick", event);
 
         chart.highlightValue(null);
         resetState();
