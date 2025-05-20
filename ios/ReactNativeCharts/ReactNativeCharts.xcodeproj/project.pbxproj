@@ -204,8 +204,8 @@
 		9DAEF87D284355CB0018D713 /* pie */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = pie; sourceTree = SOURCE_ROOT; };
 		9DAEF87E284355CB0018D713 /* RNBarLineChartViewBase.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RNBarLineChartViewBase.swift; sourceTree = SOURCE_ROOT; };
     F309C1592B21AE3000BDF66B /* AtfleeMarker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AtfleeMarker.swift; sourceTree = SOURCE_ROOT; };
-    a01dbec23f35a99d2a6238f4 /* RoundedBarChartRenderer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RoundedBarChartRenderer.swift; sourceTree = SOURCE_ROOT; };
-    27f14df8c8c128dcabd51239 /* RoundedHorizontalBarChartRenderer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RoundedHorizontalBarChartRenderer.swift; sourceTree = SOURCE_ROOT; };
+    a01dbec23f35a99d2a6238f4 /* RoundedBarChartRenderer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = bar/RoundedBarChartRenderer.swift; sourceTree = SOURCE_ROOT; };
+    27f14df8c8c128dcabd51239 /* RoundedHorizontalBarChartRenderer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = bar/RoundedHorizontalBarChartRenderer.swift; sourceTree = SOURCE_ROOT; };
     607d0cd9a1bda1546382c12e /* RoundedCombinedChartRenderer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RoundedCombinedChartRenderer.swift; sourceTree = SOURCE_ROOT; };
     F35166142B32DEAE00BE781E /* DataApproximator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DataApproximator.swift; sourceTree = "<group>"; };
 		F35166152B32DEAE00BE781E /* DataApproximator+N.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "DataApproximator+N.swift"; sourceTree = "<group>"; };
