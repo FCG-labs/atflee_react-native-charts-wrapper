@@ -51,11 +51,7 @@ class RoundedCombinedChartRenderer: DataRenderer {
 
     func setRadius(_ radius: CGFloat) {
         barRadius = radius
-        if let renderer = roundedBarRenderer {
-            renderer.setRadius(radius)
-        } else {
-            configureRenderers()
-        }
+        configureRenderers()
     }
 
     override func drawData(context: CGContext) {
@@ -82,3 +78,4 @@ class RoundedCombinedChartRenderer: DataRenderer {
         }
     }
 }
+
