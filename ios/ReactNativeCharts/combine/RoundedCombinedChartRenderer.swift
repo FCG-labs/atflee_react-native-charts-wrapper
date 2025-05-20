@@ -5,15 +5,15 @@ class RoundedCombinedChartRenderer: CombinedChartRenderer {
     private var customRenderers: [DataRenderer] = []
     private var roundedBarRenderer: RoundedBarChartRenderer?
     var barRadius: CGFloat
-    private var roundedBarRenderer: RoundedBarChartRenderer?
 
     init(chart: CombinedChartView, animator: Animator, viewPortHandler: ViewPortHandler, barRadius: CGFloat) {
         self.barRadius = barRadius
         super.init(chart: chart, animator: animator, viewPortHandler: viewPortHandler)
+        configureRenderers()
     }
 
-    override func createRenderers() {
-        renderers.removeAll()
+    private func configureRenderers() {
+        customRenderers.removeAll()
         roundedBarRenderer = nil
 
         guard let chart = chart as? CombinedChartView else { return }
@@ -22,32 +22,85 @@ class RoundedCombinedChartRenderer: CombinedChartRenderer {
             switch order {
             case .bar:
                 if chart.barData != nil {
-                    let renderer = RoundedBarChartRenderer(dataProvider: chart, animator: animator, viewPortHandler: viewPortHandler, radius: barRadius)
+                    let renderer = RoundedBarChartRenderer(
+                        dataProvider: chart,
+                        animator: animator,
+                        viewPortHandler: viewPortHandler,
+                        radius: barRadius
+                    )
                     roundedBarRenderer = renderer
-                    renderers.append(renderer)
+                    customRenderers.append(renderer)
                 }
             case .bubble:
                 if chart.bubbleData != nil {
-                    renderers.append(BubbleChartRenderer(dataProvider: chart, animator: animator, viewPortHandler: viewPortHandler))
+                    customRenderers.append(
+                        BubbleChartRenderer(
+                            dataProvider: chart,
+                            animator: animator,
+                            viewPortHandler: viewPortHandler
+                        )
+                    )
                 }
             case .line:
                 if chart.lineData != nil {
-                    renderers.append(LineChartRenderer(dataProvider: chart, animator: animator, viewPortHandler: viewPortHandler))
+                    customRenderers.append(
+                        LineChartRenderer(
+                            dataProvider: chart,
+                            animator: animator,
+                            viewPortHandler: viewPortHandler
+                        )
+                    )
                 }
             case .candle:
                 if chart.candleData != nil {
-                    renderers.append(CandleStickChartRenderer(dataProvider: chart, animator: animator, viewPortHandler: viewPortHandler))
+                    customRenderers.append(
+                        CandleStickChartRenderer(
+                            dataProvider: chart,
+                            animator: animator,
+                            viewPortHandler: viewPortHandler
+                        )
+                    )
                 }
             case .scatter:
                 if chart.scatterData != nil {
-                    renderers.append(ScatterChartRenderer(dataProvider: chart, animator: animator, viewPortHandler: viewPortHandler))
+                    customRenderers.append(
+                        ScatterChartRenderer(
+                            dataProvider: chart,
+                            animator: animator,
+                            viewPortHandler: viewPortHandler
+                        )
+                    )
                 }
             }
         }
     }
 
+    override func drawData(context: CGContext) {
+        for renderer in customRenderers {
+            renderer.drawData(context: context)
+        }
+    }
+
+    override func drawValues(context: CGContext) {
+        for renderer in customRenderers {
+            renderer.drawValues(context: context)
+        }
+    }
+
+    override func drawExtras(context: CGContext) {
+        for renderer in customRenderers {
+            renderer.drawExtras(context: context)
+        }
+    }
+
+    override func initBuffers() {
+        for renderer in customRenderers {
+            renderer.initBuffers()
+        }
+    }
+
     func setRadius(_ radius: CGFloat) {
         barRadius = radius
-        roundedBarRenderer?.setRadius(radius)
+        configureRenderers()
     }
 }
