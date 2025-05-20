@@ -30,18 +30,16 @@ class RoundedBarChartRenderer: BarChartRenderer {
             guard let e = dataSet.entryForIndex(i) as? BarChartDataEntry else { continue }
             let x = e.x
             let y = e.y
+
+            // Determine if the bar represents a positive or negative value
             let isPositive = y >= 0
-            // Use the sign of the entry to decide which corners to round
+            // Positive values round the top corners, negatives round the bottom
             let corners: UIRectCorner = isPositive ? [.topLeft, .topRight] : [.bottomLeft, .bottomRight]
 
             let left = x - barWidthHalf
             let right = x + barWidthHalf
-            var top = y >= 0.0 ? y : 0.0
-            var bottom = y <= 0.0 ? y : 0.0
-
-            if top < bottom {
-                swap(&top, &bottom)
-            }
+            let top = isPositive ? y : 0.0
+            let bottom = isPositive ? 0.0 : y
 
             barRect.origin.x = CGFloat(left)
             barRect.origin.y = CGFloat(bottom) * CGFloat(phaseY)
