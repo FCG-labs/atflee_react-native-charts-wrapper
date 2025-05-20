@@ -13,7 +13,7 @@ class RoundedHorizontalBarChartRenderer: HorizontalBarChartRenderer {
         self.radius = radius
     }
 
-    override func drawDataSet(context: CGContext, dataSet: IBarChartDataSet, index: Int) {
+    override func drawDataSet(context: CGContext, dataSet: BarChartDataSetProtocol, index: Int) {
         guard let dataProvider = dataProvider else { return }
 
         let trans = dataProvider.getTransformer(forAxis: dataSet.axisDependency)
