@@ -3,11 +3,12 @@ package com.github.wuxudong.rncharts.markers;
 import android.content.Context;
 import android.text.TextUtils;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.View.MeasureSpec;
+import android.graphics.Color;
 import com.lihang.ShadowLayout;
 
 import com.facebook.react.bridge.Arguments;
@@ -35,6 +36,10 @@ public class RNAtfleeMarkerView extends MarkerView {
     private final ImageView imageArrow;
     private final ShadowLayout mShadowLayout;
     private boolean showArrow = true;
+    private View overlayView = null;
+    private Highlight lastHighlight = null;
+
+    private static final int OVERLAY_TAG = 999;
 
     /**
      * Animation start timestamp and duration for fade in effect.
@@ -54,15 +59,6 @@ public class RNAtfleeMarkerView extends MarkerView {
         imageEmotion = findViewById(R.id.image_emotion);
 
         mShadowLayout = findViewById(R.id.mShadowLayout);
-        View clickable = mShadowLayout;
-        if (clickable != null) {
-            clickable.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    handleClick();
-                }
-            });
-        }
         // Default fade duration (milliseconds)
         fadeDuration = 300L;
         imageArrow = findViewById(R.id.image_arrow);
@@ -174,6 +170,9 @@ public class RNAtfleeMarkerView extends MarkerView {
         }
         mShadowLayout.requestLayout();
 
+        lastHighlight = highlight;
+        attachOverlay();
+
         super.refreshContent(e, highlight);
     }
 
@@ -236,6 +235,67 @@ public class RNAtfleeMarkerView extends MarkerView {
         chart.highlightValue(null);
         resetState();
     }
+
+    private void attachOverlay() {
+        Chart chart = getChartView();
+        if (chart == null || lastHighlight == null) {
+            return;
+        }
+
+        ViewGroup parent = (ViewGroup) chart.getParent();
+        if (parent == null) {
+            return;
+        }
+
+        removeOverlay();
+
+        int width = mShadowLayout.getLayoutParams() != null ? mShadowLayout.getLayoutParams().width : getWidth();
+        int height = mShadowLayout.getLayoutParams() != null ? mShadowLayout.getLayoutParams().height : getHeight();
+
+        View view = new View(getContext());
+        view.setTag(OVERLAY_TAG);
+        view.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+        view.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                handleClick();
+            }
+        });
+
+        MPPointF offset = getOffsetForDrawingAtPoint(lastHighlight.getDrawX(), lastHighlight.getDrawY());
+        float left = chart.getX() + lastHighlight.getDrawX() + offset.x;
+        float top = chart.getY() + lastHighlight.getDrawY() + offset.y;
+
+        ViewGroup.LayoutParams base = new ViewGroup.LayoutParams(width, height);
+        if (parent instanceof android.widget.FrameLayout) {
+            android.widget.FrameLayout.LayoutParams lp = new android.widget.FrameLayout.LayoutParams(base);
+            lp.leftMargin = (int) left;
+            lp.topMargin = (int) top;
+            view.setLayoutParams(lp);
+        } else if (parent instanceof android.widget.RelativeLayout) {
+            android.widget.RelativeLayout.LayoutParams lp = new android.widget.RelativeLayout.LayoutParams(base);
+            lp.leftMargin = (int) left;
+            lp.topMargin = (int) top;
+            view.setLayoutParams(lp);
+        } else {
+            view.setLayoutParams(base);
+            view.setX(left);
+            view.setY(top);
+        }
+
+        parent.addView(view);
+        overlayView = view;
+    }
+
+    private void removeOverlay() {
+        if (overlayView != null) {
+            ViewParent vp = overlayView.getParent();
+            if (vp instanceof ViewGroup) {
+                ((ViewGroup) vp).removeView(overlayView);
+            }
+            overlayView = null;
+        }
+    }
   
     @Override
     public void draw(android.graphics.Canvas canvas) {
@@ -262,6 +322,8 @@ public class RNAtfleeMarkerView extends MarkerView {
 
     public void resetState() {
         fadeStart = 0L;
+        lastHighlight = null;
+        removeOverlay();
     }
   
     public void setShowArrow(boolean show) {
