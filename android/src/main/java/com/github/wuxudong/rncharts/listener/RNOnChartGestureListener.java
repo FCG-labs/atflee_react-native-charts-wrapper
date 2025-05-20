@@ -89,9 +89,14 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
 
             ReactContext reactContext = (ReactContext) chart.getContext();
             reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
-                    chart.getId(),
-                    "topChange",
-                    event);
+                chart.getId(),
+                "topChange",
+                event);
+
+            reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
+                chart.getId(),
+                "topMarkerClick",
+                event);
         }
     }
 

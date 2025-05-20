@@ -241,7 +241,7 @@ public class RNAtfleeMarkerView extends MarkerView {
         event.putMap("data", EntryToWritableMapUtils.convertEntryToWritableMap(lastEntry));
 
         reactContext.getJSModule(RCTEventEmitter.class)
-                .receiveEvent(chart.getId(), "topMarkerClick", event);
+                .receiveEvent(chart.getId(), "onMarkerClick", event);
         // Clear the current highlight without triggering listeners and
         // then reset marker-related state as done on iOS.
         chart.highlightValue(null, false);
