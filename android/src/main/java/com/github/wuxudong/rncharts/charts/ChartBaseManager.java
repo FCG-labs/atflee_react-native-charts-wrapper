@@ -2,6 +2,7 @@ package com.github.wuxudong.rncharts.charts;
 
 import android.content.res.ColorStateList;
 import android.os.Build;
+import android.graphics.Typeface;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -340,6 +341,11 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
             marker.getTvContent().setTextSize(propMap.getInt("textSize"));
         }
 
+        if (BridgeUtils.validate(propMap, ReadableType.String, "textWeight")) {
+            String weight = propMap.getString("textWeight");
+            int style = "bold".equalsIgnoreCase(weight) ? Typeface.BOLD : Typeface.NORMAL;
+            marker.getTvContent().setTypeface(marker.getTvContent().getTypeface(), style);
+        }
         if (BridgeUtils.validate(propMap, ReadableType.Number, "fadeDuration")) {
             marker.setFadeDuration((long) propMap.getDouble("fadeDuration"));
         }

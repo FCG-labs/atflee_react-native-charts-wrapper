@@ -44,7 +44,6 @@
                 android:text="1825kcal"
                 android:textSize="12sp"
                 android:textColor="#101010"
-                android:textStyle="bold"
                 android:ellipsize="end"
                 android:textAppearance="?android:attr/textAppearanceSmall" />
 
