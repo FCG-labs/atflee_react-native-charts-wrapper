@@ -29,13 +29,13 @@ class RoundedHorizontalBarChartRenderer: HorizontalBarChartRenderer {
             guard let e = dataSet.entryForIndex(i) as? BarChartDataEntry else { continue }
             let x = e.x
             let y = e.y
+            // Determine if the bar represents a positive or negative value
             let isPositive = y >= 0
             // Positive bars extend to the right, negative bars to the left
             let corners: UIRectCorner = isPositive ? [.topRight, .bottomRight] : [.topLeft, .bottomLeft]
 
-            var left = y >= 0.0 ? 0.0 : y
-            var right = y <= 0.0 ? 0.0 : y
-            if right < left { swap(&left, &right) }
+            let left = isPositive ? 0.0 : y
+            let right = isPositive ? y : 0.0
 
             barRect.origin.y = CGFloat(x - barWidthHalf)
             barRect.size.height = CGFloat(barWidth)
