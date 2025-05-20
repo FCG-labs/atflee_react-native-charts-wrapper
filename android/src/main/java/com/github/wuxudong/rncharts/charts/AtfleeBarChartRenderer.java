@@ -20,6 +20,10 @@ public class AtfleeBarChartRenderer extends BarChartRenderer {
     private RectF mBarShadowRectBuffer = new RectF();
     protected Float mRadius = 50.f;
 
+    public void setRadius(float radius) {
+        mRadius = radius;
+    }
+
     public AtfleeBarChartRenderer(BarDataProvider chart, ChartAnimator animator, ViewPortHandler viewPortHandler) {
         super(chart, animator, viewPortHandler);
     }

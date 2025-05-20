@@ -40,4 +40,12 @@ public class AtfleeCombinedChart extends CombinedChart {
         mRenderer = new AtfleeCombinedChartRenderer(this, mAnimator, mViewPortHandler);
     }
 
+    public void setRadius(float radius) {
+        if (mRenderer instanceof AtfleeCombinedChartRenderer) {
+            AtfleeCombinedChartRenderer renderer = (AtfleeCombinedChartRenderer) mRenderer;
+            renderer.setBarRadius(radius);
+            invalidate();
+        }
+    }
+
 }
