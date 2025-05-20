@@ -30,6 +30,8 @@ class RoundedBarChartRenderer: BarChartRenderer {
             guard let e = dataSet.entryForIndex(i) as? BarChartDataEntry else { continue }
             let x = e.x
             let y = e.y
+            let isPositive = y >= 0
+            let corners: UIRectCorner = isPositive ? [.topLeft, .topRight] : [.bottomLeft, .bottomRight]
 
             let left = x - barWidthHalf
             let right = x + barWidthHalf
@@ -55,7 +57,6 @@ class RoundedBarChartRenderer: BarChartRenderer {
             }
 
             context.setFillColor(dataSet.color(atIndex: i).cgColor)
-            let corners: UIRectCorner = e.y >= 0 ? [.topLeft, .topRight] : [.bottomLeft, .bottomRight]
             let path = UIBezierPath(
                 roundedRect: barRect,
                 byRoundingCorners: corners,
