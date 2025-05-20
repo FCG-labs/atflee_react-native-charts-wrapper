@@ -132,12 +132,25 @@ public class AtfleeBarChartRenderer extends BarChartRenderer {
 //            }
 
 
-            float[] corners = new float[]{
-                    mRadius, mRadius,        // Top left radius in px
-                    mRadius, mRadius,        // Top right radius in px
-                    mRadius/2.0f, mRadius/2.0f,          // Bottom right radius in px
-                    mRadius/2.0f, mRadius/2.0f           // Bottom left radius in px
-            };
+            BarEntry entry = dataSet.getEntryForIndex(j / 4);
+            boolean isPositive = entry.getY() >= 0f;
+            // round top corners for positive values, bottom corners for negatives
+            float[] corners;
+            if (isPositive) {
+                corners = new float[]{
+                        mRadius, mRadius,     // Top left radius in px
+                        mRadius, mRadius,     // Top right radius in px
+                        0f, 0f,               // Bottom right radius in px
+                        0f, 0f                // Bottom left radius in px
+                };
+            } else {
+                corners = new float[]{
+                        0f, 0f,               // Top left radius in px
+                        0f, 0f,               // Top right radius in px
+                        mRadius, mRadius,     // Bottom right radius in px
+                        mRadius, mRadius      // Bottom left radius in px
+                };
+            }
 
             final Path path = new Path();
             RectF rect = new RectF(buffer.buffer[j], buffer.buffer[j + 1], buffer.buffer[j + 2],
