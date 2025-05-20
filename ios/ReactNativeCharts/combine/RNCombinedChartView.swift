@@ -10,6 +10,8 @@ class RNCombinedChartView: RNBarLineChartViewBase {
     let _chart: CombinedChartView;
     let _dataExtract : CombinedDataExtract;
 
+    private var barRadius: CGFloat = 0
+
     override var chart: CombinedChartView {
         return _chart
     }
@@ -54,11 +56,18 @@ class RNCombinedChartView: RNBarLineChartViewBase {
     }
 
     func setBarRadius(_ radius: NSNumber) {
-        let value = CGFloat(truncating: radius)
-        if let renderer = _chart.renderer as? RoundedCombinedChartRenderer {
-            renderer.setRadius(value)
+        barRadius = CGFloat(truncating: radius)
+
+        if barRadius > 0 {
+            if let renderer = _chart.renderer as? RoundedCombinedChartRenderer {
+                renderer.setRadius(barRadius)
+            } else {
+                _chart.renderer = RoundedCombinedChartRenderer(chart: _chart, animator: _chart.chartAnimator, viewPortHandler: _chart.viewPortHandler, barRadius: barRadius)
+            }
         } else {
-            _chart.renderer = RoundedCombinedChartRenderer(chart: _chart, animator: _chart.chartAnimator, viewPortHandler: _chart.viewPortHandler, barRadius: value)
+            if !(_chart.renderer is CombinedChartRenderer) {
+                _chart.renderer = CombinedChartRenderer(chart: _chart, animator: _chart.chartAnimator, viewPortHandler: _chart.viewPortHandler)
+            }
         }
         _chart.setNeedsDisplay()
     }
