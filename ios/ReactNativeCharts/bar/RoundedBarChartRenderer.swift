@@ -55,7 +55,12 @@ class RoundedBarChartRenderer: BarChartRenderer {
             }
 
             context.setFillColor(dataSet.color(atIndex: i).cgColor)
-            let path = UIBezierPath(roundedRect: barRect, byRoundingCorners: [.topLeft, .topRight], cornerRadii: CGSize(width: radius, height: radius))
+            let corners: UIRectCorner = e.y >= 0 ? [.topLeft, .topRight] : [.bottomLeft, .bottomRight]
+            let path = UIBezierPath(
+                roundedRect: barRect,
+                byRoundingCorners: corners,
+                cornerRadii: CGSize(width: radius, height: radius)
+            )
             context.addPath(path.cgPath)
             context.fillPath()
         }
