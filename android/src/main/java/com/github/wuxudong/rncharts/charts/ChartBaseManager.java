@@ -270,6 +270,9 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
     @ReactProp(name = "marker")
     public void setMarker(Chart chart, ReadableMap propMap) {
         if (!BridgeUtils.validate(propMap, ReadableType.Boolean, "enabled") || !propMap.getBoolean("enabled")) {
+            if (chart.getMarker() instanceof RNAtfleeMarkerView) {
+                ((RNAtfleeMarkerView) chart.getMarker()).resetState();
+            }
             chart.setMarker(null);
             return;
         }
@@ -286,6 +289,10 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
                 break;
             default:
                 markerView = rectangleMarker(chart, propMap);
+        }
+
+        if (chart.getMarker() instanceof RNAtfleeMarkerView) {
+            ((RNAtfleeMarkerView) chart.getMarker()).resetState();
         }
 
         markerView.setChartView(chart);
@@ -328,6 +335,10 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
         }
         if (BridgeUtils.validate(propMap, ReadableType.Number, "textSize")) {
             marker.getTvContent().setTextSize(propMap.getInt("textSize"));
+        }
+
+        if (BridgeUtils.validate(propMap, ReadableType.Number, "fadeDuration")) {
+            marker.setFadeDuration((long) propMap.getDouble("fadeDuration"));
         }
 
 
