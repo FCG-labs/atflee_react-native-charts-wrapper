@@ -133,6 +133,26 @@ public class RNAtfleeMarkerView extends MarkerView {
         }
     }
 
+    @Override
+    public MPPointF getOffsetForDrawingAtPoint(float posX, float posY) {
+        float chartHeight = getChartView() != null ? getChartView().getHeight() : 0f;
+        boolean showAbove = posY > chartHeight * 0.35f;
+
+        float offsetX = -(getWidth() / 2f);
+        float offsetY;
+
+        if (showAbove) {
+            offsetY = -getHeight();
+        } else {
+            offsetY = 0f;
+            if (imageEmotion.getVisibility() == View.VISIBLE) {
+                offsetY += imageEmotion.getHeight();
+            }
+        }
+
+        return new MPPointF(offsetX, offsetY);
+    }
+
     public TextView getTvTitle() {
         return tvTitle;
     }
