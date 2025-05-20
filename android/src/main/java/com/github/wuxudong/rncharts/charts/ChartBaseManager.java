@@ -368,6 +368,10 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
                 marker.getTvContent().setTextAlignment(alignment);
             }
         }
+
+        if (BridgeUtils.validate(propMap, ReadableType.Boolean, "showArrow")) {
+            marker.setShowArrow(propMap.getBoolean("showArrow"));
+        }
     }
 
     private void setMarkerParams(RNRectangleMarkerView marker, ReadableMap propMap) {
