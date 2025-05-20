@@ -33,7 +33,7 @@ public class RNAtfleeMarkerView extends MarkerView {
     private boolean showArrow = true;
 
     /**
-     * Animation start timestamp and duration for fade out effect.
+     * Animation start timestamp and duration for fade in effect.
      */
     private long fadeStart = 0L;
     private long fadeDuration = 0L;
@@ -69,7 +69,8 @@ public class RNAtfleeMarkerView extends MarkerView {
         lastEntry = e;
         if (fadeStart == 0L) {
             fadeStart = System.currentTimeMillis();
-            setAlpha(1f);
+            // Start transparent and fade in
+            setAlpha(0f);
         }
 
         String decimalPlaces = "0";
@@ -210,11 +211,13 @@ public class RNAtfleeMarkerView extends MarkerView {
         if (fadeDuration > 0 && fadeStart > 0) {
             long elapsed = System.currentTimeMillis() - fadeStart;
             if (elapsed < fadeDuration) {
-                float alpha = 1f - (float) elapsed / (float) fadeDuration;
+                float alpha = (float) elapsed / (float) fadeDuration;
                 setAlpha(alpha);
+                // Continue invalidating until fade in completes
                 invalidate();
             } else {
-                setAlpha(0f);
+                setAlpha(1f);
+                fadeStart = 0L;
             }
         }
         super.draw(canvas);
