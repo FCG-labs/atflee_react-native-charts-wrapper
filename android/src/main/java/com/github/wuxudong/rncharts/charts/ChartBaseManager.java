@@ -270,6 +270,9 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
     @ReactProp(name = "marker")
     public void setMarker(Chart chart, ReadableMap propMap) {
         if (!BridgeUtils.validate(propMap, ReadableType.Boolean, "enabled") || !propMap.getBoolean("enabled")) {
+            if (chart.getMarker() instanceof RNAtfleeMarkerView) {
+                ((RNAtfleeMarkerView) chart.getMarker()).resetState();
+            }
             chart.setMarker(null);
             return;
         }
@@ -286,6 +289,10 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
                 break;
             default:
                 markerView = rectangleMarker(chart, propMap);
+        }
+
+        if (chart.getMarker() instanceof RNAtfleeMarkerView) {
+            ((RNAtfleeMarkerView) chart.getMarker()).resetState();
         }
 
         markerView.setChartView(chart);
@@ -330,6 +337,10 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
             marker.getTvContent().setTextSize(propMap.getInt("textSize"));
         }
 
+        if (BridgeUtils.validate(propMap, ReadableType.Number, "fadeDuration")) {
+            marker.setFadeDuration((long) propMap.getDouble("fadeDuration"));
+        }
+
 
         if (BridgeUtils.validate(propMap, ReadableType.String, "titleAlign")) {
 
@@ -367,6 +378,10 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
                 marker.getTvContent().setTextAlignment(alignment);
             }
+        }
+
+        if (BridgeUtils.validate(propMap, ReadableType.Boolean, "showArrow")) {
+            marker.setShowArrow(propMap.getBoolean("showArrow"));
         }
     }
 

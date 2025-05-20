@@ -98,6 +98,22 @@ More details on available configuration can be found on their [wiki](https://git
 
 Example of how charts are used and how to apply configuration can be found in example.
 
+### Rounded bars
+
+Bar-based charts accept a `barRadius` prop that rounds the corners of the bars.
+The value is specified in **pixels** and currently only affects Android unless
+you provide an iOS implementation.
+
+```jsx
+<BarChart
+  style={{flex: 1}}
+  data={{/* data */}}
+  barRadius={8}
+/>
+```
+
+`HorizontalBarChart` and `CombinedChart` expose the same prop.
+
 
 
 ## Convention

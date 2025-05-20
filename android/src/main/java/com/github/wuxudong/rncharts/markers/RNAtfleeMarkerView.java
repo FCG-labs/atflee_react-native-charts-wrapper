@@ -21,6 +21,18 @@ public class RNAtfleeMarkerView extends MarkerView {
     private final TextView tvTitle;
     private final TextView tvContent;
     private final ImageView imageEmotion;
+    private final ImageView imageArrow;
+    private boolean showArrow = true;
+
+    /**
+     * Animation start timestamp and duration for fade out effect.
+     */
+    private long fadeStart = 0L;
+    private long fadeDuration = 0L;
+
+    public void setFadeDuration(long duration) {
+        this.fadeDuration = duration;
+    }
 
     public RNAtfleeMarkerView(Context context) {
         super(context, R.layout.atflee_marker);
@@ -28,11 +40,19 @@ public class RNAtfleeMarkerView extends MarkerView {
         tvTitle = findViewById(R.id.x_value);
         tvContent = findViewById(R.id.y_value);
         imageEmotion = findViewById(R.id.image_emotion);
+        // Default fade duration (milliseconds)
+        fadeDuration = 300L;
+        imageArrow = findViewById(R.id.image_arrow);
     }
 
 
     @Override
     public void refreshContent(Entry e, Highlight highlight) {
+        if (fadeStart == 0L) {
+            fadeStart = System.currentTimeMillis();
+            setAlpha(1f);
+        }
+
         String decimalPlaces = "0";
         String markerUnit = "";
         String markerString = "";
@@ -97,6 +117,10 @@ public class RNAtfleeMarkerView extends MarkerView {
                 imageEmotion.setImageResource(R.drawable.emotion5);
         }
 
+        // arrow image always prepared
+        imageArrow.setImageResource(R.drawable.arrow_right_circle);
+        imageArrow.setVisibility(showArrow ? VISIBLE : GONE);
+
         super.refreshContent(e, highlight);
     }
 
@@ -115,6 +139,34 @@ public class RNAtfleeMarkerView extends MarkerView {
 
     public TextView getTvContent() {
         return tvContent;
+    }
+
+    @Override
+    public void draw(android.graphics.Canvas canvas) {
+        if (fadeDuration > 0 && fadeStart > 0) {
+            long elapsed = System.currentTimeMillis() - fadeStart;
+            if (elapsed < fadeDuration) {
+                float alpha = 1f - (float) elapsed / (float) fadeDuration;
+                setAlpha(alpha);
+                invalidate();
+            } else {
+                setAlpha(0f);
+            }
+        }
+        super.draw(canvas);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        resetState();
+    }
+
+    public void resetState() {
+        fadeStart = 0L;
+    }
+    public void setShowArrow(boolean show) {
+        this.showArrow = show;
     }
 
 }
