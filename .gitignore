@@ -1,1 +1,5 @@
 .vscode/settings.json
+android/.gradle/*
+android/app/build/*
+android/.gradle/*
+android/local.properties
