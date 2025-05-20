@@ -143,9 +143,6 @@ public class RNAtfleeMarkerView extends MarkerView {
             if (parent != null) {
                 removeOverlayButton();
 
-                int overlayWidth = params != null ? params.width : getWidth();
-                int overlayHeight = params != null ? params.height : getHeight();
-
                 MPPointF drawingOffset = getOffsetForDrawingAtPoint(highlight.getDrawX(), highlight.getDrawY());
                 // Base offset calculated for completeness
                 MPPointF baseOffset = getOffset();
@@ -153,7 +150,7 @@ public class RNAtfleeMarkerView extends MarkerView {
                 float left = chart.getX() + highlight.getDrawX() + drawingOffset.x;
                 float top = chart.getY() + highlight.getDrawY() + drawingOffset.y;
                 android.graphics.RectF markerRect = new android.graphics.RectF(left, top,
-                        left + overlayWidth, top + overlayHeight);
+                        left + getWidth(), top + getHeight());
 
                 View view = new View(getContext());
                 view.setTag(OVERLAY_TAG);
@@ -165,7 +162,7 @@ public class RNAtfleeMarkerView extends MarkerView {
                     }
                 });
 
-                ViewGroup.LayoutParams base = new ViewGroup.LayoutParams(overlayWidth, overlayHeight);
+                ViewGroup.LayoutParams base = new ViewGroup.LayoutParams(getWidth(), getHeight());
                 if (parent instanceof android.widget.FrameLayout) {
                     android.widget.FrameLayout.LayoutParams lp = new android.widget.FrameLayout.LayoutParams(base);
                     lp.leftMargin = (int) left;
