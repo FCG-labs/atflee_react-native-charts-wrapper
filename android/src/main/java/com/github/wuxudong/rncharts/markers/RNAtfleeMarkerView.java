@@ -3,16 +3,23 @@ package com.github.wuxudong.rncharts.markers;
 import android.content.Context;
 import android.text.TextUtils;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.ReactContext;
+import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.uimanager.events.RCTEventEmitter;
 import com.github.mikephil.charting.components.MarkerView;
+import com.github.mikephil.charting.charts.Chart;
 import com.github.mikephil.charting.data.CandleEntry;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.utils.MPPointF;
 import com.github.mikephil.charting.utils.Utils;
 import com.github.wuxudong.rncharts.R;
+import com.github.wuxudong.rncharts.utils.EntryToWritableMapUtils;
 
 import java.util.Map;
 
@@ -21,6 +28,19 @@ public class RNAtfleeMarkerView extends MarkerView {
     private final TextView tvTitle;
     private final TextView tvContent;
     private final ImageView imageEmotion;
+    private Entry lastEntry;
+    private final ImageView imageArrow;
+    private boolean showArrow = true;
+
+    /**
+     * Animation start timestamp and duration for fade out effect.
+     */
+    private long fadeStart = 0L;
+    private long fadeDuration = 0L;
+
+    public void setFadeDuration(long duration) {
+        this.fadeDuration = duration;
+    }
 
     public RNAtfleeMarkerView(Context context) {
         super(context, R.layout.atflee_marker);
@@ -28,11 +48,30 @@ public class RNAtfleeMarkerView extends MarkerView {
         tvTitle = findViewById(R.id.x_value);
         tvContent = findViewById(R.id.y_value);
         imageEmotion = findViewById(R.id.image_emotion);
+
+        View clickable = findViewById(R.id.mShadowLayout);
+        if (clickable != null) {
+            clickable.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    handleClick();
+                }
+            });
+        }
+        // Default fade duration (milliseconds)
+        fadeDuration = 300L;
+        imageArrow = findViewById(R.id.image_arrow);
     }
 
 
     @Override
     public void refreshContent(Entry e, Highlight highlight) {
+        lastEntry = e;
+        if (fadeStart == 0L) {
+            fadeStart = System.currentTimeMillis();
+            setAlpha(1f);
+        }
+
         String decimalPlaces = "0";
         String markerUnit = "";
         String markerString = "";
@@ -97,6 +136,10 @@ public class RNAtfleeMarkerView extends MarkerView {
                 imageEmotion.setImageResource(R.drawable.emotion5);
         }
 
+        // arrow image always prepared
+        imageArrow.setImageResource(R.drawable.arrow_right_circle);
+        imageArrow.setVisibility(showArrow ? VISIBLE : GONE);
+
         super.refreshContent(e, highlight);
     }
 
@@ -109,12 +152,86 @@ public class RNAtfleeMarkerView extends MarkerView {
         }
     }
 
+    @Override
+    public MPPointF getOffsetForDrawingAtPoint(float posX, float posY) {
+        float chartHeight = getChartView() != null ? getChartView().getHeight() : 0f;
+        boolean showAbove = posY > chartHeight * 0.35f;
+
+        float offsetX = -(getWidth() / 2f);
+        float offsetY;
+
+        if (showAbove) {
+            offsetY = -getHeight();
+        } else {
+            offsetY = 0f;
+            if (imageEmotion.getVisibility() == View.VISIBLE) {
+                offsetY += imageEmotion.getHeight();
+            }
+        }
+
+        return new MPPointF(offsetX, offsetY);
+    }
+
     public TextView getTvTitle() {
         return tvTitle;
     }
 
     public TextView getTvContent() {
         return tvContent;
+    }
+
+    private void handleClick() {
+        if (lastEntry == null) {
+            return;
+        }
+
+        Chart chart = getChartView();
+        if (chart == null) {
+            return;
+        }
+
+        ReactContext reactContext = (ReactContext) getContext();
+        WritableMap event = Arguments.createMap();
+        event.putDouble("x", lastEntry.getX());
+        event.putDouble("y", lastEntry.getY());
+        event.putMap("data", EntryToWritableMapUtils.convertEntryToWritableMap(lastEntry));
+
+        reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
+                chart.getId(),
+                "topMarkerClick",
+                event
+        );
+
+        chart.highlightValue(null);
+    }
+  
+    @Override
+    public void draw(android.graphics.Canvas canvas) {
+        if (fadeDuration > 0 && fadeStart > 0) {
+            long elapsed = System.currentTimeMillis() - fadeStart;
+            if (elapsed < fadeDuration) {
+                float alpha = 1f - (float) elapsed / (float) fadeDuration;
+                setAlpha(alpha);
+                invalidate();
+            } else {
+                setAlpha(0f);
+            }
+        }
+        super.draw(canvas);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        resetState();
+    }
+
+    public void resetState() {
+        fadeStart = 0L;
+    }
+  
+    public void setShowArrow(boolean show) {
+        this.showArrow = show;
     }
 
 }
