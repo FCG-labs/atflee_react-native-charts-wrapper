@@ -258,7 +258,7 @@ open class AtfleeMarker: MarkerView {
             }
             
             // marker 글자
-            if object["markerUnit"].exists() {
+            if object["marker"].exists() {
                 markerString = object["marker"].stringValue;
                 if highlight.stackIndex != -1 && object["marker"].array != nil {
                     markerString = object["marker"].arrayValue[highlight.stackIndex].stringValue
