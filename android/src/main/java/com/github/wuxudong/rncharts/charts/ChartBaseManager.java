@@ -703,7 +703,10 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
         Map<String, Object> map = MapBuilder.of(
                 "topMarkerClick", MapBuilder.of(
                         "phasedRegistrationNames",
-                        MapBuilder.of("bubbled", "onMarkerClick"))
+                        MapBuilder.of("bubbled", "onMarkerClick")),
+                "topChange", MapBuilder.of(
+                        "phasedRegistrationNames",
+                        MapBuilder.of("bubbled", "onChange"))
         );
 
         Map<String, Object> existing = super.getExportedCustomBubblingEventTypeConstants();
