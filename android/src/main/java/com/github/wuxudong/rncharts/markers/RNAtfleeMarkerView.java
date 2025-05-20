@@ -36,7 +36,8 @@ public class RNAtfleeMarkerView extends MarkerView {
     private final ImageView imageArrow;
     private final ShadowLayout mShadowLayout;
     private boolean showArrow = true;
-    private View overlayView = null;
+    // Transparent overlay to intercept marker clicks
+    private View overlayButton = null;
     private Highlight lastHighlight = null;
 
     private static final int OVERLAY_TAG = 999;
@@ -171,7 +172,56 @@ public class RNAtfleeMarkerView extends MarkerView {
         mShadowLayout.requestLayout();
 
         lastHighlight = highlight;
-        attachOverlay();
+
+        Chart chart = getChartView();
+        if (chart != null) {
+            ViewGroup parent = (ViewGroup) chart.getParent();
+            if (parent != null) {
+                removeOverlayButton();
+
+                int overlayWidth = params != null ? params.width : getWidth();
+                int overlayHeight = params != null ? params.height : getHeight();
+
+                MPPointF drawingOffset = getOffsetForDrawingAtPoint(highlight.getDrawX(), highlight.getDrawY());
+                // Base offset calculated for completeness
+                MPPointF baseOffset = getOffset();
+
+                float left = chart.getX() + highlight.getDrawX() + drawingOffset.x;
+                float top = chart.getY() + highlight.getDrawY() + drawingOffset.y;
+                android.graphics.RectF markerRect = new android.graphics.RectF(left, top,
+                        left + overlayWidth, top + overlayHeight);
+
+                View view = new View(getContext());
+                view.setTag(OVERLAY_TAG);
+                view.setBackgroundColor(Color.TRANSPARENT);
+                view.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        handleClick();
+                    }
+                });
+
+                ViewGroup.LayoutParams base = new ViewGroup.LayoutParams(overlayWidth, overlayHeight);
+                if (parent instanceof android.widget.FrameLayout) {
+                    android.widget.FrameLayout.LayoutParams lp = new android.widget.FrameLayout.LayoutParams(base);
+                    lp.leftMargin = (int) left;
+                    lp.topMargin = (int) top;
+                    view.setLayoutParams(lp);
+                } else if (parent instanceof android.widget.RelativeLayout) {
+                    android.widget.RelativeLayout.LayoutParams lp = new android.widget.RelativeLayout.LayoutParams(base);
+                    lp.leftMargin = (int) left;
+                    lp.topMargin = (int) top;
+                    view.setLayoutParams(lp);
+                } else {
+                    view.setLayoutParams(base);
+                    view.setX(left);
+                    view.setY(top);
+                }
+
+                parent.addView(view);
+                overlayButton = view;
+            }
+        }
 
         super.refreshContent(e, highlight);
     }
@@ -233,67 +283,17 @@ public class RNAtfleeMarkerView extends MarkerView {
                 .receiveEvent(chart.getId(), "topMarkerClick", event);
 
         chart.highlightValue(null);
+        removeOverlayButton();
         resetState();
     }
 
-    private void attachOverlay() {
-        Chart chart = getChartView();
-        if (chart == null || lastHighlight == null) {
-            return;
-        }
-
-        ViewGroup parent = (ViewGroup) chart.getParent();
-        if (parent == null) {
-            return;
-        }
-
-        removeOverlay();
-
-        int width = mShadowLayout.getLayoutParams() != null ? mShadowLayout.getLayoutParams().width : getWidth();
-        int height = mShadowLayout.getLayoutParams() != null ? mShadowLayout.getLayoutParams().height : getHeight();
-
-        View view = new View(getContext());
-        view.setTag(OVERLAY_TAG);
-        view.setBackgroundColor(android.graphics.Color.TRANSPARENT);
-        view.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                handleClick();
-            }
-        });
-
-        MPPointF offset = getOffsetForDrawingAtPoint(lastHighlight.getDrawX(), lastHighlight.getDrawY());
-        float left = chart.getX() + lastHighlight.getDrawX() + offset.x;
-        float top = chart.getY() + lastHighlight.getDrawY() + offset.y;
-
-        ViewGroup.LayoutParams base = new ViewGroup.LayoutParams(width, height);
-        if (parent instanceof android.widget.FrameLayout) {
-            android.widget.FrameLayout.LayoutParams lp = new android.widget.FrameLayout.LayoutParams(base);
-            lp.leftMargin = (int) left;
-            lp.topMargin = (int) top;
-            view.setLayoutParams(lp);
-        } else if (parent instanceof android.widget.RelativeLayout) {
-            android.widget.RelativeLayout.LayoutParams lp = new android.widget.RelativeLayout.LayoutParams(base);
-            lp.leftMargin = (int) left;
-            lp.topMargin = (int) top;
-            view.setLayoutParams(lp);
-        } else {
-            view.setLayoutParams(base);
-            view.setX(left);
-            view.setY(top);
-        }
-
-        parent.addView(view);
-        overlayView = view;
-    }
-
-    private void removeOverlay() {
-        if (overlayView != null) {
-            ViewParent vp = overlayView.getParent();
+    private void removeOverlayButton() {
+        if (overlayButton != null) {
+            ViewParent vp = overlayButton.getParent();
             if (vp instanceof ViewGroup) {
-                ((ViewGroup) vp).removeView(overlayView);
+                ((ViewGroup) vp).removeView(overlayButton);
             }
-            overlayView = null;
+            overlayButton = null;
         }
     }
   
@@ -323,7 +323,7 @@ public class RNAtfleeMarkerView extends MarkerView {
     public void resetState() {
         fadeStart = 0L;
         lastHighlight = null;
-        removeOverlay();
+        removeOverlayButton();
     }
   
     public void setShowArrow(boolean show) {
