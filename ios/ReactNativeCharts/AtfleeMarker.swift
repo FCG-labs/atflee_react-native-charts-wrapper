@@ -38,7 +38,7 @@ open class AtfleeMarker: MarkerView {
     fileprivate var _drawAttributes = [NSAttributedString.Key: Any]()
     
     fileprivate var imageEmotion: UIImage? = nil
-    fileprivate let imageSize = 16.0
+    fileprivate let imageSize = 20.0
 
     // ───────────────── init 그대로 ─────────────────
     public init(color: UIColor, font: UIFont, textColor: UIColor, textAlign: NSTextAlignment, textWeight: String,titleFont: UIFont) {
@@ -99,8 +99,11 @@ open class AtfleeMarker: MarkerView {
     // ────────────── ★ ② draw(context:point:) 최소 패치 ★ ──────────────
     open override func draw(context: CGContext, point: CGPoint) {
         context.saveGState()
+
+        let iconExists = imageEmotion != nil
+        let arrowExists = arrowImage != nil // 항상 true(상시 표시)
         
-        // 페이드 인 진행률 계산
+        // 기존 페이드 인/위치 논리 유지
         var progress: CGFloat = 1
         if let start = fadeStart {
             progress = min(max(CGFloat((CACurrentMediaTime() - start) / fadeDuration), 0), 1)
@@ -110,7 +113,6 @@ open class AtfleeMarker: MarkerView {
         }
         let alpha = progress
         let yRise = 20 * (1 - progress)
-
         let chartHeight = chartView?.bounds.height ?? 0
         let showMarkerAbove = point.y > chartHeight * 0.35
 
@@ -120,86 +122,95 @@ open class AtfleeMarker: MarkerView {
         context.setAlpha(alpha)
         if showMarkerAbove {
             // 기존: tick 위에 marker
-            markerPt.y = point.y - markerHeight * 0.8
+            if iconExists {
+                markerPt.y = markerHeight
+            } else {
+                markerPt.y = point.y - markerHeight * 0.8
+            }
             context.translateBy(x: 0, y: yRise)
         } else {
             // 신규: tick 아래에 marker
-            markerPt.y = point.y + markerHeight * 1.35
+            if iconExists {
+                markerPt.y = point.y - markerHeight * 0.8
+            } else {
+                markerPt.y = point.y + markerHeight * 1.35
+            }
             context.translateBy(x: 0, y: -yRise)
         }
 
         let rect = drawRect(context: context, point: markerPt)
         self.lastBgRect = rect
 
-        // print("drawRect result origin:", rect.origin, "size:", rect.size)
-
         UIGraphicsPushContext(context)
 
-        // 패딩값 정의
+        // 기본 padding 및 크기 정의
         let bgPadding: CGFloat = 8
         let paddedRect = rect.insetBy(dx: bgPadding, dy: bgPadding)
-        
-        // 타이틀 로그
-        if let title = labelTitle, title.length > 0 {
-            // print("labelTitle:", title)
-            
-            title.draw(in: paddedRect, withAttributes: _drawTitleAttributes)
-        } else {
-            // print("labelTitle is nil or empty")
+        let itemSpacing: CGFloat = 8
+        let arrowSize: CGFloat = 20
+        let iconSize: CGFloat = CGFloat(imageSize)
+
+        // label, icon, arrowImage width 측정 (좌→우 순서 고정)
+        var labelSize = CGSize.zero
+        if let lbl = labelns, lbl.length > 0 {
+            labelSize = lbl.size(withAttributes: _drawAttributes)
         }
 
-        // 단위 로그
-        if let lbl = labelns, lbl.length > 0 {
-            // print("labelns:", lbl)
-//            lbl.draw(in: paddedRect, withAttributes: _drawAttributes)
+        // 총 width 계산 (존재하는 요소만)
+        var totalWidth: CGFloat = 0
+        if labelSize.width > 0 { totalWidth += labelSize.width }
+        if iconExists { totalWidth += iconSize }
+        if arrowExists { totalWidth += arrowSize }
+        // 간격 계산 (존재하는 요소 개수-1 만큼)
+        let itemCount = [labelSize.width > 0, iconExists, arrowExists].filter { $0 }.count
+        totalWidth += itemSpacing * CGFloat(max(itemCount - 1, 0))
+
+        // x좌표 시작점 계산
+        let startX = paddedRect.origin.x
+        var currX = startX
+        let baseY = paddedRect.maxY - labelSize.height // arrow, icon, label 모두 같은 Y축 기준
+
+        // labelns
+        if labelSize.width > 0 {
+            if iconExists {
+                
+                let labelRect = CGRect(x: currX, y:  labelTitle?.size(withAttributes: _drawTitleAttributes).height ?? paddedRect.midY - labelSize.height/2, width: labelSize.width, height: labelSize.height)
+                labelns?.draw(in: labelRect, withAttributes: _drawAttributes)
+            } else {
+                let labelRect = CGRect(x: currX, y: baseY, width: labelSize.width, height: labelSize.height)
+                labelns?.draw(in: labelRect, withAttributes: _drawAttributes)
+            }
             
-            // 1️⃣ 텍스트 위치 계산
-            var attrs = _drawAttributes
-            // labelns의 width 측정 (폰트, 속성 적용)
-            let labelSize = lbl.size(withAttributes: attrs)
+            currX += labelSize.width + itemSpacing
+        }
 
-            // labelns 위치: paddedRect에서 x좌표, y는 가운데 정렬
-            let lblX = paddedRect.origin.x
-            let lblY = paddedRect.midY - labelSize.height/2
-            let lblRect = CGRect(
-                x: lblX,
-                y: lblY,
-                width: labelSize.width,
-                height: labelSize.height
-            )
-            lbl.draw(in: lblRect, withAttributes: attrs)
+        // imageEmotion
+        if let img = imageEmotion {
+            let iconRect = CGRect(x: currX, y: paddedRect.maxY - imageSize*2, width: iconSize, height: iconSize)
+            img.draw(in: iconRect)
+            currX += iconSize + itemSpacing
+        }
 
-            // 2️⃣ arrowImage가 있다면 lbl 오른쪽에 바로 붙여서 그리기
-            if let img = arrowImage {
-                let arrowSize: CGFloat = 20
-                let arrowPadding: CGFloat = 6
-                let arrowX = lblRect.maxX + arrowPadding
-                let arrowY = paddedRect.maxY - arrowSize
-                let arrowRect = CGRect(x: arrowX, y: arrowY, width: arrowSize, height: arrowSize)
+        // arrowImage (항상 표시)
+        if let img = arrowImage {
+            if iconExists {
+                let arrowRect = CGRect(x: currX, y: paddedRect.maxY - arrowSize*2, width: arrowSize, height: arrowSize)
+                img.draw(in: arrowRect)
+            } else {
+                let arrowRect = CGRect(x: currX, y: paddedRect.maxY - arrowSize, width: arrowSize, height: arrowSize)
                 img.draw(in: arrowRect)
             }
-        } else {
-            // print("labelns is nil or empty")
+            
         }
 
-        // 아이콘 로그
-        if let img = imageEmotion {
-            // print("imageEmotion present")
-            let iconRect = CGRect(
-                origin: CGPoint(
-                    x: rect.origin.x + (rect.width - CGFloat(imageSize)) / 2,
-                    y: rect.origin.y + (rect.height - CGFloat(imageSize)) / 2 + 8
-                ),
-                size: CGSize(width: CGFloat(imageSize), height: CGFloat(imageSize))
-            )
-            img.draw(in: iconRect)
-        } else {
-            // print("imageEmotion is nil")
+        // 타이틀(기존 방식 그대로)
+        if let title = labelTitle, title.length > 0 {
+            title.draw(in: paddedRect, withAttributes: _drawTitleAttributes)
         }
 
         UIGraphicsPopContext()
         context.restoreGState()
-        
+
         if let entry = self.lastEntry {
             createOverlayButtonIfNeeded(entry)
         }
@@ -234,7 +245,7 @@ open class AtfleeMarker: MarkerView {
         _drawTitleAttributes[NSAttributedString.Key.font] = self.titleFont
         _drawTitleAttributes[NSAttributedString.Key.paragraphStyle] = _paragraphStyle
         _drawTitleAttributes[NSAttributedString.Key.foregroundColor] = #colorLiteral(red: 0.9515632987, green: 0.4954123497, blue: 0.1712778509, alpha: 1)
-        let titleSize = labelTitle?.size(withAttributes: _drawAttributes) ?? CGSize.zero
+        let titleSize = labelTitle?.size(withAttributes: _drawTitleAttributes) ?? CGSize.zero
         
         //
         if let object = entry.data as? JSON {
@@ -306,16 +317,16 @@ open class AtfleeMarker: MarkerView {
                 label = object["markerEmotion"].stringValue;
             }
         }
+
+        arrowImage = UIImage(named: "arrow_right_circle")
         if label.isEmpty {
             imageEmotion = nil
             _size.height -= imageSize
             
-            arrowImage = UIImage(named: "arrow_right_circle")
-            
             if let _ = arrowImage {
                 let arrowSize: CGFloat = 20   // draw에서 쓴 arrowSize와 맞춰야함
                 let arrowPadding: CGFloat = 6
-                _size.width = max(_size.width, _size.width + arrowSize + arrowPadding)
+                _size.width = max(_size.width, arrowSize + arrowPadding)
             }
         } else {
             switch label {
@@ -332,6 +343,16 @@ open class AtfleeMarker: MarkerView {
             default:
                 imageEmotion = nil
                 _size.height -= imageSize
+            }
+
+            if imageEmotion != nil {
+                if let _ = arrowImage {
+                    let arrowSize: CGFloat = 20   // draw에서 쓴 arrowSize와 맞춰야함
+                    let arrowPadding: CGFloat = 6
+                    _size.width = max(_size.width, arrowSize + arrowPadding + imageSize)
+                } else {
+                    _size.width = max(_size.width, _size.width + imageSize)
+                }
             }
         }
 
