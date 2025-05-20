@@ -31,6 +31,7 @@ class RoundedBarChartRenderer: BarChartRenderer {
             let x = e.x
             let y = e.y
             let isPositive = y >= 0
+            // Use the sign of the entry to decide which corners to round
             let corners: UIRectCorner = isPositive ? [.topLeft, .topRight] : [.bottomLeft, .bottomRight]
 
             let left = x - barWidthHalf
