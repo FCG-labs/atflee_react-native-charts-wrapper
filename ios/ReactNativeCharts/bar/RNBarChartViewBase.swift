@@ -28,19 +28,32 @@ class RNBarChartViewBase: RNBarLineChartViewBase {
     }
 
     func setBarRadius(_ radius: NSNumber) {
-        let value = CGFloat(truncating: radius)
+        barRadius = CGFloat(truncating: radius)
+
         if let horizontal = chart as? HorizontalBarChartView {
-            if let renderer = horizontal.renderer as? RoundedHorizontalBarChartRenderer {
-                renderer.setRadius(value)
+            if barRadius > 0 {
+                if let renderer = horizontal.renderer as? RoundedHorizontalBarChartRenderer {
+                    renderer.setRadius(barRadius)
+                } else {
+                    horizontal.renderer = RoundedHorizontalBarChartRenderer(dataProvider: horizontal, animator: horizontal.chartAnimator, viewPortHandler: horizontal.viewPortHandler, radius: barRadius)
+                }
             } else {
-                horizontal.renderer = RoundedHorizontalBarChartRenderer(dataProvider: horizontal, animator: horizontal.chartAnimator, viewPortHandler: horizontal.viewPortHandler, radius: value)
+                if !(horizontal.renderer is HorizontalBarChartRenderer) {
+                    horizontal.renderer = HorizontalBarChartRenderer(dataProvider: horizontal, animator: horizontal.chartAnimator, viewPortHandler: horizontal.viewPortHandler)
+                }
             }
             horizontal.setNeedsDisplay()
         } else if let vertical = chart as? BarChartView {
-            if let renderer = vertical.renderer as? RoundedBarChartRenderer {
-                renderer.setRadius(value)
+            if barRadius > 0 {
+                if let renderer = vertical.renderer as? RoundedBarChartRenderer {
+                    renderer.setRadius(barRadius)
+                } else {
+                    vertical.renderer = RoundedBarChartRenderer(dataProvider: vertical, animator: vertical.chartAnimator, viewPortHandler: vertical.viewPortHandler, radius: barRadius)
+                }
             } else {
-                vertical.renderer = RoundedBarChartRenderer(dataProvider: vertical, animator: vertical.chartAnimator, viewPortHandler: vertical.viewPortHandler, radius: value)
+                if !(vertical.renderer is BarChartRenderer) {
+                    vertical.renderer = BarChartRenderer(dataProvider: vertical, animator: vertical.chartAnimator, viewPortHandler: vertical.viewPortHandler)
+                }
             }
             vertical.setNeedsDisplay()
         }
