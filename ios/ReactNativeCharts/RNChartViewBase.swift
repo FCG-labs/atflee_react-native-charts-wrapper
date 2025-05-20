@@ -53,6 +53,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
         let chartFrame = CGRect(x: 0, y: 0, width: frame.width, height: frame.height)
         chart.setExtraOffsets(left: 35, top: 5, right: 5, bottom: 5)
+        chart.viewPortHandler.setDragOffsetX(35)
         chart.reactSetFrame(chartFrame)
     }
 
