@@ -30,6 +30,7 @@ class RoundedHorizontalBarChartRenderer: HorizontalBarChartRenderer {
             let x = e.x
             let y = e.y
             let isPositive = y >= 0
+            // Positive bars extend to the right, negative bars to the left
             let corners: UIRectCorner = isPositive ? [.topRight, .bottomRight] : [.topLeft, .bottomLeft]
 
             var left = y >= 0.0 ? 0.0 : y
