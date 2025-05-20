@@ -5,6 +5,7 @@ class RoundedBarChartRenderer: BarChartRenderer {
     var radius: CGFloat
 
     init(dataProvider: BarChartDataProvider, animator: Animator, viewPortHandler: ViewPortHandler, radius: CGFloat) {
+
         self.radius = radius
         super.init(dataProvider: dataProvider, animator: animator, viewPortHandler: viewPortHandler)
     }

@@ -13,6 +13,8 @@ class RNBarChartViewBase: RNBarLineChartViewBase {
         }
     }
 
+    private var barRadius: CGFloat = 0
+
     func setDrawValueAboveBar(_ enabled: Bool) {
         barChart.drawValueAboveBarEnabled = enabled
     }
