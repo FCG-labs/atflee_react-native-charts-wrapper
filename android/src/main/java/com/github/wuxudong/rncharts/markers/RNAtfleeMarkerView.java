@@ -236,6 +236,7 @@ public class RNAtfleeMarkerView extends MarkerView {
         );
 
         chart.highlightValue(null);
+        resetState();
     }
   
     @Override
