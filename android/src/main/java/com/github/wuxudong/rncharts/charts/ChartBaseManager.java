@@ -41,7 +41,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
 public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends SimpleViewManager<T> {
@@ -701,16 +700,11 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
     @Nullable
     @Override
     public Map<String, Object> getExportedCustomBubblingEventTypeConstants() {
-        Map<String, Object> map = new HashMap<>();
-        map.put(
-                "topMarkerClick",
-                MapBuilder.of(
+        Map<String, Object> map = MapBuilder.of(
+                "topMarkerClick", MapBuilder.of(
                         "phasedRegistrationNames",
-                        MapBuilder.of("bubbled", "onMarkerClick"))
-        );
-        map.put(
-                "topChange",
-                MapBuilder.of(
+                        MapBuilder.of("bubbled", "onMarkerClick")),
+                "topChange", MapBuilder.of(
                         "phasedRegistrationNames",
                         MapBuilder.of("bubbled", "onChange"))
         );
