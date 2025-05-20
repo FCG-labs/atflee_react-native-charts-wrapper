@@ -2,6 +2,8 @@ import Foundation
 import DGCharts
 
 class RoundedCombinedChartRenderer: CombinedChartRenderer {
+    private var customRenderers: [DataRenderer] = []
+    private var roundedBarRenderer: RoundedBarChartRenderer?
     var barRadius: CGFloat
     private var roundedBarRenderer: RoundedBarChartRenderer?
 

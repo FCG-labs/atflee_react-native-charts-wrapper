@@ -13,7 +13,7 @@ class RoundedHorizontalBarChartRenderer: HorizontalBarChartRenderer {
         self.radius = radius
     }
 
-    override func drawDataSet(context: CGContext, dataSet: IBarChartDataSet, index: Int) {
+    override func drawDataSet(context: CGContext, dataSet: BarChartDataSetProtocol, index: Int) {
         guard let dataProvider = dataProvider else { return }
 
         let trans = dataProvider.getTransformer(forAxis: dataSet.axisDependency)
@@ -29,6 +29,8 @@ class RoundedHorizontalBarChartRenderer: HorizontalBarChartRenderer {
             guard let e = dataSet.entryForIndex(i) as? BarChartDataEntry else { continue }
             let x = e.x
             let y = e.y
+            let isPositive = y >= 0
+            let corners: UIRectCorner = isPositive ? [.topRight, .bottomRight] : [.topLeft, .bottomLeft]
 
             var left = y >= 0.0 ? 0.0 : y
             var right = y <= 0.0 ? 0.0 : y
@@ -49,7 +51,11 @@ class RoundedHorizontalBarChartRenderer: HorizontalBarChartRenderer {
             }
 
             context.setFillColor(dataSet.color(atIndex: i).cgColor)
-            let path = UIBezierPath(roundedRect: barRect, cornerRadius: radius)
+            let path = UIBezierPath(
+                roundedRect: barRect,
+                byRoundingCorners: corners,
+                cornerRadii: CGSize(width: radius, height: radius)
+            )
             context.addPath(path.cgPath)
             context.fillPath()
         }
