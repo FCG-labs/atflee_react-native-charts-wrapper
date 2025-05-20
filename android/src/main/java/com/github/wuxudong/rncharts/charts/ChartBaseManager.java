@@ -10,6 +10,8 @@ import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.ReadableType;
 import com.facebook.react.uimanager.SimpleViewManager;
 import com.facebook.react.uimanager.annotations.ReactProp;
+import com.facebook.react.common.MapBuilder;
+import javax.annotation.Nullable;
 import com.github.mikephil.charting.animation.Easing;
 import com.github.mikephil.charting.charts.Chart;
 import com.github.mikephil.charting.components.AxisBase;
@@ -37,6 +39,7 @@ import com.github.wuxudong.rncharts.utils.TypefaceUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends SimpleViewManager<T> {
@@ -686,6 +689,22 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
         chart.notifyDataSetChanged();
         onAfterDataSetChanged(chart);
         chart.postInvalidate();;
+    }
+
+    @Nullable
+    @Override
+    public Map<String, Object> getExportedCustomBubblingEventTypeConstants() {
+        Map<String, Object> map = MapBuilder.of(
+                "topMarkerClick", MapBuilder.of(
+                        "phasedRegistrationNames",
+                        MapBuilder.of("bubbled", "onMarkerClick"))
+        );
+
+        Map<String, Object> existing = super.getExportedCustomBubblingEventTypeConstants();
+        if (existing != null) {
+            map.putAll(existing);
+        }
+        return map;
     }
 
 }
