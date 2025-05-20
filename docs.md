@@ -147,6 +147,7 @@
 | ------------------- | ------------------- | ------- | ---- |
 | `drawValueAboveBar` | `bool`              |         |      |
 | `drawBarShadow`     | `bool`              |         |      |
+| `barRadius`         | `number`            |         | Pixel radius of bar corners. Android only unless implemented for iOS. |
 | `data`              | `DataTypes.barData` |         |      |
 
 ## BubbleChart
@@ -173,6 +174,10 @@
 | ------      | ---------------------------------------------------- | ------- | ---- |
 | `data`      | `DataTypes.combinedData`                             |         |      |
 | `drawOrder` | `array with one of: ['SCATTER', 'BAR', 'LINE']`      |         |      |
+| `drawValueAboveBar` | `bool`              |         |      |
+| `highlightFullBarEnabled` | `bool`         |         |      |
+| `drawBarShadow`     | `bool`              |         |      |
+| `barRadius`         | `number`            |         | Pixel radius of bar corners. Android only unless implemented for iOS. |
 
 ## HorizontalBarChart
 
@@ -182,6 +187,7 @@
 | ------------------- | ------------------- | ------- | ---- |
 | `drawValueAboveBar` | `bool`              |         |      |
 | `drawBarShadow`     | `bool`              |         |      |
+| `barRadius`         | `number`            |         | Pixel radius of bar corners. Android only unless implemented for iOS. |
 | `data`              | `DataTypes.barData` |         |      |
 
 ## LineChart
