@@ -55,6 +55,13 @@ public class CombinedChartManager extends BarLineChartBaseManager<CombinedChart,
         chart.setHighlightFullBarEnabled(enabled);
     }
 
+    @ReactProp(name = "barRadius")
+    public void setBarRadius(CombinedChart chart, float radius) {
+        if (chart instanceof AtfleeCombinedChart) {
+            ((AtfleeCombinedChart) chart).setRadius(radius);
+        }
+    }
+
     @Override
     DataExtract getDataExtract() {
         return new CombinedDataExtract();

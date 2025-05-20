@@ -53,4 +53,17 @@ class RNCombinedChartView: RNBarLineChartViewBase {
         _chart.highlightFullBarEnabled = enabled
     }
 
+    func setBarRadius(_ radius: NSNumber) {
+        let value = CGFloat(truncating: radius)
+        if let renderer = _chart.renderer as? CombinedChartRenderer {
+            for item in renderer.renderers {
+                if let barRenderer = item as? RoundedBarChartRenderer {
+                    barRenderer.radius = value
+                } else if let horizRenderer = item as? RoundedHorizontalBarChartRenderer {
+                    horizRenderer.radius = value
+                }
+            }
+        }
+    }
+
 }
