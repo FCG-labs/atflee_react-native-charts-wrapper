@@ -86,12 +86,22 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
         if (chart != null) {
 
             WritableMap event = getEvent(action, me, chart);
+            try {
+                // 1. 이벤트 객체 생성 직후 상태
+                Log.d("RNChartEvent", "[sendEvent] event created: " + event);
+                Log.d("RNChartEvent", "[sendEvent] action: " + action + ", chartId: " + chart.getId());
+                Log.d("RNChartEvent", "[sendEvent] motionEvent: x=" + me.getX() + ", y=" + me.getY());
 
-            ReactContext reactContext = (ReactContext) chart.getContext();
-            reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
+                ReactContext reactContext = (ReactContext) chart.getContext();
+
+                reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
                     chart.getId(),
                     "topChange",
                     event);
+
+            } catch (Exception e) {
+                Log.e("RNChartEvent", "[sendEvent] Exception in receiveEvent", e);
+            }
         }
     }
 

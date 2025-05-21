@@ -41,7 +41,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
 public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends SimpleViewManager<T> {
@@ -275,9 +274,6 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
     @ReactProp(name = "marker")
     public void setMarker(Chart chart, ReadableMap propMap) {
         if (!BridgeUtils.validate(propMap, ReadableType.Boolean, "enabled") || !propMap.getBoolean("enabled")) {
-            if (chart.getMarker() instanceof RNAtfleeMarkerView) {
-                ((RNAtfleeMarkerView) chart.getMarker()).resetState();
-            }
             chart.setMarker(null);
             return;
         }
@@ -294,10 +290,6 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
                 break;
             default:
                 markerView = rectangleMarker(chart, propMap);
-        }
-
-        if (chart.getMarker() instanceof RNAtfleeMarkerView) {
-            ((RNAtfleeMarkerView) chart.getMarker()).resetState();
         }
 
         markerView.setChartView(chart);
@@ -347,10 +339,6 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
             int style = "bold".equalsIgnoreCase(weight) ? Typeface.BOLD : Typeface.NORMAL;
             marker.getTvContent().setTypeface(marker.getTvContent().getTypeface(), style);
         }
-        if (BridgeUtils.validate(propMap, ReadableType.Number, "fadeDuration")) {
-            marker.setFadeDuration((long) propMap.getDouble("fadeDuration"));
-        }
-
 
         if (BridgeUtils.validate(propMap, ReadableType.String, "titleAlign")) {
 
@@ -388,10 +376,6 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
                 marker.getTvContent().setTextAlignment(alignment);
             }
-        }
-
-        if (BridgeUtils.validate(propMap, ReadableType.Boolean, "showArrow")) {
-            marker.setShowArrow(propMap.getBoolean("showArrow"));
         }
     }
 
@@ -701,16 +685,11 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
     @Nullable
     @Override
     public Map<String, Object> getExportedCustomBubblingEventTypeConstants() {
-        Map<String, Object> map = new HashMap<>();
-        map.put(
-                "topMarkerClick",
-                MapBuilder.of(
+        Map<String, Object> map = MapBuilder.of(
+                "topMarkerClick", MapBuilder.of(
                         "phasedRegistrationNames",
-                        MapBuilder.of("bubbled", "onMarkerClick"))
-        );
-        map.put(
-                "topChange",
-                MapBuilder.of(
+                        MapBuilder.of("bubbled", "onMarkerClick")),
+                "topChange", MapBuilder.of(
                         "phasedRegistrationNames",
                         MapBuilder.of("bubbled", "onChange"))
         );
