@@ -9,17 +9,18 @@ class RoundedCombinedChartRenderer: CombinedChartRenderer {
     init(chart: CombinedChartView, animator: Animator, viewPortHandler: ViewPortHandler, barRadius: CGFloat) {
         self.barRadius = barRadius
         super.init(chart: chart, animator: animator, viewPortHandler: viewPortHandler)
-        configureRenderers()
+        createRenderers()
     }
 
-    private func configureRenderers() {
+    override func createRenderers() {
         customRenderers.removeAll()
         roundedBarRenderer = nil
 
         guard let chart = chart as? CombinedChartView else { return }
 
         for order in chart.drawOrder {
-            switch order {
+            guard let drawOrder = CombinedChartView.DrawOrder(rawValue: order) else { continue }
+            switch drawOrder {
             case .bar:
                 if chart.barData != nil {
                     let renderer = RoundedBarChartRenderer(
@@ -101,6 +102,6 @@ class RoundedCombinedChartRenderer: CombinedChartRenderer {
 
     func setRadius(_ radius: CGFloat) {
         barRadius = radius
-        configureRenderers()
+        createRenderers()
     }
 }
