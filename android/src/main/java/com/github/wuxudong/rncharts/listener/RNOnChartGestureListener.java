@@ -94,16 +94,11 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
 
                 ReactContext reactContext = (ReactContext) chart.getContext();
 
-                // 2. 이벤트 전달 전 상태
-                Log.d("RNChartEvent", "[sendEvent] before receiveEvent. event: " + event);
-
                 reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
                     chart.getId(),
                     "topChange",
                     event);
 
-                // 3. 이벤트 전달 후 (예외 발생 시 try-catch로 잡아서 로그)
-                Log.d("RNChartEvent", "[sendEvent] after receiveEvent. event should be consumed.");
             } catch (Exception e) {
                 Log.e("RNChartEvent", "[sendEvent] Exception in receiveEvent", e);
             }

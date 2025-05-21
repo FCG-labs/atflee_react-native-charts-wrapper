@@ -22,7 +22,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:layout_marginHorizontal="8dp"
-            android:layout_marginVertical="4dp"
+            android:layout_marginVertical="8dp"
             >
             <LinearLayout
                 android:layout_width="wrap_content"

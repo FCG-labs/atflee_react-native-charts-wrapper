@@ -257,7 +257,7 @@ public class RNAtfleeMarkerView extends MarkerView {
             overlayButton = null;
         }
     }
-  
+
     @Override
     public void draw(android.graphics.Canvas canvas) {
         if (fadeStart > 0) {
@@ -291,7 +291,7 @@ public class RNAtfleeMarkerView extends MarkerView {
         fadeStart = 0L;
         removeOverlayButton();
     }
-  
+
     public void setShowArrow(boolean show) {
         this.showArrow = show;
     }
