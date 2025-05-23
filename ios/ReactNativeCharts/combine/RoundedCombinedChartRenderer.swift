@@ -12,7 +12,7 @@ class RoundedCombinedChartRenderer: CombinedChartRenderer {
         createRenderers()
     }
 
-    override func createRenderers() {
+    func createRenderers() {
         customRenderers.removeAll()
         roundedBarRenderer = nil
 
