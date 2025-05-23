@@ -309,6 +309,10 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
     private RNAtfleeMarkerView atfleeMarkerView(Chart chart, ReadableMap propMap) {
         RNAtfleeMarkerView marker =  new RNAtfleeMarkerView(chart.getContext());
         setMarkerParams(marker, propMap);
+
+        if (propMap.hasKey("arrowHidden")) {
+            marker.setArrowHidden(propMap.getBoolean("arrowHidden"));
+        }
         return marker;
     }
 

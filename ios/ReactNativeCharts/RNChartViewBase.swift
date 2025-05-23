@@ -501,6 +501,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             if json["titleSize"].float != nil {
                 titleFont = titleFont.withSize(CGFloat(json["titleSize"].floatValue))
             }
+
             let marker = AtfleeMarker(
                 color: RCTConvert.uiColor(json["markerColor"].intValue),
                 font: markerFont,
@@ -509,6 +510,11 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 textWeight: (json["textWeight"].string ?? "normal").lowercased(),
                 titleFont: titleFont
             )
+
+            if json["arrowHidden"].bool != nil {
+                marker.arrowHidden = json["arrowHidden"].boolValue
+            }
+
             chart.marker = marker
             marker.chartView = chart
         default:

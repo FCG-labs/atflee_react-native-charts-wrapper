@@ -32,11 +32,14 @@ public class RNAtfleeMarkerView extends MarkerView {
     private final TextView tvTitle;
     private final TextView tvContent;
     private final ImageView imageEmotion;
+    private final ImageView image_arrow;
     private Entry lastEntry;
     private final ShadowLayout mShadowLayout;
     private boolean showArrow = true;
     // Transparent overlay to intercept marker clicks
     private View overlayButton = null;
+
+    private boolean arrowHidden = false;
 
     private static final int OVERLAY_TAG = 999;
 
@@ -58,6 +61,7 @@ public class RNAtfleeMarkerView extends MarkerView {
         imageEmotion = findViewById(R.id.image_emotion);
 
         mShadowLayout = findViewById(R.id.mShadowLayout);
+        image_arrow = findViewById(R.id.image_arrow);
         // Default fade duration (milliseconds)
         fadeDuration = 300L;
     }
@@ -135,6 +139,11 @@ public class RNAtfleeMarkerView extends MarkerView {
             if (markerEmotion.equalsIgnoreCase("5"))
                 imageEmotion.setImageResource(R.drawable.emotion5);
         }
+
+        if (image_arrow != null) {
+            image_arrow.setVisibility(arrowHidden ? View.GONE : View.VISIBLE);
+        }
+    
 
 
         Chart chart = getChartView();
@@ -294,6 +303,13 @@ public class RNAtfleeMarkerView extends MarkerView {
 
     public void setShowArrow(boolean show) {
         this.showArrow = show;
+    }
+
+    public void setArrowHidden(boolean hidden) {
+        this.arrowHidden = hidden;
+        if (image_arrow != null) {
+            image_arrow.setVisibility(hidden ? View.GONE : View.VISIBLE);
+        }
     }
 
 }

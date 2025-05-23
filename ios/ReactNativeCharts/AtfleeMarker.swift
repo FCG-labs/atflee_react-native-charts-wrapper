@@ -25,6 +25,9 @@ open class AtfleeMarker: MarkerView {
     open var textColor: UIColor?
     open var textWeight: String?
     open var minimumSize = CGSize(width: 10, height: 10)
+    /// arrow 표시 여부
+    open var arrowHidden: Bool = false
+
     
     fileprivate var insets = UIEdgeInsets(top: 8.0,left: 8.0,bottom: 20.0,right: 8.0)
     fileprivate var topInsets = UIEdgeInsets(top: 20.0,left: 8.0,bottom: 8.0,right: 8.0)
@@ -318,7 +321,8 @@ open class AtfleeMarker: MarkerView {
             }
         }
 
-        arrowImage = UIImage(named: "arrow_right_circle")
+        arrowImage = arrowHidden ? nil : UIImage(named: "arrow_right_circle")
+
         if label.isEmpty {
             imageEmotion = nil
             _size.height -= imageSize
@@ -370,7 +374,7 @@ open class AtfleeMarker: MarkerView {
 
         let overlayButton = OverlayMarkerButton(frame: lastBgRect)
         overlayButton.tag = 999
-            overlayButton.backgroundColor = .clear  // 디버깅 시 색상 지정 가능
+        overlayButton.backgroundColor = .clear  // 디버깅 시 색상 지정 가능
             
         // 디버그용
 //        overlayButton.backgroundColor = .yellow
@@ -380,7 +384,10 @@ open class AtfleeMarker: MarkerView {
         overlayButton.clickHandler = { [weak chartView] in
             guard let chartView = chartView,
                 let base = chartView.superview as? RNChartViewBase,
-                let onMarkerClick = base.onMarkerClick else { return }
+                let onMarkerClick = base.onMarkerClick else { 
+                    self.resetState()
+                    return 
+                }
 
             let dict: [AnyHashable: Any] = [
                 "x": entry.x,
