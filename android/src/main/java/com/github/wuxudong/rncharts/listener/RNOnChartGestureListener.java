@@ -1,5 +1,6 @@
 package com.github.wuxudong.rncharts.listener;
 
+import android.util.Log;
 import androidx.annotation.NonNull;
 import android.view.MotionEvent;
 
