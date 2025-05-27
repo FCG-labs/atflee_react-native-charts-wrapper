@@ -35,7 +35,6 @@ public class RNAtfleeMarkerView extends MarkerView {
     private final ImageView image_arrow;
     private Entry lastEntry;
     private final ShadowLayout mShadowLayout;
-    private boolean showArrow = true;
     // Transparent overlay to intercept marker clicks
     private View overlayButton = null;
 
@@ -299,10 +298,6 @@ public class RNAtfleeMarkerView extends MarkerView {
     public void resetState() {
         fadeStart = 0L;
         removeOverlayButton();
-    }
-
-    public void setShowArrow(boolean show) {
-        this.showArrow = show;
     }
 
     public void setArrowHidden(boolean hidden) {

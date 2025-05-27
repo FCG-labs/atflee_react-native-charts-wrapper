@@ -275,6 +275,9 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
     public void setMarker(Chart chart, ReadableMap propMap) {
         if (!BridgeUtils.validate(propMap, ReadableType.Boolean, "enabled") || !propMap.getBoolean("enabled")) {
             chart.setMarker(null);
+            if (chart.getMarker() instanceof RNAtfleeMarkerView) {
+                ((RNAtfleeMarkerView) chart.getMarker()).resetState();
+            }
             return;
         }
 
@@ -290,6 +293,10 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
                 break;
             default:
                 markerView = rectangleMarker(chart, propMap);
+        }
+
+        if (chart.getMarker() instanceof RNAtfleeMarkerView) {
+            ((RNAtfleeMarkerView) chart.getMarker()).resetState();
         }
 
         markerView.setChartView(chart);
@@ -309,10 +316,6 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
     private RNAtfleeMarkerView atfleeMarkerView(Chart chart, ReadableMap propMap) {
         RNAtfleeMarkerView marker =  new RNAtfleeMarkerView(chart.getContext());
         setMarkerParams(marker, propMap);
-
-        if (propMap.hasKey("arrowHidden")) {
-            marker.setArrowHidden(propMap.getBoolean("arrowHidden"));
-        }
         return marker;
     }
 
@@ -344,6 +347,9 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
             marker.getTvContent().setTypeface(marker.getTvContent().getTypeface(), style);
         }
 
+        if (BridgeUtils.validate(propMap, ReadableType.Number, "fadeDuration")) {
+            marker.setFadeDuration((long) propMap.getDouble("fadeDuration"));
+        }
         if (BridgeUtils.validate(propMap, ReadableType.String, "titleAlign")) {
 
             int alignment = View.TEXT_ALIGNMENT_CENTER;
@@ -361,6 +367,10 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
                 marker.getTvContent().setTextAlignment(alignment);
             }
+        }
+
+        if (BridgeUtils.validate(propMap, ReadableType.Boolean, "arrowHidden")) {
+            marker.setArrowHidden(propMap.getBoolean("arrowHidden"));
         }
 
         if (BridgeUtils.validate(propMap, ReadableType.String, "textAlign")) {
