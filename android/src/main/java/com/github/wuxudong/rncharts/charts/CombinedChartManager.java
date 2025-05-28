@@ -5,6 +5,7 @@ import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.annotations.ReactProp;
 import com.github.mikephil.charting.charts.CombinedChart;
+import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.wuxudong.rncharts.data.CombinedDataExtract;
 import com.github.wuxudong.rncharts.data.DataExtract;

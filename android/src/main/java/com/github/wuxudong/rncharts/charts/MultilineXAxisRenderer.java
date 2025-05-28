@@ -1,11 +1,7 @@
 package com.github.wuxudong.rncharts.charts;
 
 import android.graphics.Canvas;
-import android.os.Build;
-import android.text.Layout;
-import android.text.StaticLayout;
-import android.text.TextPaint;
-
+import android.graphics.Paint;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.renderer.XAxisRenderer;
 import com.github.mikephil.charting.utils.MPPointF;
