@@ -26,6 +26,24 @@ public class CombinedChartManager extends BarLineChartBaseManager<CombinedChart,
         AtfleeCombinedChart combinedChart = new AtfleeCombinedChart(reactContext);
         combinedChart.setOnChartValueSelectedListener(new RNOnChartValueSelectedListener(combinedChart));
         combinedChart.setOnChartGestureListener(new RNOnChartGestureListener(combinedChart));
+
+             // 1) 커스텀 XAxisRenderer 적용
+         MultilineXAxisRenderer xRenderer = new MultilineXAxisRenderer(
+             combinedChart.getViewPortHandler(),
+             combinedChart.getXAxis(),
+             combinedChart.getTransformer(YAxis.AxisDependency.LEFT)
+         );
+        combinedChart.setXAxisRenderer(xRenderer);
+
+             // 2) 좌우 끝 라벨 클리핑 방지
+//        combinedChart.getXAxis().setAvoidFirstLastClipping(true);
+//        combinedChart.setClipChildren(false);
+//        combinedChart.setClipToPadding(false);
+//         if (combinedChart.getParent() instanceof ViewGroup) {
+//             ViewGroup parent = (ViewGroup) combinedChart.getParent();
+//             parent.setClipChildren(false);
+//             parent.setClipToPadding(false);
+//         }
         return combinedChart;
     }
 

@@ -81,7 +81,15 @@ public class RNAtfleeMarkerView extends MarkerView {
         String markerEmotion = "";
 
         // 날짜(타이틀)
-        tvTitle.setText(getChartView().getXAxis().getValueFormatter().getFormattedValue(e.getX()));
+        String raw = getChartView()
+            .getXAxis()
+            .getValueFormatter()
+            .getFormattedValue(e.getX());
+
+        // 줄바꿈이 있을 경우 공백으로 대체
+        String title = raw.replace("\n", " ");
+
+        tvTitle.setText(title);
 
         //
         if (e.getData() instanceof Map) {
@@ -209,8 +217,11 @@ public class RNAtfleeMarkerView extends MarkerView {
         float chartHeight = getChartView() != null ? getChartView().getHeight() : 0f;
         boolean showAbove = posY > chartHeight * 0.35f;
 
-        float offsetX = -(getWidth() / 2f);
+        float width = getWidth();
+        float chartWidth = getChartView().getWidth();
+        float offsetX = -(width / 2f);
         float offsetY;
+
 
         if (showAbove) {
             offsetY = -getHeight();
@@ -219,6 +230,15 @@ public class RNAtfleeMarkerView extends MarkerView {
             if (imageEmotion.getVisibility() == View.VISIBLE) {
                 offsetY += imageEmotion.getHeight();
             }
+        }
+
+        // 왼쪽 끝에서 잘림 방지
+        if (posX + offsetX < 0) {
+            offsetX = -posX;
+        }
+        // 오른쪽 끝에서 잘림 방지
+        else if (posX + width + offsetX > chartWidth) {
+            offsetX = chartWidth - posX - width;
         }
 
         return new MPPointF(offsetX, offsetY);

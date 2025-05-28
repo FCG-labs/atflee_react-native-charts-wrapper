@@ -235,7 +235,15 @@ open class AtfleeMarker: MarkerView {
         var markerString = ""
 
         // 날짜(타이틀)
-        label = chartView?.xAxis.valueFormatter?.stringForValue(entry.x, axis: chartView?.xAxis) ?? ""
+        // label = chartView?.xAxis.valueFormatter?.stringForValue(entry.x, axis: chartView?.xAxis) ?? ""
+        // 날짜(타이틀) — 줄바꿈(\n) 은 공백으로 대체
+        if let raw = chartView?.xAxis.valueFormatter?.stringForValue(entry.x, axis: chartView!.xAxis) {
+            let cleaned = raw.replacingOccurrences(of: "\n", with: " ")
+            label = cleaned
+        } else {
+            label = ""
+        }
+        
         labelTitle = label as NSString
         
         if let object = entry.data as? JSON {
