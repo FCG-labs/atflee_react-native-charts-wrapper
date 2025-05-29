@@ -30,8 +30,8 @@ public class AtfleeBarChart extends BarChart {
 
         setHighlighter(new BarHighlighter(this));
 
-        getXAxis().setSpaceMin(1f);
-        getXAxis().setSpaceMax(1f);
+        getXAxis().setSpaceMin(0.25f);
+        getXAxis().setSpaceMax(0.25f);
     }
 
     public void setRadius(float radius) {

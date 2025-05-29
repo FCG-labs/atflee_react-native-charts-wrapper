@@ -18,22 +18,33 @@ public class MultilineXAxisRenderer extends XAxisRenderer {
     Paint paint = mAxisLabelPaint;
     paint.setTextAlign(Paint.Align.CENTER);
 
-    // 1) label을 줄바꿈(\n) 기준으로 분할
+    // 1) 폰트 메트릭 전체 높이 계산
+    Paint.FontMetrics fm = paint.getFontMetrics();
+    float textHeight = fm.descent - fm.ascent - 1;
+
+    // 2) lines 배열
     String[] lines = formattedLabel.split("\\n");
+    int lineCount = lines.length;
 
-    // 2) 각 줄을 차례로 그림
-    float lineHeight = -paint.ascent() + paint.descent();
+    // 3) 전체 멀티라인 높이
+    float totalHeight = lineCount * textHeight + (lineCount - 1) * paint.getFontMetrics().leading;
 
-    // anchor.y가 baseline offset이므로, baseline 위치 보정
-    float yOffset = y;
+    // 4) anchor.y 반영: 라벨의 기준점 보정
+    float yOffset = y - totalHeight * anchor.y - fm.ascent;
 
-    // 위아래 중앙 정렬하려면:
-     float totalHeight = lineHeight * lines.length;
-     yOffset = y - totalHeight / 2 + ( -paint.ascent() );
-
-    for (String line : lines) {
-      c.drawText(line, x, yOffset, paint);
-      yOffset += lineHeight;
+    // 5) 회전 적용
+    c.save();
+    c.translate(x, yOffset);
+    if (angleDegrees != 0f) {
+      c.rotate(angleDegrees, 0, totalHeight * anchor.y);
     }
+
+    // 6) 각 라인 렌더
+    float lineY = 0f;
+    for (String line : lines) {
+      c.drawText(line, 0f, lineY - fm.ascent, paint);
+      lineY += textHeight + fm.leading;
+    }
+    c.restore();
   }
 }
