@@ -89,8 +89,6 @@ public class RNAtfleeMarkerView extends MarkerView {
         // 줄바꿈이 있을 경우 공백으로 대체
         String title = raw.replace("\n", " ");
 
-        tvTitle.setText(title);
-
         //
         if (e.getData() instanceof Map) {
             // 단위
@@ -111,7 +109,15 @@ public class RNAtfleeMarkerView extends MarkerView {
                 decimalPlaces = marker.toString();
             }
 
+            // 타이틀 수동 설정
+            if (((Map) e.getData()).containsKey("markerTitle")) {
+                Object marker = ((Map) e.getData()).get("markerTitle");
+                title = marker.toString();
+            }
         }
+
+        tvTitle.setText(title);
+
         if (e instanceof CandleEntry) {
             CandleEntry ce = (CandleEntry) e;
             tvContent.setText(Utils.formatNumber(ce.getHigh(), 0, true));
