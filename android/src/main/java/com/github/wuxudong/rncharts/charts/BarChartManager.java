@@ -4,6 +4,7 @@ import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.annotations.ReactProp;
 import com.github.mikephil.charting.charts.BarChart;
 import com.github.mikephil.charting.data.BarEntry;
+import com.github.mikephil.charting.components.YAxis;
 import com.github.wuxudong.rncharts.data.BarDataExtract;
 import com.github.wuxudong.rncharts.data.DataExtract;
 import com.github.wuxudong.rncharts.listener.RNOnChartGestureListener;
@@ -21,6 +22,14 @@ public class BarChartManager extends BarLineChartBaseManager<BarChart, BarEntry>
         AtfleeBarChart barChart = new AtfleeBarChart(reactContext);
         barChart.setOnChartValueSelectedListener(new RNOnChartValueSelectedListener(barChart));
         barChart.setOnChartGestureListener(new RNOnChartGestureListener(barChart));
+
+        MultilineXAxisRenderer xRenderer = new MultilineXAxisRenderer(
+            barChart.getViewPortHandler(),
+            barChart.getXAxis(),
+            barChart.getTransformer(YAxis.AxisDependency.LEFT)
+        );
+        barChart.setXAxisRenderer(xRenderer);
+
         return barChart;
     }
 
