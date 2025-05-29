@@ -15,6 +15,8 @@ import com.github.wuxudong.rncharts.utils.ConversionUtil;
 import com.github.wuxudong.rncharts.utils.DrawableUtils;
 
 import java.lang.Exception;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 
 
@@ -115,7 +117,25 @@ public class LineDataExtract extends DataExtract<LineData, Entry> {
                 entry = new Entry(x, (float) map.getDouble("y"), DrawableUtils.drawableFromUrl(bundle.getString("uri"), width, height));
 
             } else {
-                entry = new Entry(x, (float) map.getDouble("y"), ConversionUtil.toMap(map));
+                // y 원본을 먼저 가져옴
+                double yRaw = map.getDouble("y");
+                float  yVal;
+
+                // decimalPlaces 키가 있으면 반올림, 없으면 그대로
+                if (map.hasKey("decimalPlaces") && !map.isNull("decimalPlaces")) {
+                    int dp = map.getInt("decimalPlaces");
+
+                    // JS toFixed와 동일하게 HALF_UP 반올림
+                    BigDecimal bd = BigDecimal.valueOf(yRaw)
+                            .setScale(dp, RoundingMode.HALF_UP);
+
+                    yVal = bd.floatValue();          // ★ 반올림 값
+                } else {
+                    yVal = (float) yRaw;             // ★ 원본 유지
+                }
+
+                // Entry 생성 (data 파라미터 필요하면 인자 생성자 사용)
+                entry = new Entry(x, yVal, ConversionUtil.toMap(map));
             }
         } else if (ReadableType.Number.equals(values.getType(index))) {
             entry = new Entry(x, (float) values.getDouble(index));
@@ -125,6 +145,4 @@ public class LineDataExtract extends DataExtract<LineData, Entry> {
 
         return entry;
     }
-
-
 }
