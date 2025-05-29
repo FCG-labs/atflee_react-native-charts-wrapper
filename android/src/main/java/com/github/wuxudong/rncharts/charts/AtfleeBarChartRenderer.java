@@ -1,24 +1,38 @@
 package com.github.wuxudong.rncharts.charts;
 
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PathEffect;
 import android.graphics.RectF;
 
 import com.github.mikephil.charting.animation.ChartAnimator;
 import com.github.mikephil.charting.buffer.BarBuffer;
+import com.github.mikephil.charting.charts.BarLineChartBase;
+import com.github.mikephil.charting.components.IMarker;
 import com.github.mikephil.charting.data.BarData;
 import com.github.mikephil.charting.data.BarEntry;
+import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.interfaces.dataprovider.BarDataProvider;
 import com.github.mikephil.charting.interfaces.datasets.IBarDataSet;
 import com.github.mikephil.charting.renderer.BarChartRenderer;
+import com.github.mikephil.charting.utils.MPPointD;
+import com.github.mikephil.charting.utils.MPPointF;
 import com.github.mikephil.charting.utils.Transformer;
 import com.github.mikephil.charting.utils.Utils;
 import com.github.mikephil.charting.utils.ViewPortHandler;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 public class AtfleeBarChartRenderer extends BarChartRenderer {
+
+    // 수직선 방향 선택: true → 위쪽으로 그리기, false → 아래쪽으로
+    private static final boolean VERTICAL_TO_TOP = false;
 
     private RectF mBarShadowRectBuffer = new RectF();
     protected Float mRadius = 50.f;
+    private final Paint crossPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     public void setRadius(float radius) {
         mRadius = radius;
@@ -26,6 +40,82 @@ public class AtfleeBarChartRenderer extends BarChartRenderer {
 
     public AtfleeBarChartRenderer(BarDataProvider chart, ChartAnimator animator, ViewPortHandler viewPortHandler) {
         super(chart, animator, viewPortHandler);
+        crossPaint.setStyle(Paint.Style.STROKE);
+    }
+
+    @Override
+    public void drawHighlighted(Canvas c, Highlight[] indices) {
+        BarData data = mChart.getBarData();
+        for (Highlight h : indices) {
+            IBarDataSet raw = data.getDataSetByIndex(h.getDataSetIndex());
+            if (raw == null || !raw.isHighlightEnabled()) continue;
+
+            // 색상
+            crossPaint.setColor(raw.getHighLightColor());
+
+            // 굵기
+            float strokeDp = 1f;
+            try {
+                Method m = raw.getClass().getMethod("getHighlightLineWidth");
+                strokeDp = (Float) m.invoke(raw);
+            } catch (Exception ignored) { /* ≤3.0.x */ }
+            crossPaint.setStrokeWidth(Utils.convertDpToPixel(strokeDp));
+
+            // α(투명도)
+            int alpha = 255;
+            try {
+                Method mAlpha = raw.getClass().getMethod("getHighlightAlpha");
+                alpha = (Integer) mAlpha.invoke(raw);
+            } catch (Exception ignored) { /* fallback 255 */ }
+            crossPaint.setAlpha(alpha);
+
+            // dash
+            try {
+                Method mDash = raw.getClass().getMethod("getDashPathEffectHighlight");
+                PathEffect pe = (PathEffect) mDash.invoke(raw);
+                crossPaint.setPathEffect(pe);
+            } catch (Exception ignored) { crossPaint.setPathEffect(null); }
+
+            // 좌표 변환
+            Transformer t = mChart.getTransformer(raw.getAxisDependency());
+            MPPointD p = t.getPixelForValues(h.getX(), h.getY());
+
+            // ② markerTop 계산
+            float markerTop = (float) p.y;
+            if (mChart instanceof BarLineChartBase<?> chartBase) {
+              if (chartBase.isDrawMarkersEnabled()) {
+                    IMarker marker = chartBase.getMarker();
+                    if (marker != null) {
+                        MPPointF off = marker.getOffsetForDrawingAtPoint((float) p.x, (float) p.y);
+                        markerTop += off.y;                    // 보통 음수 → barTop보다 위
+                    }
+                }
+            }
+            // 차트 영역 밖이면 contentTop 으로 클램프
+            if (markerTop < mViewPortHandler.contentTop())
+                markerTop = mViewPortHandler.contentTop();
+
+            h.setDraw((float) p.x, (float) p.y);
+
+            float padPx = Utils.convertDpToPixel(10.0f);
+
+            // 수직선
+            float yStart, yEnd;
+            if (VERTICAL_TO_TOP) {          // 위쪽 절반
+                yStart = mViewPortHandler.contentTop();
+                yEnd   = markerTop + padPx;
+            } else {                        // 아래쪽 절반
+                yStart = markerTop + padPx;
+                yEnd   = mViewPortHandler.contentBottom();
+            }
+            c.drawLine((float) p.x, yStart, (float) p.x, yEnd, crossPaint);
+
+            // 수평선
+//            c.drawLine(mViewPortHandler.contentLeft(),  markerTop,
+//               mViewPortHandler.contentRight(), markerTop, crossPaint);
+
+            MPPointD.recycleInstance(p);
+        }
     }
 
     protected void drawDataSet(Canvas c, IBarDataSet dataSet, int index) {

@@ -3,6 +3,8 @@ import DGCharts
 
 class RoundedBarChartRenderer: BarChartRenderer {
     var radius: CGFloat
+    private let verticalToTop: Bool  = false     // true: ⬆︎→marker, false: marker→⬇︎
+    private let markerPadDp: CGFloat = 10.0      // 라인·마커 여백
 
     init(dataProvider: BarChartDataProvider, animator: Animator, viewPortHandler: ViewPortHandler, radius: CGFloat) {
 
@@ -12,6 +14,65 @@ class RoundedBarChartRenderer: BarChartRenderer {
 
     func setRadius(_ radius: CGFloat) {
         self.radius = radius
+    }
+
+    override func drawHighlighted(context: CGContext, indices: [Highlight]) {
+        // 0) 바 사각형 하이라이트가 필요하면 유지
+        super.drawHighlighted(context: context, indices: indices)
+
+        guard
+            let provider   = dataProvider,
+            let chartBase  = provider as? BarLineChartViewBase
+        else { return }
+
+        for hi in indices {
+            guard
+                let set = provider.barData?
+                        .dataSets[hi.dataSetIndex] as? BarChartDataSetProtocol,
+                set.isHighlightEnabled
+            else { continue }
+
+            // 1) 데이터점 → 픽셀 (막대 상단)
+            let trans = provider.getTransformer(forAxis: set.axisDependency)
+            let pt    = trans.pixelForValues(x: hi.x, y: hi.y)
+
+            // 2) 마커 Y(패드 포함)
+            var markerY = pt.y
+            if chartBase.drawMarkers, let marker = chartBase.marker {
+                let off   = marker.offsetForDrawing(atPoint: CGPoint(x: pt.x, y: pt.y))
+                let padPx = markerPadDp * UIScreen.main.scale
+                markerY  = pt.y + off.y + padPx         // off.y: 음수 → 위로; padPx: 미세 여백
+            }
+            if markerY < viewPortHandler.contentTop {   // 위로 튀는 것 방지
+                markerY = viewPortHandler.contentTop
+            }
+
+            // 3) 마커 렌더용 좌표 기록(필수)
+            hi.setDraw(x: pt.x, y: pt.y)
+
+            // 4) 펜 설정
+            context.saveGState()
+            context.setStrokeColor(set.highlightColor.cgColor)
+            context.setLineWidth(max(set.highlightLineWidth, 1))
+            if let dash = set.highlightLineDashLengths {
+                context.setLineDash(phase: 0, lengths: dash)
+            }
+            context.setAlpha(CGFloat(set.highlightAlpha) / 255.0)
+
+            // 5) 수직선 (절반)
+            let (yStart, yEnd) = verticalToTop
+                ? (viewPortHandler.contentTop, markerY)
+                : (markerY, viewPortHandler.contentBottom)
+            context.move(to: CGPoint(x: pt.x, y: yStart))
+            context.addLine(to: CGPoint(x: pt.x, y: yEnd))
+
+            // 6) 수평선 (마커 Y)
+            context.move(to: CGPoint(x: viewPortHandler.contentLeft,  y: markerY))
+            context.addLine(to: CGPoint(x: viewPortHandler.contentRight, y: markerY))
+
+            context.strokePath()
+            context.restoreGState()
+        }
     }
 
     override func drawDataSet(context: CGContext, dataSet: BarChartDataSetProtocol, index: Int) {
