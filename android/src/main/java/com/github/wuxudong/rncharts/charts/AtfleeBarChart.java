@@ -24,14 +24,14 @@ public class AtfleeBarChart extends BarChart {
         super.init();
 
         // 양쪽 drag padding 추가
-        mViewPortHandler.setDragOffsetX(35f);
+        mViewPortHandler.setDragOffsetX(30f);
 
         mRenderer = new AtfleeBarChartRenderer(this, mAnimator, mViewPortHandler);
 
         setHighlighter(new BarHighlighter(this));
 
-        getXAxis().setSpaceMin(0.5f);
-        getXAxis().setSpaceMax(0.5f);
+        getXAxis().setSpaceMin(1f);
+        getXAxis().setSpaceMax(1f);
     }
 
     public void setRadius(float radius) {
