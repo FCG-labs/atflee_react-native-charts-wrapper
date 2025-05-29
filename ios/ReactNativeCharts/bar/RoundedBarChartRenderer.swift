@@ -40,8 +40,8 @@ class RoundedBarChartRenderer: BarChartRenderer {
             var markerY = pt.y
             if chartBase.drawMarkers, let marker = chartBase.marker {
                 let off   = marker.offsetForDrawing(atPoint: CGPoint(x: pt.x, y: pt.y))
-                let padPx = markerPadDp * UIScreen.main.scale
-                markerY  = pt.y + off.y + padPx         // off.y: 음수 → 위로; padPx: 미세 여백
+                let pad   = markerPadDp                // ← 곱하기 **삭제**
+                markerY   = pt.y + off.y + pad         // off.y: 음수 → 위로
             }
             if markerY < viewPortHandler.contentTop {   // 위로 튀는 것 방지
                 markerY = viewPortHandler.contentTop
@@ -57,7 +57,7 @@ class RoundedBarChartRenderer: BarChartRenderer {
             if let dash = set.highlightLineDashLengths {
                 context.setLineDash(phase: 0, lengths: dash)
             }
-            context.setAlpha(CGFloat(set.highlightAlpha) / 255.0)
+            // context.setAlpha(CGFloat(set.highlightAlpha) / 255.0)
 
             // 5) 수직선 (절반)
             let (yStart, yEnd) = verticalToTop
@@ -67,8 +67,8 @@ class RoundedBarChartRenderer: BarChartRenderer {
             context.addLine(to: CGPoint(x: pt.x, y: yEnd))
 
             // 6) 수평선 (마커 Y)
-            context.move(to: CGPoint(x: viewPortHandler.contentLeft,  y: markerY))
-            context.addLine(to: CGPoint(x: viewPortHandler.contentRight, y: markerY))
+//            context.move(to: CGPoint(x: viewPortHandler.contentLeft,  y: markerY))
+//            context.addLine(to: CGPoint(x: viewPortHandler.contentRight, y: markerY))
 
             context.strokePath()
             context.restoreGState()
