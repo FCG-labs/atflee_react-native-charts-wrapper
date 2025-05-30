@@ -87,6 +87,9 @@ open class AtfleeMarker: MarkerView {
             if pt.y < 8 {
                 pt.y = 8
             }
+            if pt.y + height > chart.bounds.size.height {
+                pt.y = chart.bounds.size.height - height - 8
+            }
         }
         
         let bgRect = CGRect(origin: pt, size: _size)
@@ -258,6 +261,9 @@ open class AtfleeMarker: MarkerView {
                 pt.x = chart.bounds.size.width - _size.width - 8
             }
             if pt.y < 8 { pt.y = 8 }
+            if pt.y + _size.height > chart.bounds.size.height {
+                pt.y = chart.bounds.size.height - _size.height - 8
+            }
         }
 
         let offsetX = pt.x - point.x
