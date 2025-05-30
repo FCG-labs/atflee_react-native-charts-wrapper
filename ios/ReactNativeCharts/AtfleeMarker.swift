@@ -6,6 +6,14 @@ import Foundation
 import SwiftyJSON
 import DGCharts
 
+private extension String {
+    var containsEmoji: Bool {
+        return unicodeScalars.contains { $0.properties.isEmoji }
+    }
+}
+
+private let showAboveThreshold: CGFloat = 0.8
+
 open class AtfleeMarker: MarkerView {
 
     // ────────────── ★ ① Fade-in 애니메이션용 프로퍼티 ★ ──────────────
@@ -99,6 +107,29 @@ open class AtfleeMarker: MarkerView {
         context.restoreGState()
     }
 
+    private func adjustedMarkerPoint(for point: CGPoint, chartHeight: CGFloat) -> CGPoint {
+        let iconExists = imageEmotion != nil
+        let showAbove = point.y > chartHeight * showAboveThreshold
+
+        var markerPt = point
+        let markerHeight = _size.height
+
+        if showAbove {
+            if iconExists {
+                markerPt.y = markerHeight
+            } else {
+                markerPt.y = point.y - markerHeight * 0.8
+            }
+        } else {
+            if iconExists {
+                markerPt.y = point.y - markerHeight * 0.8
+            } else {
+                markerPt.y = point.y + markerHeight * 1.35
+            }
+        }
+        return markerPt
+    }
+
     // ────────────── ★ ② draw(context:point:) 최소 패치 ★ ──────────────
     open override func draw(context: CGContext, point: CGPoint) {
         context.saveGState()
@@ -117,27 +148,14 @@ open class AtfleeMarker: MarkerView {
         let alpha = progress
         let yRise = 20 * (1 - progress)
         let chartHeight = chartView?.bounds.height ?? 0
-        let showMarkerAbove = point.y > chartHeight * 0.35
 
-        var markerPt = point
-        let markerHeight = _size.height
+        let markerPt = adjustedMarkerPoint(for: point, chartHeight: chartHeight)
+        let showMarkerAbove = point.y > chartHeight * showAboveThreshold
 
         context.setAlpha(alpha)
         if showMarkerAbove {
-            // 기존: tick 위에 marker
-            if iconExists {
-                markerPt.y = markerHeight
-            } else {
-                markerPt.y = point.y - markerHeight * 0.8
-            }
             context.translateBy(x: 0, y: yRise)
         } else {
-            // 신규: tick 아래에 marker
-            if iconExists {
-                markerPt.y = point.y - markerHeight * 0.8
-            } else {
-                markerPt.y = point.y + markerHeight * 1.35
-            }
             context.translateBy(x: 0, y: -yRise)
         }
 
@@ -220,7 +238,34 @@ open class AtfleeMarker: MarkerView {
     }
     // ────────────────────────────────────────────────────────────────
 
-    // offsetForDrawing, drawCenterRect 등 원본 그대로 … (생략)
+    // draw() 에서 마커 위치를 직접 계산하기 때문에 기본 offset 로직과
+    // RoundedBarChartRenderer 의 하이라이트 라인이 맞지 않는 문제가 있었다.
+    // drawHighlighted 에서는 marker.offsetForDrawing(atPoint:) 의 값을 이용해
+    // 수직 라인의 시작점을 계산하므로, draw() 와 동일한 위치 계산을 여기서도
+    // 수행하여 일관된 오프셋을 돌려준다.
+    open override func offsetForDrawing(atPoint point: CGPoint) -> CGPoint {
+        let chartHeight = chartView?.bounds.height ?? 0
+        let markerPt = adjustedMarkerPoint(for: point, chartHeight: chartHeight)
+
+        var pt = CGPoint(
+            x: markerPt.x - _size.width / 2,
+            y: markerPt.y - _size.height - 10
+        )
+
+        if let chart = chartView {
+            if pt.x < 8 { pt.x = 8 }
+            if pt.x + _size.width > chart.bounds.size.width {
+                pt.x = chart.bounds.size.width - _size.width - 8
+            }
+            if pt.y < 8 { pt.y = 8 }
+        }
+
+        let offsetX = pt.x - point.x
+        let offsetY = pt.y - point.y
+        return CGPoint(x: offsetX, y: offsetY)
+    }
+
+    // drawCenterRect 등 원본 그대로 … (생략)
 
     // ────────────── ★ ③ refreshContent에 한 줄만 추가 ★ ──────────────
     open override func refreshContent(entry: ChartDataEntry, highlight: Highlight) {
@@ -312,7 +357,10 @@ open class AtfleeMarker: MarkerView {
         _drawAttributes[.font] = labelFont
 
         // 전체 크기
-        let labelSize = labelns?.size(withAttributes: _drawAttributes) ?? CGSize.zero
+        var labelSize = labelns?.size(withAttributes: _drawAttributes) ?? CGSize.zero
+        if let raw = labelns as String?, raw.containsEmoji {
+            labelSize.height = labelFont.lineHeight
+        }
         let maxWidth = max(titleSize.width, labelSize.width)
         let maxHeight = max(titleSize.height, labelSize.height)
         _labelSize = CGSize(width: maxWidth, height: maxHeight + 8) // 패딩줬기때문에 라벨 하단 짤려서 넣어줘야함
