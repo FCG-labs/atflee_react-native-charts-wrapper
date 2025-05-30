@@ -79,6 +79,9 @@ open class AtfleeMarker: MarkerView {
             if pt.y < 8 {
                 pt.y = 8
             }
+            if pt.y + height > chart.bounds.size.height {
+                pt.y = chart.bounds.size.height - height - 8
+            }
         }
         
         let bgRect = CGRect(origin: pt, size: _size)
@@ -220,7 +223,55 @@ open class AtfleeMarker: MarkerView {
     }
     // ────────────────────────────────────────────────────────────────
 
-    // offsetForDrawing, drawCenterRect 등 원본 그대로 … (생략)
+    // draw() 에서 마커 위치를 직접 계산하기 때문에 기본 offset 로직과
+    // RoundedBarChartRenderer 의 하이라이트 라인이 맞지 않는 문제가 있었다.
+    // drawHighlighted 에서는 marker.offsetForDrawing(atPoint:) 의 값을 이용해
+    // 수직 라인의 시작점을 계산하므로, draw() 와 동일한 위치 계산을 여기서도
+    // 수행하여 일관된 오프셋을 돌려준다.
+    open override func offsetForDrawing(atPoint point: CGPoint) -> CGPoint {
+        var markerPt = point
+        let markerHeight = _size.height
+        let chartHeight = chartView?.bounds.height ?? 0
+        let iconExists = imageEmotion != nil
+
+        let showMarkerAbove = point.y > chartHeight * 0.35
+
+        if showMarkerAbove {
+            if iconExists {
+                markerPt.y = markerHeight
+            } else {
+                markerPt.y = point.y - markerHeight * 0.8
+            }
+        } else {
+            if iconExists {
+                markerPt.y = point.y - markerHeight * 0.8
+            } else {
+                markerPt.y = point.y + markerHeight * 1.35
+            }
+        }
+
+        var pt = CGPoint(
+            x: markerPt.x - _size.width / 2,
+            y: markerPt.y - _size.height - 10
+        )
+
+        if let chart = chartView {
+            if pt.x < 8 { pt.x = 8 }
+            if pt.x + _size.width > chart.bounds.size.width {
+                pt.x = chart.bounds.size.width - _size.width - 8
+            }
+            if pt.y < 8 { pt.y = 8 }
+            if pt.y + _size.height > chart.bounds.size.height {
+                pt.y = chart.bounds.size.height - _size.height - 8
+            }
+        }
+
+        let offsetX = pt.x - point.x
+        let offsetY = pt.y - point.y
+        return CGPoint(x: offsetX, y: offsetY)
+    }
+
+    // drawCenterRect 등 원본 그대로 … (생략)
 
     // ────────────── ★ ③ refreshContent에 한 줄만 추가 ★ ──────────────
     open override func refreshContent(entry: ChartDataEntry, highlight: Highlight) {
