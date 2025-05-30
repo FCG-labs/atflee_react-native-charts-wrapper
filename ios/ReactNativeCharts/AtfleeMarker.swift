@@ -67,49 +67,7 @@ open class AtfleeMarker: MarkerView {
     
     public required init?(coder aDecoder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    // ───────────────── drawRect / drawCenterRect 그대로 ─────────────────
-    func drawRect(context: CGContext, point: CGPoint) -> CGRect {
-        let width = _size.width
-        let height = _size.height
-        
-        // 포인트 위 중앙에 표시될 원래 pt
-        var pt = CGPoint(x: point.x - width/2,
-                         y: point.y - height - 10)
-        
-        // ② 엣지 보정: 좌/우/상 경계 안으로
-        if let chart = chartView {
-            if pt.x < 8 {
-                pt.x = 8
-            }
-            if pt.x + width > chart.bounds.size.width {
-                pt.x = chart.bounds.size.width - width - 8
-            }
-            if pt.y < 8 {
-                pt.y = 8
-            }
-            if pt.y + height > chart.bounds.size.height {
-                pt.y = chart.bounds.size.height - height - 8
-            }
-        }
-        
-        let bgRect = CGRect(origin: pt, size: _size)
-        drawCenterRect(context: context, rect: bgRect)
-        
-        // ③ 자식(draw) 로직은 bgRect 그대로 씁니다
-        return bgRect
-    }
-    func drawCenterRect(context: CGContext, rect: CGRect) {
-        context.saveGState()
-        let roundRect = UIBezierPath(roundedRect: rect, byRoundingCorners:.allCorners,
-                                     cornerRadii: CGSize(width: 8, height: 8))
-        context.setFillColor(UIColor.white.cgColor)
-        context.setShadow(offset: CGSize(width: 1.0, height: 4.0), blur: 7.5)
-//        context.setBlendMode(.multiply)
-        context.addPath(roundRect.cgPath)
-        context.fillPath()
-        context.restoreGState()
-    }
-
+    
     private func adjustedMarkerPoint(for point: CGPoint, chartHeight: CGFloat) -> CGPoint {
         let iconExists = imageEmotion != nil
         let showAbove = point.y > chartHeight * showAboveThreshold
@@ -132,6 +90,95 @@ open class AtfleeMarker: MarkerView {
         }
         return markerPt
     }
+    
+    // draw() 에서 마커 위치를 직접 계산하기 때문에 기본 offset 로직과
+    // RoundedBarChartRenderer 의 하이라이트 라인이 맞지 않는 문제가 있었다.
+    // drawHighlighted 에서는 marker.offsetForDrawing(atPoint:) 의 값을 이용해
+    // 수직 라인의 시작점을 계산하므로, draw() 와 동일한 위치 계산을 여기서도
+    // 수행하여 일관된 오프셋을 돌려준다.
+    open override func offsetForDrawing(atPoint point: CGPoint) -> CGPoint {
+        var markerPt = point
+        let markerHeight = _size.height
+        let chartHeight = chartView?.bounds.height ?? 0
+        let iconExists = imageEmotion != nil
+
+        let showMarkerAbove = point.y > chartHeight * 0.35
+
+        if showMarkerAbove {
+            if iconExists {
+                markerPt.y = markerHeight
+            } else {
+                markerPt.y = point.y - markerHeight * 0.8
+            }
+        } else {
+            if iconExists {
+                markerPt.y = point.y - markerHeight * 0.8
+            } else {
+                markerPt.y = point.y + markerHeight * 1.35
+            }
+        }
+
+        var pt = CGPoint(
+            x: markerPt.x - _size.width / 2,
+            y: markerPt.y - _size.height - 10
+        )
+
+        if let chart = chartView {
+            if pt.x < 8 { pt.x = 8 }
+            if pt.x + _size.width > chart.bounds.size.width {
+                pt.x = chart.bounds.size.width - _size.width - 8
+            }
+            if pt.y < 8 { pt.y = 8 }
+        }
+
+        let offsetX = pt.x - point.x
+        let offsetY = pt.y - point.y
+        return CGPoint(x: offsetX, y: offsetY)
+    }
+
+    
+    // ───────────────── drawRect / drawCenterRect 그대로 ─────────────────
+    func drawRect(context: CGContext, point: CGPoint) -> CGRect {
+        let width = _size.width
+        let height = _size.height
+        
+        // 포인트 위 중앙에 표시될 원래 pt
+        var pt = CGPoint(x: point.x - width/2,
+                         y: point.y - height - 10)
+        
+        // ② 엣지 보정: 좌/우/상 경계 안으로
+        if let chart = chartView {
+            if pt.x < 8 {
+                pt.x = 8
+            }
+            if pt.x + width > chart.bounds.size.width {
+                pt.x = chart.bounds.size.width - width - 8
+            }
+            if pt.y < 8 {
+                pt.y = 8
+            }
+            if pt.y + height > chart.bounds.size.height {
+                pt.y = chart.bounds.size.height - height
+            }
+        }
+        
+        let bgRect = CGRect(origin: pt, size: _size)
+        drawCenterRect(context: context, rect: bgRect)
+        
+        // ③ 자식(draw) 로직은 bgRect 그대로 씁니다
+        return bgRect
+    }
+    func drawCenterRect(context: CGContext, rect: CGRect) {
+        context.saveGState()
+        let roundRect = UIBezierPath(roundedRect: rect, byRoundingCorners:.allCorners,
+                                     cornerRadii: CGSize(width: 8, height: 8))
+        context.setFillColor(UIColor.white.cgColor)
+        context.setShadow(offset: CGSize(width: 1.0, height: 4.0), blur: 7.5)
+//        context.setBlendMode(.multiply)
+        context.addPath(roundRect.cgPath)
+        context.fillPath()
+        context.restoreGState()
+    }
 
     // ────────────── ★ ② draw(context:point:) 최소 패치 ★ ──────────────
     open override func draw(context: CGContext, point: CGPoint) {
@@ -151,14 +198,12 @@ open class AtfleeMarker: MarkerView {
         let alpha = progress
         let yRise = 20 * (1 - progress)
         let chartHeight = chartView?.bounds.height ?? 0
-
+        
         let markerPt = adjustedMarkerPoint(for: point, chartHeight: chartHeight)
         let showMarkerAbove = point.y > chartHeight * showAboveThreshold
 
         context.setAlpha(alpha)
         if showMarkerAbove {
-            context.translateBy(x: 0, y: yRise)
-        } else {
             context.translateBy(x: 0, y: -yRise)
         }
 
@@ -196,35 +241,24 @@ open class AtfleeMarker: MarkerView {
 
         // labelns
         if labelSize.width > 0 {
-            if iconExists {
-                
-                let labelRect = CGRect(x: currX, y:  labelTitle?.size(withAttributes: _drawTitleAttributes).height ?? paddedRect.midY - labelSize.height/2, width: labelSize.width, height: labelSize.height)
-                labelns?.draw(in: labelRect, withAttributes: _drawAttributes)
-            } else {
-                let labelRect = CGRect(x: currX, y: baseY, width: labelSize.width, height: labelSize.height)
-                labelns?.draw(in: labelRect, withAttributes: _drawAttributes)
-            }
-            
+            let labelRect = CGRect(x: currX, y: baseY, width: labelSize.width, height: labelSize.height)
+            labelns?.draw(in: labelRect, withAttributes: _drawAttributes)
             currX += labelSize.width + itemSpacing
         }
 
         // imageEmotion
         if let img = imageEmotion {
-            let iconRect = CGRect(x: currX, y: paddedRect.maxY - imageSize*2, width: iconSize, height: iconSize)
+            let iconY = baseY + (labelSize.height - iconSize)
+            let iconRect = CGRect(x: currX, y: iconY, width: iconSize, height: iconSize)
             img.draw(in: iconRect)
             currX += iconSize + itemSpacing
         }
 
         // arrowImage (항상 표시)
         if let img = arrowImage {
-            if iconExists {
-                let arrowRect = CGRect(x: currX, y: paddedRect.maxY - arrowSize*2, width: arrowSize, height: arrowSize)
-                img.draw(in: arrowRect)
-            } else {
-                let arrowRect = CGRect(x: currX, y: paddedRect.maxY - arrowSize, width: arrowSize, height: arrowSize)
-                img.draw(in: arrowRect)
-            }
-            
+            let arrowY = baseY + (labelSize.height - arrowSize) / 2
+            let arrowRect = CGRect(x: currX, y: arrowY, width: arrowSize, height: arrowSize)
+            img.draw(in: arrowRect)
         }
 
         // 타이틀(기존 방식 그대로)
@@ -241,37 +275,7 @@ open class AtfleeMarker: MarkerView {
     }
     // ────────────────────────────────────────────────────────────────
 
-    // draw() 에서 마커 위치를 직접 계산하기 때문에 기본 offset 로직과
-    // RoundedBarChartRenderer 의 하이라이트 라인이 맞지 않는 문제가 있었다.
-    // drawHighlighted 에서는 marker.offsetForDrawing(atPoint:) 의 값을 이용해
-    // 수직 라인의 시작점을 계산하므로, draw() 와 동일한 위치 계산을 여기서도
-    // 수행하여 일관된 오프셋을 돌려준다.
-    open override func offsetForDrawing(atPoint point: CGPoint) -> CGPoint {
-        let chartHeight = chartView?.bounds.height ?? 0
-        let markerPt = adjustedMarkerPoint(for: point, chartHeight: chartHeight)
-
-        var pt = CGPoint(
-            x: markerPt.x - _size.width / 2,
-            y: markerPt.y - _size.height - 10
-        )
-
-        if let chart = chartView {
-            if pt.x < 8 { pt.x = 8 }
-            if pt.x + _size.width > chart.bounds.size.width {
-                pt.x = chart.bounds.size.width - _size.width - 8
-            }
-            if pt.y < 8 { pt.y = 8 }
-            if pt.y + _size.height > chart.bounds.size.height {
-                pt.y = chart.bounds.size.height - _size.height - 8
-            }
-        }
-
-        let offsetX = pt.x - point.x
-        let offsetY = pt.y - point.y
-        return CGPoint(x: offsetX, y: offsetY)
-    }
-
-    // drawCenterRect 등 원본 그대로 … (생략)
+    // offsetForDrawing, drawCenterRect 등 원본 그대로 … (생략)
 
     // ────────────── ★ ③ refreshContent에 한 줄만 추가 ★ ──────────────
     open override func refreshContent(entry: ChartDataEntry, highlight: Highlight) {
