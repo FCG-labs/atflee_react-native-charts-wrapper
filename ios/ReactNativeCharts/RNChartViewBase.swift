@@ -52,8 +52,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         super.reactSetFrame(frame);
 
         let chartFrame = CGRect(x: 0, y: 0, width: frame.width, height: frame.height)
-        chart.setExtraOffsets(left: 30, top: 5, right: 5, bottom: 5)
-        chart.viewPortHandler.setDragOffsetX(30)
+        chart.setExtraOffsets(left: 25, top: 5, right: 5, bottom: 5)
+        chart.viewPortHandler.setDragOffsetX(25)
         chart.reactSetFrame(chartFrame)
     }
 
