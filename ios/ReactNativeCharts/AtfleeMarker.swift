@@ -12,7 +12,7 @@ private extension String {
     }
 }
 
-private let showAboveThreshold: CGFloat = 0.8
+private let showAboveThreshold: CGFloat = 0.2
 
 open class AtfleeMarker: MarkerView {
 
@@ -102,7 +102,7 @@ open class AtfleeMarker: MarkerView {
         let chartHeight = chartView?.bounds.height ?? 0
         let iconExists = imageEmotion != nil
 
-        let showMarkerAbove = point.y > chartHeight * 0.35
+        let showMarkerAbove = point.y > chartHeight * showAboveThreshold
 
         if showMarkerAbove {
             if iconExists {
@@ -391,7 +391,6 @@ open class AtfleeMarker: MarkerView {
 
         if label.isEmpty {
             imageEmotion = nil
-            _size.height -= imageSize
             
             if let _ = arrowImage {
                 let arrowSize: CGFloat = 20   // draw에서 쓴 arrowSize와 맞춰야함
@@ -412,7 +411,6 @@ open class AtfleeMarker: MarkerView {
                 imageEmotion = UIImage(named: "emotion5")
             default:
                 imageEmotion = nil
-                _size.height -= imageSize
             }
 
             if imageEmotion != nil {
