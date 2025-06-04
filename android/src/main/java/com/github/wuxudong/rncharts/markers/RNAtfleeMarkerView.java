@@ -39,6 +39,7 @@ public class RNAtfleeMarkerView extends MarkerView {
     private View overlayButton = null;
 
     private boolean arrowHidden = false;
+    private boolean fixedOnTop = false;
 
     private static final int OVERLAY_TAG = 999;
 
@@ -221,7 +222,7 @@ public class RNAtfleeMarkerView extends MarkerView {
     @Override
     public MPPointF getOffsetForDrawingAtPoint(float posX, float posY) {
         float chartHeight = getChartView() != null ? getChartView().getHeight() : 0f;
-        boolean showAbove = posY > chartHeight * 0.35f;
+        boolean showAbove = fixedOnTop ? true : posY > chartHeight * 0.35f;
 
         float width = getWidth();
         float chartWidth = getChartView().getWidth();
@@ -229,7 +230,9 @@ public class RNAtfleeMarkerView extends MarkerView {
         float offsetY;
 
 
-        if (showAbove) {
+        if (fixedOnTop) {
+            offsetY = 8f - posY;
+        } else if (showAbove) {
             offsetY = -getHeight();
         } else {
             offsetY = 0f;
@@ -331,6 +334,10 @@ public class RNAtfleeMarkerView extends MarkerView {
         if (image_arrow != null) {
             image_arrow.setVisibility(hidden ? View.GONE : View.VISIBLE);
         }
+    }
+
+    public void setFixedOnTop(boolean fixed) {
+        this.fixedOnTop = fixed;
     }
 
 }
