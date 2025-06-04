@@ -35,6 +35,8 @@ open class AtfleeMarker: MarkerView {
     open var minimumSize = CGSize(width: 10, height: 10)
     /// arrow 표시 여부
     open var arrowHidden: Bool = false
+    /// y 위치를 무시하고 화면 상단에 고정할지 여부
+    open var fixedOnTop: Bool = false
 
     
     fileprivate var insets = UIEdgeInsets(top: 8.0,left: 8.0,bottom: 20.0,right: 8.0)
@@ -70,12 +72,14 @@ open class AtfleeMarker: MarkerView {
     
     private func adjustedMarkerPoint(for point: CGPoint, chartHeight: CGFloat) -> CGPoint {
         let iconExists = imageEmotion != nil
-        let showAbove = point.y > chartHeight * showAboveThreshold
+        let showAbove = fixedOnTop ? true : point.y > chartHeight * showAboveThreshold
 
         var markerPt = point
         let markerHeight = _size.height
 
-        if showAbove {
+        if fixedOnTop {
+            markerPt.y = markerHeight
+        } else if showAbove {
             if iconExists {
                 markerPt.y = markerHeight
             } else {
@@ -102,9 +106,11 @@ open class AtfleeMarker: MarkerView {
         let chartHeight = chartView?.bounds.height ?? 0
         let iconExists = imageEmotion != nil
 
-        let showMarkerAbove = point.y > chartHeight * showAboveThreshold
+        let showMarkerAbove = fixedOnTop ? true : point.y > chartHeight * showAboveThreshold
 
-        if showMarkerAbove {
+        if fixedOnTop {
+            markerPt.y = markerHeight
+        } else if showMarkerAbove {
             if iconExists {
                 markerPt.y = markerHeight
             } else {
@@ -200,7 +206,7 @@ open class AtfleeMarker: MarkerView {
         let chartHeight = chartView?.bounds.height ?? 0
         
         let markerPt = adjustedMarkerPoint(for: point, chartHeight: chartHeight)
-        let showMarkerAbove = point.y > chartHeight * showAboveThreshold
+        let showMarkerAbove = fixedOnTop ? true : point.y > chartHeight * showAboveThreshold
 
         context.setAlpha(alpha)
         if showMarkerAbove {

@@ -514,6 +514,9 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             if json["arrowHidden"].bool != nil {
                 marker.arrowHidden = json["arrowHidden"].boolValue
             }
+            if json["fixedOnTop"].bool != nil {
+                marker.fixedOnTop = json["fixedOnTop"].boolValue
+            }
 
             chart.marker = marker
             marker.chartView = chart

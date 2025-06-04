@@ -372,6 +372,9 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
         if (BridgeUtils.validate(propMap, ReadableType.Boolean, "arrowHidden")) {
             marker.setArrowHidden(propMap.getBoolean("arrowHidden"));
         }
+        if (BridgeUtils.validate(propMap, ReadableType.Boolean, "fixedOnTop")) {
+            marker.setFixedOnTop(propMap.getBoolean("fixedOnTop"));
+        }
 
         if (BridgeUtils.validate(propMap, ReadableType.String, "textAlign")) {
 
