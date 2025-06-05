@@ -653,8 +653,9 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         chart.notifyDataSetChanged()
         onAfterDataSetChanged()
 
-        if !hasSentLoadComplete {
-            DispatchQueue.main.async {
+        if !hasSentLoadComplete && bounds.width > 0 && bounds.height > 0 {
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
                 self.sendEvent("chartLoadComplete")
                 self.hasSentLoadComplete = true
             }
