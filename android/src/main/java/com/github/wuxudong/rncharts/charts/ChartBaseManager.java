@@ -9,9 +9,13 @@ import android.view.View;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.ReadableType;
+import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.uimanager.SimpleViewManager;
 import com.facebook.react.uimanager.annotations.ReactProp;
 import com.facebook.react.common.MapBuilder;
+import com.facebook.react.uimanager.events.RCTEventEmitter;
 import javax.annotation.Nullable;
 import com.github.mikephil.charting.animation.Easing;
 import com.github.mikephil.charting.charts.Chart;
@@ -21,6 +25,10 @@ import com.github.mikephil.charting.components.Legend;
 import com.github.mikephil.charting.components.Legend.LegendForm;
 import com.github.mikephil.charting.components.LegendEntry;
 import com.github.mikephil.charting.components.LimitLine;
+import com.github.mikephil.charting.charts.BarLineChartBase;
+import com.github.mikephil.charting.components.YAxis;
+import com.github.mikephil.charting.utils.MPPointD;
+import com.github.mikephil.charting.utils.ViewPortHandler;
 import com.github.mikephil.charting.components.MarkerView;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.XAxis.XAxisPosition;
@@ -54,6 +62,38 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
     protected static final int HIGHLIGHTS = 8;
 
     protected static final int SET_DATA_AND_LOCK_INDEX = 9;
+
+    private static java.util.WeakHashMap<Chart, Boolean> loadCompleteMap = new java.util.WeakHashMap<>();
+
+    private void sendLoadCompleteEvent(T chart) {
+        WritableMap event = Arguments.createMap();
+        event.putString("action", "chartLoadComplete");
+
+        if (chart instanceof BarLineChartBase) {
+            BarLineChartBase barLineChart = (BarLineChartBase) chart;
+            ViewPortHandler handler = chart.getViewPortHandler();
+            event.putDouble("scaleX", chart.getScaleX());
+            event.putDouble("scaleY", chart.getScaleY());
+
+            if (handler != null) {
+                MPPointD center = barLineChart.getValuesByTouchPoint(handler.getContentCenter().getX(), handler.getContentCenter().getY(), YAxis.AxisDependency.LEFT);
+                event.putDouble("centerX", center.x);
+                event.putDouble("centerY", center.y);
+
+                MPPointD leftBottom = barLineChart.getValuesByTouchPoint(handler.contentLeft(), handler.contentBottom(), YAxis.AxisDependency.LEFT);
+                MPPointD rightTop = barLineChart.getValuesByTouchPoint(handler.contentRight(), handler.contentTop(), YAxis.AxisDependency.LEFT);
+
+                event.putDouble("left", leftBottom.x);
+                event.putDouble("bottom", leftBottom.y);
+                event.putDouble("right", rightTop.x);
+                event.putDouble("top", rightTop.y);
+            }
+        }
+
+        ReactContext reactContext = (ReactContext) chart.getContext();
+        reactContext.getJSModule(RCTEventEmitter.class)
+                .receiveEvent(chart.getId(), "topChange", event);
+    }
 
     abstract DataExtract getDataExtract();
 
@@ -697,6 +737,16 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
         chart.notifyDataSetChanged();
         onAfterDataSetChanged(chart);
         chart.postInvalidate();;
+        Boolean sent = loadCompleteMap.get(chart);
+        if (sent == null || !sent) {
+            chart.post(new Runnable() {
+                @Override
+                public void run() {
+                    sendLoadCompleteEvent(chart);
+                }
+            });
+            loadCompleteMap.put(chart, true);
+        }
     }
 
     @Nullable
