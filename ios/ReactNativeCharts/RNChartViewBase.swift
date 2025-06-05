@@ -642,8 +642,10 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         onAfterDataSetChanged()
 
         if !hasSentLoadComplete {
-            sendEvent("chartLoadComplete")
-            hasSentLoadComplete = true
+            DispatchQueue.main.async {
+                self.sendEvent("chartLoadComplete")
+                self.hasSentLoadComplete = true
+            }
         }
 
         if self.group != nil && self.identifier != nil && chart is BarLineChartViewBase {

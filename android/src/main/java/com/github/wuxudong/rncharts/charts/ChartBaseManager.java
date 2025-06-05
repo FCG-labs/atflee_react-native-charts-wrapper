@@ -739,8 +739,13 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
         chart.postInvalidate();;
         Boolean sent = loadCompleteMap.get(chart);
         if (sent == null || !sent) {
+            chart.post(new Runnable() {
+                @Override
+                public void run() {
+                    sendLoadCompleteEvent(chart);
+                }
+            });
             sendLoadCompleteEvent(chart);
-            loadCompleteMap.put(chart, true);
         }
     }
 
