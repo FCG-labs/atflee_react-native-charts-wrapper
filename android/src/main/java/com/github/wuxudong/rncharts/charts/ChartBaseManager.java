@@ -736,16 +736,26 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
         super.onAfterUpdateTransaction(chart);
         chart.notifyDataSetChanged();
         onAfterDataSetChanged(chart);
-        chart.postInvalidate();;
+        chart.postInvalidate();
         Boolean sent = loadCompleteMap.get(chart);
         if (sent == null || !sent) {
             chart.post(new Runnable() {
                 @Override
                 public void run() {
-                    sendLoadCompleteEvent(chart);
+                    if (chart.getWidth() == 0 || chart.getHeight() == 0) {
+                        chart.getViewTreeObserver().addOnGlobalLayoutListener(new android.view.ViewTreeObserver.OnGlobalLayoutListener() {
+                            @Override
+                            public void onGlobalLayout() {
+                                chart.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                                sendLoadCompleteEvent(chart);
+                            }
+                        });
+                    } else {
+                        sendLoadCompleteEvent(chart);
+                    }
                 }
             });
-            sendLoadCompleteEvent(chart);
+            loadCompleteMap.put(chart, true);
         }
     }
 
