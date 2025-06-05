@@ -745,7 +745,7 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
                     sendLoadCompleteEvent(chart);
                 }
             });
-            loadCompleteMap.put(chart, true);
+            sendLoadCompleteEvent(chart);
         }
     }
 
