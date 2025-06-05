@@ -515,3 +515,16 @@ type combinedData {
   bubbleData: bubbleData
 }
 ```
+
+## Callbacks
+
+```jsx
+const handleChange = e => {
+  if (e.nativeEvent.action === 'chartLoadComplete') {
+    // chart is ready, e.nativeEvent.scaleX etc. are valid
+  }
+};
+<LineChart onChange={handleChange} ... />
+```
+
+Payload fields: `scaleX`, `scaleY`, `centerX`, `centerY`, `left`, `right`, `top`, `bottom`.

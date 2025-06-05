@@ -195,8 +195,18 @@ Triggered for various supported events on each platform. Due to the different na
 | `chartFling`        | When a chart recieves a fling gesture. | ❌ | ✅ |
 | `doubleTapped`      | When a chart is double tapped | ❌ | ✅ |
 
-
 check Example->MultipleChart for details.
+
+```jsx
+const handleChange = e => {
+  if (e.nativeEvent.action === 'chartLoadComplete') {
+    // chart is ready, e.nativeEvent.scaleX etc. are valid
+  }
+};
+<LineChart onChange={handleChange} ... />
+```
+
+Payload fields: `scaleX`, `scaleY`, `centerX`, `centerY`, `left`, `right`, `top`, `bottom`.
 
 ## Direct Function Call
 
