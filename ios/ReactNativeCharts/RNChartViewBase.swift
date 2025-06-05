@@ -47,6 +47,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
     private  var syncY = false
 
+    private var hasSentLoadComplete = false
+
     override open func reactSetFrame(_ frame: CGRect)
     {
         super.reactSetFrame(frame);
@@ -638,6 +640,11 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         super.didSetProps(changedProps)
         chart.notifyDataSetChanged()
         onAfterDataSetChanged()
+
+        if !hasSentLoadComplete {
+            sendEvent("chartLoadComplete")
+            hasSentLoadComplete = true
+        }
 
         if self.group != nil && self.identifier != nil && chart is BarLineChartViewBase {
             ChartGroupHolder.addChart(group: self.group!, identifier: self.identifier!, chart: chart as! BarLineChartViewBase, syncX: syncX, syncY: syncY);
