@@ -54,7 +54,6 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
         if !hasSentLoadComplete && bounds.width > 0 && bounds.height > 0 {
             DispatchQueue.main.async {
-                CATransaction.flush()
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self else { return }
                     self.sendEvent("chartLoadComplete")
