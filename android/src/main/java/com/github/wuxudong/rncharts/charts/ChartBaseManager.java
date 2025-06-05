@@ -5,6 +5,7 @@ import android.os.Build;
 import android.graphics.Typeface;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewTreeObserver;
 
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
@@ -712,11 +713,7 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
                             v.getParent().requestDisallowInterceptTouchEvent(false);
                             break;
                         }
-                        case MotionEvent.ACTION_DOWN: {
-                            v.getParent().requestDisallowInterceptTouchEvent(true);
-                            break;
-                        }
-                        case MotionEvent.ACTION_MOVE: {
+                        case MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE: {
                             v.getParent().requestDisallowInterceptTouchEvent(true);
                             break;
                         }
