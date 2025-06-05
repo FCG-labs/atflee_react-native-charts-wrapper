@@ -102,8 +102,8 @@ Example of how charts are used and how to apply configuration can be found in ex
 
 Bar-based charts accept a `barRadius` prop that rounds the corners of the bars.
 When the value is greater than `0`, the chart switches to a rounded bar
-renderer. The radius value is specified in **pixels** and currently only
-affects Android unless you provide an iOS implementation.
+renderer. The radius value is specified in **pixels** and works on both
+Android and iOS.
 
 ```jsx
 <BarChart
