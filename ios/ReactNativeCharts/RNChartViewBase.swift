@@ -615,23 +615,27 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
                 let minX = barLineChart.chartXMin
                 let maxX = barLineChart.chartXMax
+                let dragOffset = handler.dragOffsetX
+
+                let allowedMin = minX - Double(dragOffset)
+                let allowedMax = maxX + Double(dragOffset)
 
                 let originalWidth = rightTop.x - leftBottom.x
                 var leftValue = leftBottom.x
                 var rightValue = rightTop.x
 
-                if leftValue < minX {
-                    leftValue = minX
+                if leftValue < allowedMin {
+                    leftValue = allowedMin
                     rightValue = leftValue + originalWidth
                 }
 
-                if rightValue > maxX {
-                    rightValue = maxX
+                if rightValue > allowedMax {
+                    rightValue = allowedMax
                     leftValue = rightValue - originalWidth
                 }
 
-                if leftValue < minX { leftValue = minX }
-                if rightValue > maxX { rightValue = maxX }
+                if leftValue < allowedMin { leftValue = allowedMin }
+                if rightValue > allowedMax { rightValue = allowedMax }
 
                 dict["left"] = leftValue
                 dict["bottom"] = leftBottom.y
