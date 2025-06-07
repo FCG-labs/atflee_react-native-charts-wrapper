@@ -611,12 +611,35 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 dict["centerY"] = center.y
 
                 let leftBottom = barLineChart.valueForTouchPoint(point: CGPoint(x: handler.contentLeft, y: handler.contentBottom), axis: YAxis.AxisDependency.left)
-
                 let rightTop = barLineChart.valueForTouchPoint(point: CGPoint(x: handler.contentRight, y: handler.contentTop), axis: YAxis.AxisDependency.left)
 
-                dict["left"] = leftBottom.x
+                let minX = barLineChart.chartXMin
+                let maxX = barLineChart.chartXMax
+                let dragOffset = handler.dragOffsetX
+
+                let allowedMin = minX - Double(dragOffset)
+                let allowedMax = maxX + Double(dragOffset)
+
+                let originalWidth = rightTop.x - leftBottom.x
+                var leftValue = leftBottom.x
+                var rightValue = rightTop.x
+
+                if leftValue < allowedMin {
+                    leftValue = allowedMin
+                    rightValue = leftValue + originalWidth
+                }
+
+                if rightValue > allowedMax {
+                    rightValue = allowedMax
+                    leftValue = rightValue - originalWidth
+                }
+
+                if leftValue < allowedMin { leftValue = allowedMin }
+                if rightValue > allowedMax { rightValue = allowedMax }
+
+                dict["left"] = leftValue
                 dict["bottom"] = leftBottom.y
-                dict["right"] = rightTop.x
+                dict["right"] = rightValue
                 dict["top"] = rightTop.y
 
                 if self.group != nil && self.identifier != nil {

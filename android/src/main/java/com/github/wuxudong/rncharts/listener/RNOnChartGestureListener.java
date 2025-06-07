@@ -122,12 +122,42 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
             event.putDouble("centerX", center.x);
             event.putDouble("centerY", center.y);
 
-            MPPointD leftBottom = ((BarLineChartBase) chart).getValuesByTouchPoint(viewPortHandler.contentLeft(), viewPortHandler.contentBottom(), YAxis.AxisDependency.LEFT);
-            MPPointD rightTop = ((BarLineChartBase) chart).getValuesByTouchPoint(viewPortHandler.contentRight(), viewPortHandler.contentTop(), YAxis.AxisDependency.LEFT);
+            MPPointD leftBottom = ((BarLineChartBase) chart).getValuesByTouchPoint(
+                    viewPortHandler.contentLeft(),
+                    viewPortHandler.contentBottom(),
+                    YAxis.AxisDependency.LEFT);
+            MPPointD rightTop = ((BarLineChartBase) chart).getValuesByTouchPoint(
+                    viewPortHandler.contentRight(),
+                    viewPortHandler.contentTop(),
+                    YAxis.AxisDependency.LEFT);
 
-            event.putDouble("left", leftBottom.x);
+            float minX = chart.getData() != null ? chart.getData().getXMin() : Float.MIN_VALUE;
+            float maxX = chart.getData() != null ? chart.getData().getXMax() : Float.MAX_VALUE;
+            float dragOffset = viewPortHandler.getDragOffsetX();
+
+            double allowedMin = minX - dragOffset;
+            double allowedMax = maxX + dragOffset;
+
+            double originalWidth = rightTop.x - leftBottom.x;
+            double leftValue = leftBottom.x;
+            double rightValue = rightTop.x;
+
+            if (leftValue < allowedMin) {
+                leftValue = allowedMin;
+                rightValue = leftValue + originalWidth;
+            }
+
+            if (rightValue > allowedMax) {
+                rightValue = allowedMax;
+                leftValue = rightValue - originalWidth;
+            }
+
+            if (leftValue < allowedMin) leftValue = allowedMin;
+            if (rightValue > allowedMax) rightValue = allowedMax;
+
+            event.putDouble("left", leftValue);
             event.putDouble("bottom", leftBottom.y);
-            event.putDouble("right", rightTop.x);
+            event.putDouble("right", rightValue);
             event.putDouble("top", rightTop.y);
 
             if (group != null && identifier != null) {
