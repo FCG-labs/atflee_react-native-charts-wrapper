@@ -26,6 +26,9 @@ public class AtfleeBarChart extends BarChart {
         // 양쪽 drag padding 추가
         mViewPortHandler.setDragOffsetX(30f);
 
+        // Highlight should follow finger drag similar to iOS
+        setHighlightPerDragEnabled(true);
+
         mRenderer = new AtfleeBarChartRenderer(this, mAnimator, mViewPortHandler);
 
         setHighlighter(new BarHighlighter(this));

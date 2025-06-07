@@ -30,6 +30,9 @@ public class BarChartManager extends BarLineChartBaseManager<BarChart, BarEntry>
         );
         barChart.setXAxisRenderer(xRenderer);
 
+        // Enable marker dragging by default for consistency with iOS
+        barChart.setHighlightPerDragEnabled(true);
+
         return barChart;
     }
 

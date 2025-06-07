@@ -21,6 +21,8 @@ public class ScatterChartManager extends BarLineChartBaseManager<ScatterChart, E
         ScatterChart scatterChart = new ScatterChart(reactContext);
         scatterChart.setOnChartValueSelectedListener(new RNOnChartValueSelectedListener(scatterChart));
         scatterChart.setOnChartGestureListener(new RNOnChartGestureListener(scatterChart));
+        // Enable marker dragging by default for consistency with iOS
+        scatterChart.setHighlightPerDragEnabled(true);
         return scatterChart;
     }
 

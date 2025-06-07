@@ -30,7 +30,10 @@ public class LineChartManager extends BarLineChartBaseManager<LineChart, Entry> 
                 lineChart.getTransformer(YAxis.AxisDependency.LEFT)
         );
         lineChart.setXAxisRenderer(renderer);
-        
+
+        // Enable marker dragging by default for consistency with iOS
+        lineChart.setHighlightPerDragEnabled(true);
+
         return lineChart;
     }
 
