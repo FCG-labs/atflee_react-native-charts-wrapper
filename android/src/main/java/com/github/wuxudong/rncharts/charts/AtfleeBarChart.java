@@ -24,7 +24,7 @@ public class AtfleeBarChart extends BarChart {
         super.init();
 
         // 양쪽 drag padding 추가
-        mViewPortHandler.setDragOffsetX(30f);
+        // mViewPortHandler.setDragOffsetX(30f);
 
         // Highlight should follow finger drag similar to iOS
         setHighlightPerDragEnabled(true);
@@ -33,8 +33,8 @@ public class AtfleeBarChart extends BarChart {
 
         setHighlighter(new BarHighlighter(this));
 
-        getXAxis().setSpaceMin(0.25f);
-        getXAxis().setSpaceMax(0.25f);
+        getXAxis().setSpaceMin(0.75f);
+        getXAxis().setSpaceMax(0.75f);
     }
 
     public void setRadius(float radius) {

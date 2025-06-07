@@ -38,7 +38,9 @@ public class AtfleeCombinedChart extends CombinedChart {
         setHighlightPerDragEnabled(true);
 
         // 양쪽 drag padding 추가
-        mViewPortHandler.setDragOffsetX(35f);
+        // mViewPortHandler.setDragOffsetX(35f);
+        getXAxis().setSpaceMin(0.75f);
+        getXAxis().setSpaceMax(0.75f);
 
         mRenderer = new AtfleeCombinedChartRenderer(this, mAnimator, mViewPortHandler);
     }
