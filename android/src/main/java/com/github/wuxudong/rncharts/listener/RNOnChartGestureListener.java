@@ -122,18 +122,33 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
             event.putDouble("centerX", center.x);
             event.putDouble("centerY", center.y);
 
-            MPPointD leftBottom = ((BarLineChartBase) chart).getValuesByTouchPoint(viewPortHandler.contentLeft(), viewPortHandler.contentBottom(), YAxis.AxisDependency.LEFT);
-            MPPointD rightTop = ((BarLineChartBase) chart).getValuesByTouchPoint(viewPortHandler.contentRight(), viewPortHandler.contentTop(), YAxis.AxisDependency.LEFT);
+            MPPointD leftBottom = ((BarLineChartBase) chart).getValuesByTouchPoint(
+                    viewPortHandler.contentLeft(),
+                    viewPortHandler.contentBottom(),
+                    YAxis.AxisDependency.LEFT);
+            MPPointD rightTop = ((BarLineChartBase) chart).getValuesByTouchPoint(
+                    viewPortHandler.contentRight(),
+                    viewPortHandler.contentTop(),
+                    YAxis.AxisDependency.LEFT);
 
             float minX = chart.getData() != null ? chart.getData().getXMin() : Float.MIN_VALUE;
             float maxX = chart.getData() != null ? chart.getData().getXMax() : Float.MAX_VALUE;
 
+            double originalWidth = rightTop.x - leftBottom.x;
             double leftValue = leftBottom.x;
             double rightValue = rightTop.x;
 
+            if (leftValue < minX) {
+                leftValue = minX;
+                rightValue = leftValue + originalWidth;
+            }
+
+            if (rightValue > maxX) {
+                rightValue = maxX;
+                leftValue = rightValue - originalWidth;
+            }
+
             if (leftValue < minX) leftValue = minX;
-            if (leftValue > maxX) leftValue = maxX;
-            if (rightValue < minX) rightValue = minX;
             if (rightValue > maxX) rightValue = maxX;
 
             event.putDouble("left", leftValue);
