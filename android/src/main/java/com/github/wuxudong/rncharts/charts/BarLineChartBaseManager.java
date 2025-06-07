@@ -147,6 +147,8 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                 }
             }
         }
+
+        sendLoadCompleteEvent(chart);
     }
 
     @ReactProp(name = "autoScaleMinMaxEnabled")
@@ -214,6 +216,7 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                     (float) propMap.getDouble("yValue"),
                     axisDependency
             );
+            sendLoadCompleteEvent(chart);
         }
     }
 

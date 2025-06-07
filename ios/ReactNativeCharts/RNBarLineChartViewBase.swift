@@ -136,6 +136,8 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         if y["right"]["max"].double != nil {
             barLineChart.setVisibleYRangeMaximum(y["right"]["max"].doubleValue, axis: YAxis.AxisDependency.right)
         }
+
+        sendEvent("chartLoadComplete")
     }
 
     func setMaxScale(_ config: NSDictionary) {
@@ -208,6 +210,8 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
                     xValue: json["xValue"].doubleValue,
                     yValue: json["yValue"].doubleValue,
                     axis: axisDependency)
+
+            sendEvent("chartLoadComplete")
         }
     }
 
@@ -283,6 +287,8 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             updateVisibleRange(config)
         }
         barLineChart.notifyDataSetChanged()
+
+        sendEvent("chartLoadComplete")
     }
 
     func getVisibleYRange(_ axis: YAxis.AxisDependency) -> CGFloat {
