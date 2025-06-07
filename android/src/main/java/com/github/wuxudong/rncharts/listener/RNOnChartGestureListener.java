@@ -125,9 +125,20 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
             MPPointD leftBottom = ((BarLineChartBase) chart).getValuesByTouchPoint(viewPortHandler.contentLeft(), viewPortHandler.contentBottom(), YAxis.AxisDependency.LEFT);
             MPPointD rightTop = ((BarLineChartBase) chart).getValuesByTouchPoint(viewPortHandler.contentRight(), viewPortHandler.contentTop(), YAxis.AxisDependency.LEFT);
 
-            event.putDouble("left", leftBottom.x);
+            float minX = chart.getData() != null ? chart.getData().getXMin() : Float.MIN_VALUE;
+            float maxX = chart.getData() != null ? chart.getData().getXMax() : Float.MAX_VALUE;
+
+            double leftValue = leftBottom.x;
+            double rightValue = rightTop.x;
+
+            if (leftValue < minX) leftValue = minX;
+            if (leftValue > maxX) leftValue = maxX;
+            if (rightValue < minX) rightValue = minX;
+            if (rightValue > maxX) rightValue = maxX;
+
+            event.putDouble("left", leftValue);
             event.putDouble("bottom", leftBottom.y);
-            event.putDouble("right", rightTop.x);
+            event.putDouble("right", rightValue);
             event.putDouble("top", rightTop.y);
 
             if (group != null && identifier != null) {
