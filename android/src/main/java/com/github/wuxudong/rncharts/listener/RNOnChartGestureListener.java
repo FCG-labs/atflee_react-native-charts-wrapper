@@ -131,12 +131,24 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
                     viewPortHandler.contentTop(),
                     YAxis.AxisDependency.LEFT);
 
+            // Due to rounding errors when the viewport is dragged beyond the
+            // chart edges, the calculated right value can become smaller than
+            // the left value. Swap them to keep a valid range before applying
+            // additional clamping logic.
+            if (rightTop.x < leftBottom.x) {
+                MPPointD tmp = leftBottom;
+                leftBottom = rightTop;
+                rightTop = tmp;
+            }
+
             float minX = chart.getData() != null ? chart.getData().getXMin() : Float.MIN_VALUE;
             float maxX = chart.getData() != null ? chart.getData().getXMax() : Float.MAX_VALUE;
-            float dragOffset = 30f; //viewPortHandler.getDragOffsetX();
 
-            double allowedMin = minX - dragOffset;
-            double allowedMax = maxX + dragOffset;
+            // Constrain the viewport strictly to the dataset bounds to avoid
+            // reporting values outside the data range when the user drags past
+            // the edges of the chart.
+            double allowedMin = minX;
+            double allowedMax = maxX;
 
             double originalWidth = rightTop.x - leftBottom.x;
             double allowedWidth = allowedMax - allowedMin;
