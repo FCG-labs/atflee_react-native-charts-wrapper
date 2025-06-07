@@ -45,6 +45,8 @@ public class CombinedChartManager extends BarLineChartBaseManager<CombinedChart,
 //             parent.setClipChildren(false);
 //             parent.setClipToPadding(false);
 //         }
+        // Enable marker dragging by default for consistency with iOS
+        combinedChart.setHighlightPerDragEnabled(true);
         return combinedChart;
     }
 

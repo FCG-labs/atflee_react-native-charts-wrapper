@@ -20,6 +20,8 @@ public class CandleStickChartManager extends BarLineChartBaseManager<CandleStick
         CandleStickChart candleStickChart = new CandleStickChart(reactContext);
         candleStickChart.setOnChartValueSelectedListener(new RNOnChartValueSelectedListener(candleStickChart));
         candleStickChart.setOnChartGestureListener(new RNOnChartGestureListener(candleStickChart));
+        // Enable marker dragging by default for consistency with iOS
+        candleStickChart.setHighlightPerDragEnabled(true);
         return candleStickChart;
     }
 

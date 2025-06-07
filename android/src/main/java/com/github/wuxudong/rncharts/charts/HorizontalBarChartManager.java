@@ -18,6 +18,8 @@ public class HorizontalBarChartManager extends BarChartManager {
         HorizontalBarChart horizontalBarChart = new HorizontalBarChart(reactContext);
         horizontalBarChart.setOnChartValueSelectedListener(new RNOnChartValueSelectedListener(horizontalBarChart));
         horizontalBarChart.setOnChartGestureListener(new RNOnChartGestureListener(horizontalBarChart));
+        // Enable marker dragging by default for consistency with iOS
+        horizontalBarChart.setHighlightPerDragEnabled(true);
         return horizontalBarChart;
     }
 }

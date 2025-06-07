@@ -34,6 +34,9 @@ public class AtfleeCombinedChart extends CombinedChart {
         // Old default behaviour
         setHighlightFullBarEnabled(true);
 
+        // Highlight should move with finger drag, matching iOS behaviour
+        setHighlightPerDragEnabled(true);
+
         // 양쪽 drag padding 추가
         mViewPortHandler.setDragOffsetX(35f);
 

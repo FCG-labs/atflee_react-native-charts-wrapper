@@ -21,6 +21,8 @@ public class BubbleChartManager extends BarLineChartBaseManager<BubbleChart, Bub
         BubbleChart bubbleChart =  new BubbleChart(reactContext);
         bubbleChart.setOnChartValueSelectedListener(new RNOnChartValueSelectedListener(bubbleChart));
         bubbleChart.setOnChartGestureListener(new RNOnChartGestureListener(bubbleChart));
+        // Enable marker dragging by default for consistency with iOS
+        bubbleChart.setHighlightPerDragEnabled(true);
         return bubbleChart;
     }
 
