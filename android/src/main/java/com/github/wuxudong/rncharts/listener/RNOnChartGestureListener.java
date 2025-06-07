@@ -133,7 +133,7 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
 
             float minX = chart.getData() != null ? chart.getData().getXMin() : Float.MIN_VALUE;
             float maxX = chart.getData() != null ? chart.getData().getXMax() : Float.MAX_VALUE;
-            float dragOffset = 30f; //viewPortHandler.getDragOffsetX();
+            float dragOffset = 30f;
 
             double allowedMin = minX - dragOffset;
             double allowedMax = maxX + dragOffset;
