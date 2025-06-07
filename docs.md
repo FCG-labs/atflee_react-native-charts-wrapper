@@ -521,7 +521,7 @@ type combinedData {
 ```jsx
 const handleChange = e => {
   if (e.nativeEvent.action === 'chartLoadComplete') {
-    // chart has finished drawing; scaleX/scaleY are valid here
+    // zoom and visibleRange props have been applied; scaleX/scaleY are valid
   }
 };
 <LineChart onChange={handleChange} ... />
