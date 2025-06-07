@@ -139,21 +139,27 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
             double allowedMax = maxX + dragOffset;
 
             double originalWidth = rightTop.x - leftBottom.x;
+            double allowedWidth = allowedMax - allowedMin;
             double leftValue = leftBottom.x;
             double rightValue = rightTop.x;
 
-            if (leftValue < allowedMin) {
+            if (originalWidth > allowedWidth) {
                 leftValue = allowedMin;
-                rightValue = leftValue + originalWidth;
-            }
-
-            if (rightValue > allowedMax) {
                 rightValue = allowedMax;
-                leftValue = rightValue - originalWidth;
-            }
+            } else {
+                if (leftValue < allowedMin) {
+                    leftValue = allowedMin;
+                    rightValue = leftValue + originalWidth;
+                }
 
-            if (leftValue < allowedMin) leftValue = allowedMin;
-            if (rightValue > allowedMax) rightValue = allowedMax;
+                if (rightValue > allowedMax) {
+                    rightValue = allowedMax;
+                    leftValue = rightValue - originalWidth;
+                }
+
+                if (leftValue < allowedMin) leftValue = allowedMin;
+                if (rightValue > allowedMax) rightValue = allowedMax;
+            }
 
             event.putDouble("left", leftValue);
             event.putDouble("bottom", leftBottom.y);

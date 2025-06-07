@@ -615,27 +615,34 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
                 let minX = barLineChart.chartXMin
                 let maxX = barLineChart.chartXMax
-                let dragOffset = handler.dragOffsetX
-
-                let allowedMin = minX - Double(dragOffset)
-                let allowedMax = maxX + Double(dragOffset)
+                // Constrain the range strictly to the actual data bounds.
+                // Using dragOffset here caused values outside of the data range
+                // to be emitted when overscrolling to the chart edges.
+                let allowedMin = minX
+                let allowedMax = maxX
 
                 let originalWidth = rightTop.x - leftBottom.x
+                let allowedWidth = allowedMax - allowedMin
                 var leftValue = leftBottom.x
                 var rightValue = rightTop.x
 
-                if leftValue < allowedMin {
+                if originalWidth > allowedWidth {
                     leftValue = allowedMin
-                    rightValue = leftValue + originalWidth
-                }
-
-                if rightValue > allowedMax {
                     rightValue = allowedMax
-                    leftValue = rightValue - originalWidth
-                }
+                } else {
+                    if leftValue < allowedMin {
+                        leftValue = allowedMin
+                        rightValue = leftValue + originalWidth
+                    }
 
-                if leftValue < allowedMin { leftValue = allowedMin }
-                if rightValue > allowedMax { rightValue = allowedMax }
+                    if rightValue > allowedMax {
+                        rightValue = allowedMax
+                        leftValue = rightValue - originalWidth
+                    }
+
+                    if leftValue < allowedMin { leftValue = allowedMin }
+                    if rightValue > allowedMax { rightValue = allowedMax }
+                }
 
                 dict["left"] = leftValue
                 dict["bottom"] = leftBottom.y

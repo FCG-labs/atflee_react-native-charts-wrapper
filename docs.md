@@ -528,3 +528,5 @@ const handleChange = e => {
 ```
 
 Payload fields: `scaleX`, `scaleY`, `centerX`, `centerY`, `left`, `right`, `top`, `bottom`.
+`left` and `right` are clamped to the chart's data range and will never span
+beyond the dataset width, preventing spikes if you fling past the chart edges.
