@@ -184,6 +184,19 @@ public class RNAtfleeMarkerView extends MarkerView {
                         handleClick();
                     }
                 });
+                // Forward drag events to the chart so the marker can move while
+                // swiping. Without this, the overlay view blocks touch events
+                // from reaching the chart, preventing highlight updates.
+                view.setOnTouchListener(new View.OnTouchListener() {
+                    @Override
+                    public boolean onTouch(View v, MotionEvent event) {
+                        Chart chartView = getChartView();
+                        if (chartView != null) {
+                            chartView.onTouchEvent(event);
+                        }
+                        return true; // consume so click listener still works
+                    }
+                });
 
                 ViewGroup.LayoutParams base = new ViewGroup.LayoutParams(getWidth(), getHeight());
                 if (parent instanceof android.widget.FrameLayout) {
