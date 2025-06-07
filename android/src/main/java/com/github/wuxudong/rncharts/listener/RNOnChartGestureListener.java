@@ -133,14 +133,10 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
 
             float minX = chart.getData() != null ? chart.getData().getXMin() : Float.MIN_VALUE;
             float maxX = chart.getData() != null ? chart.getData().getXMax() : Float.MAX_VALUE;
-            // Limit values strictly to the visible data range
-            // Previously this calculation included dragOffset, which allowed
-            // values beyond the actual data min/max to be reported. When a user
-            // dragged to the very edges of the chart, this caused noticeable
-            // jumps in the reported left/right values. Restricting the range to
-            // the data bounds prevents that jitter.
-            double allowedMin = minX;
-            double allowedMax = maxX;
+            float dragOffset = 30f; //viewPortHandler.getDragOffsetX();
+
+            double allowedMin = minX - dragOffset;
+            double allowedMax = maxX + dragOffset;
 
             double originalWidth = rightTop.x - leftBottom.x;
             double allowedWidth = allowedMax - allowedMin;
