@@ -66,7 +66,7 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
 
     private static java.util.WeakHashMap<Chart, Boolean> loadCompleteMap = new java.util.WeakHashMap<>();
 
-    protected void sendLoadCompleteEvent(T chart) {
+    protected void sendLoadCompleteEvent(Chart chart) {
         WritableMap event = Arguments.createMap();
         event.putString("action", "chartLoadComplete");
 
