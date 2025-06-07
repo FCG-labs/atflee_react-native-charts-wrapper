@@ -91,9 +91,11 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
             }
         }
 
-        ReactContext reactContext = (ReactContext) chart.getContext();
-        reactContext.getJSModule(RCTEventEmitter.class)
-                .receiveEvent(chart.getId(), "topChange", event);
+        if (chart.getContext() instanceof ReactContext) {
+            ReactContext reactContext = (ReactContext) chart.getContext();
+            reactContext.getJSModule(RCTEventEmitter.class)
+                    .receiveEvent(chart.getId(), "topChange", event);
+        }
     }
 
     abstract DataExtract getDataExtract();
