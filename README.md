@@ -207,6 +207,8 @@ const handleChange = e => {
 ```
 
 Payload fields: `scaleX`, `scaleY`, `centerX`, `centerY`, `left`, `right`, `top`, `bottom`.
+`left` and `right` never exceed your dataset's X range and their distance is
+clamped to the width of the data to prevent jumps when you fling past the edges.
 
 ## Direct Function Call
 

@@ -133,27 +133,37 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
 
             float minX = chart.getData() != null ? chart.getData().getXMin() : Float.MIN_VALUE;
             float maxX = chart.getData() != null ? chart.getData().getXMax() : Float.MAX_VALUE;
-            float dragOffset = viewPortHandler.getDragOffsetX();
-
-            double allowedMin = minX - dragOffset;
-            double allowedMax = maxX + dragOffset;
+            // Limit values strictly to the visible data range
+            // Previously this calculation included dragOffset, which allowed
+            // values beyond the actual data min/max to be reported. When a user
+            // dragged to the very edges of the chart, this caused noticeable
+            // jumps in the reported left/right values. Restricting the range to
+            // the data bounds prevents that jitter.
+            double allowedMin = minX;
+            double allowedMax = maxX;
 
             double originalWidth = rightTop.x - leftBottom.x;
+            double allowedWidth = allowedMax - allowedMin;
             double leftValue = leftBottom.x;
             double rightValue = rightTop.x;
 
-            if (leftValue < allowedMin) {
+            if (originalWidth > allowedWidth) {
                 leftValue = allowedMin;
-                rightValue = leftValue + originalWidth;
-            }
-
-            if (rightValue > allowedMax) {
                 rightValue = allowedMax;
-                leftValue = rightValue - originalWidth;
-            }
+            } else {
+                if (leftValue < allowedMin) {
+                    leftValue = allowedMin;
+                    rightValue = leftValue + originalWidth;
+                }
 
-            if (leftValue < allowedMin) leftValue = allowedMin;
-            if (rightValue > allowedMax) rightValue = allowedMax;
+                if (rightValue > allowedMax) {
+                    rightValue = allowedMax;
+                    leftValue = rightValue - originalWidth;
+                }
+
+                if (leftValue < allowedMin) leftValue = allowedMin;
+                if (rightValue > allowedMax) rightValue = allowedMax;
+            }
 
             event.putDouble("left", leftValue);
             event.putDouble("bottom", leftBottom.y);
