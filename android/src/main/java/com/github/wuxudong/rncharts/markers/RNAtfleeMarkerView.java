@@ -1,7 +1,9 @@
 package com.github.wuxudong.rncharts.markers;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.text.TextUtils;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -67,6 +69,7 @@ public class RNAtfleeMarkerView extends MarkerView {
     }
 
 
+    @SuppressLint("ClickableViewAccessibility")
     @Override
     public void refreshContent(Entry e, Highlight highlight) {
         lastEntry = e;
@@ -187,15 +190,12 @@ public class RNAtfleeMarkerView extends MarkerView {
                 // Forward drag events to the chart so the marker can move while
                 // swiping. Without this, the overlay view blocks touch events
                 // from reaching the chart, preventing highlight updates.
-                view.setOnTouchListener(new View.OnTouchListener() {
-                    @Override
-                    public boolean onTouch(View v, MotionEvent event) {
-                        Chart chartView = getChartView();
-                        if (chartView != null) {
-                            chartView.onTouchEvent(event);
-                        }
-                        return true; // consume so click listener still works
+                view.setOnTouchListener((v, event) -> {
+                    Chart chartView = getChartView();
+                    if (chartView != null) {
+                        chartView.onTouchEvent(event);
                     }
+                    return true; // consume so click listener still works
                 });
 
                 ViewGroup.LayoutParams base = new ViewGroup.LayoutParams(getWidth(), getHeight());
