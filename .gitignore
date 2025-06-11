@@ -5,3 +5,4 @@ android/.gradle/*
 android/local.properties
 codereview.sh
 fullhistory.diff
+atflee_react-native-charts-wrapper.html
