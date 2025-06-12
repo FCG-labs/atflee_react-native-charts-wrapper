@@ -2,6 +2,7 @@ package com.github.wuxudong.rncharts.charts;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import java.lang.Math;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.renderer.XAxisRenderer;
 import com.github.mikephil.charting.utils.MPPointF;
@@ -11,6 +12,43 @@ import com.github.mikephil.charting.utils.ViewPortHandler;
 public class MultilineXAxisRenderer extends XAxisRenderer {
   public MultilineXAxisRenderer(ViewPortHandler viewPortHandler, XAxis xAxis, Transformer trans) {
     super(viewPortHandler, xAxis, trans);
+  }
+
+  @Override
+  protected void computeSize() {
+    super.computeSize();
+
+    String longest = mXAxis.getLongestLabel();
+    if (longest == null || !longest.contains("\n")) {
+      return;
+    }
+
+    String[] lines = longest.split("\\n");
+    int lineCount = lines.length;
+    if (lineCount <= 1) {
+      return;
+    }
+
+    float maxLineWidth = 0f;
+    for (String line : lines) {
+      maxLineWidth = Math.max(maxLineWidth, mAxisLabelPaint.measureText(line));
+    }
+
+    Paint.FontMetrics fm = mAxisLabelPaint.getFontMetrics();
+    float lineHeight = fm.descent - fm.ascent - 1f;
+    float labelHeight = lineCount * lineHeight + (lineCount - 1) * fm.leading;
+
+    float angle = mXAxis.getLabelRotationAngle();
+    double rad = Math.toRadians(angle);
+    float sin = (float) Math.abs(Math.sin(rad));
+    float cos = (float) Math.abs(Math.cos(rad));
+    float rotatedWidth = maxLineWidth * cos + labelHeight * sin;
+    float rotatedHeight = maxLineWidth * sin + labelHeight * cos;
+
+    mXAxis.mLabelWidth = Math.round(maxLineWidth + mXAxis.getXOffset() * 3.5f);
+    mXAxis.mLabelHeight = Math.round(labelHeight);
+    mXAxis.mLabelRotatedWidth = Math.round(rotatedWidth + mXAxis.getXOffset() * 3.5f);
+    mXAxis.mLabelRotatedHeight = Math.round(rotatedHeight);
   }
 
   @Override
