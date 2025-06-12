@@ -74,7 +74,7 @@
 | ------------------------ | -------- | ------- | ---- |
 | `labelRotationAngle`     | `number` |         |      |
 | `avoidFirstLastClipping` | `bool`   |         |      |
-| `edgeLabelEnabled`       | `bool`   |         | Show only the left and right labels of the current view. The formatter derives the edge positions from viewport coordinates. If the edge does not land on an exact entry the previous value is used |
+| `edgeLabelEnabled`       | `bool`   |         | Show only the left and right labels of the current view. The formatter derives the labels from the visible viewport so they always reflect the exact boundary values |
 | `position`               | `string` |         | Should be in upper case. you will get an error in android if the position is in lower case      |
 | `valueFormatterPattern`  | `string` |         |      |
 

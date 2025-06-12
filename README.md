@@ -120,10 +120,9 @@ affects Android unless you provide an iOS implementation.
 Sometimes you may want the x-axis to show labels only at the start and end of
 the visible range. Set `edgeLabelEnabled` to `true` to let the native layer
 automatically render labels only for the left and right edge. Internally a
-formatter checks the viewport coordinates instead of relying on the chart's
-visible indices and hides the other labels. When the
-viewport edge falls between two values and the exact point is not visible,
-the formatter displays the previous value so that a label remains visible.
+formatter looks up the current viewport boundaries and hides the other
+labels. The edge labels always show the values at the exact start and end of
+the visible range so they update as you pan or zoom.
 
 ```jsx
 <LineChart
