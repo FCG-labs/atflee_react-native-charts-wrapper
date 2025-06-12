@@ -37,6 +37,8 @@ import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
 import com.github.mikephil.charting.formatter.LargeValueFormatter;
 import com.github.mikephil.charting.formatter.PercentFormatter;
+import com.github.mikephil.charting.formatter.ValueFormatter;
+import com.github.wuxudong.rncharts.charts.VisibleEdgeAxisValueFormatter;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.wuxudong.rncharts.data.DataExtract;
 import com.github.wuxudong.rncharts.markers.RNAtfleeMarkerView;
@@ -310,6 +312,24 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
         }
         if (BridgeUtils.validate(propMap, ReadableType.String, "position")) {
             axis.setPosition(XAxisPosition.valueOf(propMap.getString("position")));
+        }
+
+        if (BridgeUtils.validate(propMap, ReadableType.Boolean, "edgeLabelEnabled")) {
+            boolean enabled = propMap.getBoolean("edgeLabelEnabled");
+            if (chart instanceof BarLineChartBase) {
+                BarLineChartBase barLineChart = (BarLineChartBase) chart;
+                ValueFormatter current = axis.getValueFormatter();
+                if (current instanceof VisibleEdgeAxisValueFormatter) {
+                    VisibleEdgeAxisValueFormatter vf = (VisibleEdgeAxisValueFormatter) current;
+                    if (enabled) {
+                        vf.setEnabled(true);
+                    } else {
+                        axis.setValueFormatter(vf.getBaseFormatter());
+                    }
+                } else if (enabled) {
+                    axis.setValueFormatter(new VisibleEdgeAxisValueFormatter(barLineChart, current, true));
+                }
+            }
         }
 
     }

@@ -115,6 +115,49 @@ affects Android unless you provide an iOS implementation.
 
 `HorizontalBarChart` and `CombinedChart` expose the same prop.
 
+### Display xAxis labels only at the edges
+
+Sometimes you may want the x-axis to show labels only at the start and end of
+the visible range. Set `edgeLabelEnabled` to `true` to let the native layer
+automatically render labels only for the left and right edge. Internally a
+formatter checks the current viewport and hides the other labels. When the
+viewport edge falls between two values and the exact point is not visible,
+the formatter displays the previous value so that a label remains visible.
+
+```jsx
+<LineChart
+  style={{flex: 1}}
+  xAxis={{
+    edgeLabelEnabled: true,
+  }}
+/>
+```
+
+If you need to handle this manually you can enable `granularity` and force the
+label count to two:
+
+```jsx
+<LineChart
+  style={{flex: 1}}
+  xAxis={{
+    granularityEnabled: true,
+    granularity: xLabelVisibleCount,
+    labelCount: 2,
+    labelCountForce: true,
+    avoidFirstLastClipping: true,
+  }}
+/>
+```
+
+Update `xLabelVisibleCount` when `showValueText` is `false` so that the axis
+labels appear only for the first and last entries:
+
+```javascript
+setXLabelVisibleCount(
+  showValueText ? defaultGranularity : chartValue.length - 1
+);
+```
+
 
 
 ## Convention
