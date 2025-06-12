@@ -17,8 +17,11 @@ open class VisibleEdgeAxisValueFormatter: NSObject, ValueFormatter, AxisValueFor
         guard enabled, let chart = chart else {
             return base.stringForValue(value, axis: axis)
         }
-        let lowest = chart.lowestVisibleX
-        let highest = chart.highestVisibleX
+        let handler = chart.viewPortHandler
+        let leftBottom = chart.valueForTouchPoint(point: CGPoint(x: handler.contentLeft, y: handler.contentBottom), axis: .left)
+        let rightTop = chart.valueForTouchPoint(point: CGPoint(x: handler.contentRight, y: handler.contentTop), axis: .left)
+        let lowest = leftBottom.x
+        let highest = rightTop.x
 
         // fall back to the base when no range is computed yet
         if lowest == highest {
