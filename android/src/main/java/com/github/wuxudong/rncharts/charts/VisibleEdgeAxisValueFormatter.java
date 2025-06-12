@@ -31,15 +31,14 @@ public class VisibleEdgeAxisValueFormatter extends ValueFormatter {
         float lowest = chart.getLowestVisibleX();
         float highest = chart.getHighestVisibleX();
 
-        int leftIndex = Math.round(lowest);
-        if (leftIndex > lowest) {
-            leftIndex -= 1;
+        // if the chart hasn't calculated a range yet fall back to the base
+        if (highest == lowest) {
+            return baseFormatter.getFormattedValue(value);
         }
 
-        int rightIndex = Math.round(highest);
-        if (rightIndex < highest) {
-            rightIndex += 1;
-        }
+        int leftIndex = (int) Math.floor(lowest);
+
+        int rightIndex = (int) Math.ceil(highest);
 
         int index = Math.round(value);
         if (index == leftIndex || index == rightIndex) {

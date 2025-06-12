@@ -20,15 +20,13 @@ open class VisibleEdgeAxisValueFormatter: NSObject, ValueFormatter, AxisValueFor
         let lowest = chart.lowestVisibleX
         let highest = chart.highestVisibleX
 
-        var leftIndex = Int(lowest.rounded())
-        if Double(leftIndex) > lowest {
-            leftIndex -= 1
+        // fall back to the base when no range is computed yet
+        if lowest == highest {
+            return base.stringForValue(value, axis: axis)
         }
 
-        var rightIndex = Int(highest.rounded())
-        if Double(rightIndex) < highest {
-            rightIndex += 1
-        }
+        let leftIndex = Int(floor(lowest))
+        let rightIndex = Int(ceil(highest))
 
         let index = Int(value.rounded())
         if index == leftIndex || index == rightIndex {
