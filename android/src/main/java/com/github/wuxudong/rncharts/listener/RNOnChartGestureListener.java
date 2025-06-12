@@ -16,6 +16,7 @@ import com.github.mikephil.charting.listener.OnChartGestureListener;
 import com.github.mikephil.charting.utils.MPPointD;
 import com.github.mikephil.charting.utils.ViewPortHandler;
 import com.github.wuxudong.rncharts.charts.ChartGroupHolder;
+import com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper;
 
 import java.lang.ref.WeakReference;
 
@@ -161,6 +162,8 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
             event.putDouble("bottom", leftBottom.y);
             event.putDouble("right", rightValue);
             event.putDouble("top", rightTop.y);
+
+            com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.update(chart, leftValue, rightValue);
 
             if (group != null && identifier != null) {
                 ChartGroupHolder.sync(group, identifier, chart.getScaleX(), chart.getScaleY(), (float) center.x, (float) center.y);
