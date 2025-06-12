@@ -74,7 +74,7 @@
 | ------------------------ | -------- | ------- | ---- |
 | `labelRotationAngle`     | `number` |         |      |
 | `avoidFirstLastClipping` | `bool`   |         |      |
-| `edgeLabelEnabled`       | `bool`   |         | Hide normal x-axis labels and draw two padded labels at the visible range edges. The labels update automatically as you scroll or zoom and never disappear |
+| `edgeLabelEnabled`       | `bool`   |         | Hide normal x-axis labels and draw two padded labels at the visible range edges. The labels include top padding so the text sits above the axis and they update automatically as you scroll or zoom |
 | `position`               | `string` |         | Should be in upper case. you will get an error in android if the position is in lower case      |
 | `valueFormatterPattern`  | `string` |         |      |
 

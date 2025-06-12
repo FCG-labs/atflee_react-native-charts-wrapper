@@ -16,6 +16,7 @@ import com.github.mikephil.charting.formatter.ValueFormatter;
 public class EdgeLabelHelper {
     private static final float PADDING_DP_LEFT = 8f;
     private static final float PADDING_DP_RIGHT = 24f;
+    private static final float PADDING_DP_TOP = 8f;
     private static String leftTag(Chart chart) {
         return "edgeLabelLeft-" + chart.getId();
     }
@@ -95,9 +96,10 @@ public class EdgeLabelHelper {
 
         int padLeft = px(chart, PADDING_DP_LEFT);
         int padRight = px(chart, PADDING_DP_RIGHT);
+        int padTop = px(chart, PADDING_DP_TOP);
 
-        left.layout(chartLeft + padLeft, chartBottom - leftH, chartLeft + padLeft + leftW, chartBottom);
-        right.layout(chartRight - rightW - padRight, chartBottom - rightH, chartRight - padRight, chartBottom);
+        left.layout(chartLeft + padLeft, chartBottom - leftH - padTop, chartLeft + padLeft + leftW, chartBottom - padTop);
+        right.layout(chartRight - rightW - padRight, chartBottom - rightH - padTop, chartRight - padRight, chartBottom - padTop);
 
         left.bringToFront();
         right.bringToFront();
