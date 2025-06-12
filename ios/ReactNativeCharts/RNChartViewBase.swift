@@ -610,7 +610,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 let label = UILabel()
                 label.translatesAutoresizingMaskIntoConstraints = false
                 addSubview(label)
-                label.bottomAnchor.constraint(equalTo: bottomAnchor).isActive = true
+                label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -8).isActive = true
                 label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8).isActive = true
                 leftEdgeLabel = label
             }
@@ -618,7 +618,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 let label = UILabel()
                 label.translatesAutoresizingMaskIntoConstraints = false
                 addSubview(label)
-                label.bottomAnchor.constraint(equalTo: bottomAnchor).isActive = true
+                label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -8).isActive = true
                 label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8).isActive = true
                 rightEdgeLabel = label
             }
