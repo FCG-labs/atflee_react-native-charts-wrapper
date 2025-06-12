@@ -1,9 +1,8 @@
 package com.github.wuxudong.rncharts.charts.helpers;
 
 import android.util.TypedValue;
-import android.view.Gravity;
+import android.view.View;
 import android.view.ViewGroup;
-import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import com.github.mikephil.charting.charts.BarLineChartBase;
@@ -22,7 +21,16 @@ public class EdgeLabelHelper {
 
     public static void setEnabled(BarLineChartBase chart, boolean enabled) {
         ViewGroup parent = (ViewGroup) chart.getParent();
-        if (parent == null) return;
+        if (parent == null) {
+            chart.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+                @Override public void onViewAttachedToWindow(View view) {
+                    chart.removeOnAttachStateChangeListener(this);
+                    setEnabled(chart, enabled);
+                }
+                @Override public void onViewDetachedFromWindow(View view) {}
+            });
+            return;
+        }
 
         TextView left = parent.findViewWithTag(leftTag(chart));
         TextView right = parent.findViewWithTag(rightTag(chart));
@@ -35,24 +43,49 @@ public class EdgeLabelHelper {
 
         if (left == null) {
             left = new TextView(chart.getContext());
-            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT);
-            lp.gravity = Gravity.START | Gravity.BOTTOM;
-            parent.addView(left, lp);
+            left.setClickable(false);
+            left.setFocusable(false);
+            parent.addView(left);
             left.setTag(leftTag(chart));
         }
         if (right == null) {
             right = new TextView(chart.getContext());
-            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT);
-            lp.gravity = Gravity.END | Gravity.BOTTOM;
-            parent.addView(right, lp);
+            right.setClickable(false);
+            right.setFocusable(false);
+            parent.addView(right);
             right.setTag(rightTag(chart));
         }
 
         style(chart);
+        reposition(chart);
+    }
+
+    private static void reposition(BarLineChartBase chart) {
+        ViewGroup parent = (ViewGroup) chart.getParent();
+        if (parent == null) return;
+        TextView left = parent.findViewWithTag(leftTag(chart));
+        TextView right = parent.findViewWithTag(rightTag(chart));
+        if (left == null || right == null) return;
+
+        int widthSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+        int heightSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+        left.measure(widthSpec, heightSpec);
+        right.measure(widthSpec, heightSpec);
+
+        int leftW = left.getMeasuredWidth();
+        int leftH = left.getMeasuredHeight();
+        int rightW = right.getMeasuredWidth();
+        int rightH = right.getMeasuredHeight();
+
+        int chartLeft = chart.getLeft();
+        int chartRight = chart.getRight();
+        int chartBottom = chart.getBottom();
+
+        left.layout(chartLeft, chartBottom - leftH, chartLeft + leftW, chartBottom);
+        right.layout(chartRight - rightW, chartBottom - rightH, chartRight, chartBottom);
+
+        left.bringToFront();
+        right.bringToFront();
     }
 
     private static void style(BarLineChartBase chart) {
@@ -83,5 +116,7 @@ public class EdgeLabelHelper {
         ValueFormatter vf = bar.getXAxis().getValueFormatter();
         left.setText(vf.getFormattedValue((float) leftValue));
         right.setText(vf.getFormattedValue((float) rightValue));
+
+        reposition(bar);
     }
 }
