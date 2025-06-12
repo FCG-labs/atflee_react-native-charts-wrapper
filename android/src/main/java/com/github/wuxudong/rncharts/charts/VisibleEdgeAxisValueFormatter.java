@@ -52,13 +52,15 @@ public class VisibleEdgeAxisValueFormatter extends ValueFormatter {
             return baseFormatter.getFormattedValue(value);
         }
 
-        int leftIndex = (int) Math.floor(lowest);
-
-        int rightIndex = (int) Math.ceil(highest);
+        int leftIndex = (int) Math.ceil(lowest);
+        int rightIndex = (int) Math.floor(highest);
 
         int index = Math.round(value);
-        if (index == leftIndex || index == rightIndex) {
-            return baseFormatter.getFormattedValue(value);
+        if (index == leftIndex) {
+            return baseFormatter.getFormattedValue(lowest);
+        }
+        if (index == rightIndex) {
+            return baseFormatter.getFormattedValue(highest);
         }
         return "";
     }
