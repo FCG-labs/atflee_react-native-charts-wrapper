@@ -28,15 +28,12 @@ open class VisibleEdgeAxisValueFormatter: NSObject, ValueFormatter, AxisValueFor
             return base.stringForValue(value, axis: axis)
         }
 
-        let leftIndex = Int(ceil(lowest))
-        let rightIndex = Int(floor(highest))
+        let leftIndex = Int(floor(lowest))
+        let rightIndex = Int(ceil(highest))
 
         let index = Int(value.rounded())
-        if index == leftIndex {
-            return base.stringForValue(lowest, axis: axis)
-        }
-        if index == rightIndex {
-            return base.stringForValue(highest, axis: axis)
+        if index == leftIndex || index == rightIndex {
+            return base.stringForValue(value, axis: axis)
         }
         return ""
     }
