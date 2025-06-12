@@ -34,11 +34,11 @@ import com.github.mikephil.charting.components.MarkerView;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.XAxis.XAxisPosition;
 import com.github.mikephil.charting.data.Entry;
+import com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper;
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
 import com.github.mikephil.charting.formatter.LargeValueFormatter;
 import com.github.mikephil.charting.formatter.PercentFormatter;
 import com.github.mikephil.charting.formatter.ValueFormatter;
-import com.github.wuxudong.rncharts.charts.VisibleEdgeAxisValueFormatter;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.wuxudong.rncharts.data.DataExtract;
 import com.github.wuxudong.rncharts.markers.RNAtfleeMarkerView;
@@ -90,6 +90,8 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
                 event.putDouble("bottom", leftBottom.y);
                 event.putDouble("right", rightTop.x);
                 event.putDouble("top", rightTop.y);
+
+                EdgeLabelHelper.update(barLineChart, leftBottom.x, rightTop.x);
             }
         }
 
@@ -318,16 +320,10 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
             boolean enabled = propMap.getBoolean("edgeLabelEnabled");
             if (chart instanceof BarLineChartBase) {
                 BarLineChartBase barLineChart = (BarLineChartBase) chart;
-                ValueFormatter current = axis.getValueFormatter();
-                if (current instanceof VisibleEdgeAxisValueFormatter) {
-                    VisibleEdgeAxisValueFormatter vf = (VisibleEdgeAxisValueFormatter) current;
-                    if (enabled) {
-                        vf.setEnabled(true);
-                    } else {
-                        axis.setValueFormatter(vf.getBaseFormatter());
-                    }
-                } else if (enabled) {
-                    axis.setValueFormatter(new VisibleEdgeAxisValueFormatter(barLineChart, current, true));
+                axis.setDrawLabels(!enabled);
+                com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.setEnabled(barLineChart, enabled);
+                if (enabled) {
+                    com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.update(barLineChart, barLineChart.getLowestVisibleX(), barLineChart.getHighestVisibleX());
                 }
             }
         }

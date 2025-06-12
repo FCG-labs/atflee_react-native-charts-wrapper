@@ -53,14 +53,15 @@ public class VisibleEdgeAxisValueFormatter extends ValueFormatter {
         if (highest == lowest) {
             return baseFormatter.getFormattedValue(value);
         }
-        Log.d("index", "lowest: " + lowest + ", highest: " + highest);
         int leftIndex = (int) Math.ceil(lowest);
         int rightIndex = (int) Math.floor(highest);
-        Log.d("index", "leftIndex: " + leftIndex + ", rightIndex: " + rightIndex);
+
         int index = Math.round(value);
-        Log.d("index", "round: " + index);
-        if (index == leftIndex || index == rightIndex) {
-            return baseFormatter.getFormattedValue(value);
+        if (index == leftIndex) {
+            return baseFormatter.getFormattedValue(lowest);
+        }
+        if (index == rightIndex) {
+            return baseFormatter.getFormattedValue(highest);
         }
         return "";
     }
