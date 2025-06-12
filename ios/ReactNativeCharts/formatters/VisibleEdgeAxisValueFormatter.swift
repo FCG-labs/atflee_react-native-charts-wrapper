@@ -17,8 +17,19 @@ open class VisibleEdgeAxisValueFormatter: NSObject, ValueFormatter, AxisValueFor
         guard enabled, let chart = chart else {
             return base.stringForValue(value, axis: axis)
         }
-        let leftIndex = Int(chart.lowestVisibleX.rounded())
-        let rightIndex = Int(chart.highestVisibleX.rounded())
+        let lowest = chart.lowestVisibleX
+        let highest = chart.highestVisibleX
+
+        var leftIndex = Int(lowest.rounded())
+        if Double(leftIndex) > lowest {
+            leftIndex -= 1
+        }
+
+        var rightIndex = Int(highest.rounded())
+        if Double(rightIndex) < highest {
+            rightIndex += 1
+        }
+
         let index = Int(value.rounded())
         if index == leftIndex || index == rightIndex {
             return base.stringForValue(value, axis: axis)
