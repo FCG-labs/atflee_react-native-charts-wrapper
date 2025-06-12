@@ -300,6 +300,20 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         if json["position"].string != nil {
             xAxis.labelPosition = BridgeUtils.parseXAxisLabelPosition(json["position"].stringValue)
         }
+
+        if let barLine = chart as? BarLineChartViewBase, json["edgeLabelEnabled"].bool != nil {
+            let enable = json["edgeLabelEnabled"].boolValue
+            let current = xAxis.valueFormatter
+            if let edge = current as? VisibleEdgeAxisValueFormatter {
+                if enable {
+                    edge.enabled = true
+                } else {
+                    xAxis.valueFormatter = edge.base
+                }
+            } else if enable {
+                xAxis.valueFormatter = VisibleEdgeAxisValueFormatter(chart: barLine, base: current)
+            }
+        }
     }
 
     func setCommonAxisConfig(_ axis: AxisBase, config: JSON) {

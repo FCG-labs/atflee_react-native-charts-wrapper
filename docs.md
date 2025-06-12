@@ -74,6 +74,7 @@
 | ------------------------ | -------- | ------- | ---- |
 | `labelRotationAngle`     | `number` |         |      |
 | `avoidFirstLastClipping` | `bool`   |         |      |
+| `edgeLabelEnabled`       | `bool`   |         | Show only the left and right labels of the current view |
 | `position`               | `string` |         | Should be in upper case. you will get an error in android if the position is in lower case      |
 | `valueFormatterPattern`  | `string` |         |      |
 
