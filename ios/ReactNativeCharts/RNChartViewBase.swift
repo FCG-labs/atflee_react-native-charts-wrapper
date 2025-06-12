@@ -619,7 +619,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 label.translatesAutoresizingMaskIntoConstraints = false
                 addSubview(label)
                 label.bottomAnchor.constraint(equalTo: bottomAnchor).isActive = true
-                label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8).isActive = true
+                label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -24).isActive = true
                 rightEdgeLabel = label
             }
             applyEdgeLabelStyle()

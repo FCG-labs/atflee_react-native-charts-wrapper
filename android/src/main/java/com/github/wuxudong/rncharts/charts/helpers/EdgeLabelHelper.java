@@ -14,7 +14,8 @@ import com.github.mikephil.charting.formatter.ValueFormatter;
 
 /** Helper for fixed edge labels overlayed on the chart. */
 public class EdgeLabelHelper {
-    private static final float PADDING_DP = 8f;
+    private static final float PADDING_DP_LEFT = 8f;
+    private static final float PADDING_DP_RIGHT = 24f;
     private static String leftTag(Chart chart) {
         return "edgeLabelLeft-" + chart.getId();
     }
@@ -92,10 +93,11 @@ public class EdgeLabelHelper {
         int chartRight = chart.getRight();
         int chartBottom = chart.getBottom();
 
-        int pad = px(chart, PADDING_DP);
+        int padLeft = px(chart, PADDING_DP_LEFT);
+        int padRight = px(chart, PADDING_DP_RIGHT);
 
-        left.layout(chartLeft + pad, chartBottom - leftH, chartLeft + pad + leftW, chartBottom);
-        right.layout(chartRight - rightW - pad, chartBottom - rightH, chartRight - pad, chartBottom);
+        left.layout(chartLeft + padLeft, chartBottom - leftH, chartLeft + padLeft + leftW, chartBottom);
+        right.layout(chartRight - rightW - padRight, chartBottom - rightH, chartRight - padRight, chartBottom);
 
         left.bringToFront();
         right.bringToFront();
