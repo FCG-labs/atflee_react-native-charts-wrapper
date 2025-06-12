@@ -16,6 +16,8 @@ import com.github.mikephil.charting.formatter.ValueFormatter;
 public class EdgeLabelHelper {
     private static final float PADDING_DP = 8f;
     private static final float TOP_PADDING_DP = 8f;
+    private static java.util.WeakHashMap<BarLineChartBase, Boolean> enabledMap = new java.util.WeakHashMap<>();
+    private static java.util.WeakHashMap<BarLineChartBase, float[]> baseOffsets = new java.util.WeakHashMap<>();
     private static String leftTag(Chart chart) {
         return "edgeLabelLeft-" + chart.getId();
     }
@@ -31,6 +33,7 @@ public class EdgeLabelHelper {
     }
 
     public static void setEnabled(BarLineChartBase chart, boolean enabled) {
+        enabledMap.put(chart, enabled);
         ViewGroup parent = (ViewGroup) chart.getParent();
         if (parent == null) {
             chart.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
@@ -49,6 +52,7 @@ public class EdgeLabelHelper {
         if (!enabled) {
             if (left != null) parent.removeView(left);
             if (right != null) parent.removeView(right);
+            applyPadding(chart);
             return;
         }
 
@@ -70,6 +74,7 @@ public class EdgeLabelHelper {
         style(chart);
         reposition(chart);
         update(chart, chart.getLowestVisibleX(), chart.getHighestVisibleX());
+        applyPadding(chart);
     }
 
     private static void reposition(BarLineChartBase chart) {
@@ -101,6 +106,7 @@ public class EdgeLabelHelper {
 
         left.bringToFront();
         right.bringToFront();
+        applyPadding(chart);
     }
 
     private static void style(BarLineChartBase chart) {
@@ -153,5 +159,42 @@ public class EdgeLabelHelper {
         }
 
         reposition(bar);
+    }
+
+    public static void saveBaseOffsets(BarLineChartBase chart, float left, float top, float right, float bottom) {
+        baseOffsets.put(chart, new float[]{left, top, right, bottom});
+    }
+
+    private static float[] base(BarLineChartBase chart) {
+        float[] b = baseOffsets.get(chart);
+        if (b == null) {
+            b = new float[]{0f, 0f, 0f, 0f};
+        }
+        return b;
+    }
+
+    private static boolean isEnabled(BarLineChartBase chart) {
+        Boolean e = enabledMap.get(chart);
+        return e != null && e;
+    }
+
+    private static int overlayHeight(BarLineChartBase chart) {
+        ViewGroup parent = (ViewGroup) chart.getParent();
+        if (parent == null) return 0;
+        TextView left = parent.findViewWithTag(leftTag(chart));
+        if (left == null) return 0;
+        int widthSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+        int heightSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+        left.measure(widthSpec, heightSpec);
+        return left.getMeasuredHeight();
+    }
+
+    public static void applyPadding(BarLineChartBase chart) {
+        float[] b = base(chart);
+        float bottom = b[3];
+        if (isEnabled(chart)) {
+            bottom += overlayHeight(chart) + px(chart, TOP_PADDING_DP);
+        }
+        chart.setExtraOffsets(b[0], b[1], b[2], bottom);
     }
 }

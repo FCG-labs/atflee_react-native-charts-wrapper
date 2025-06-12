@@ -256,7 +256,8 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         if (BridgeUtils.validate(propMap, ReadableType.Number, "bottom")) {
             bottom = propMap.getDouble("bottom");
         }
-        chart.setExtraOffsets((float) left, (float) top, (float) right, (float) bottom);
+        com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.saveBaseOffsets(chart, (float) left, (float) top, (float) right, (float) bottom);
+        com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.applyPadding(chart);
     }
 
     @ReactProp(name = "group")

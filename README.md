@@ -121,8 +121,9 @@ Enable `edgeLabelEnabled` to hide the regular x-axis labels and instead draw two
 fixed labels anchored to the left and right edges of the chart. The labels show
 the formatted values at the current visible range boundaries and update
 automatically as you pan or zoom. Padding is added on the sides and above the
-axis line so the text does not touch the chart edges, and the helper ensures the
-values remain visible while scrolling or zooming.
+axis line so the text does not touch the chart edges. The chart automatically
+adds bottom padding equal to the label height so the overlay never obstructs the
+data, and the helper keeps the values visible while scrolling or zooming.
 
 ```jsx
 <LineChart

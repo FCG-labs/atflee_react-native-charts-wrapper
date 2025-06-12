@@ -41,7 +41,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
     private var leftEdgeLabel: UILabel?
     private var rightEdgeLabel: UILabel?
-    private var edgeLabelEnabled: Bool = false
+    var edgeLabelEnabled: Bool = false
+    private let edgeLabelTopPadding: CGFloat = 8
 
     private var group: String?
 
@@ -55,6 +56,10 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
     override open func layoutSubviews() {
         super.layoutSubviews()
+
+        if edgeLabelEnabled, let bar = self as? RNBarLineChartViewBase {
+            bar.applyExtraOffsets()
+        }
 
         if !hasSentLoadComplete && bounds.width > 0 && bounds.height > 0 {
             DispatchQueue.main.async {
@@ -624,11 +629,13 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             }
             applyEdgeLabelStyle()
             updateEdgeLabels(left: chart.lowestVisibleX, right: chart.highestVisibleX)
+            if let bar = self as? RNBarLineChartViewBase { bar.applyExtraOffsets() }
         } else {
             leftEdgeLabel?.removeFromSuperview()
             rightEdgeLabel?.removeFromSuperview()
             leftEdgeLabel = nil
             rightEdgeLabel = nil
+            if let bar = self as? RNBarLineChartViewBase { bar.applyExtraOffsets() }
         }
     }
 
@@ -643,6 +650,11 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         rightEdgeLabel?.textColor = color
         leftEdgeLabel?.textAlignment = .left
         rightEdgeLabel?.textAlignment = .right
+    }
+
+    func edgeLabelHeight() -> CGFloat {
+        guard let label = leftEdgeLabel else { return 0 }
+        return label.intrinsicContentSize.height
     }
 
     private func updateEdgeLabels(left: Double, right: Double) {
@@ -669,6 +681,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         } else {
             rightEdgeLabel?.text = formatter.stringForValue(Double(rightIndex), axis: barLine.xAxis)
         }
+        if let bar = self as? RNBarLineChartViewBase { bar.applyExtraOffsets() }
     }
 
     func sendEvent(_ action:String) {
