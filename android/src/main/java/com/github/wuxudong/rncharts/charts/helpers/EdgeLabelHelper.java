@@ -2,6 +2,7 @@ package com.github.wuxudong.rncharts.charts.helpers;
 
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.TextView;
@@ -22,7 +23,16 @@ public class EdgeLabelHelper {
 
     public static void setEnabled(BarLineChartBase chart, boolean enabled) {
         ViewGroup parent = (ViewGroup) chart.getParent();
-        if (parent == null) return;
+        if (parent == null) {
+            chart.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+                @Override public void onViewAttachedToWindow(View view) {
+                    chart.removeOnAttachStateChangeListener(this);
+                    setEnabled(chart, enabled);
+                }
+                @Override public void onViewDetachedFromWindow(View view) {}
+            });
+            return;
+        }
 
         TextView left = parent.findViewWithTag(leftTag(chart));
         TextView right = parent.findViewWithTag(rightTag(chart));
