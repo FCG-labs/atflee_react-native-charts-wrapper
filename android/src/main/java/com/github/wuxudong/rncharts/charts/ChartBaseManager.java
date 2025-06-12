@@ -325,6 +325,7 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
                 if (enabled) {
                     com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.update(barLineChart, barLineChart.getLowestVisibleX(), barLineChart.getHighestVisibleX());
                 }
+                com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.applyPadding(barLineChart);
             }
         }
 
