@@ -28,8 +28,19 @@ public class VisibleEdgeAxisValueFormatter extends ValueFormatter {
         if (!enabled) {
             return baseFormatter.getFormattedValue(value);
         }
-        int leftIndex = Math.round(chart.getLowestVisibleX());
-        int rightIndex = Math.round(chart.getHighestVisibleX());
+        float lowest = chart.getLowestVisibleX();
+        float highest = chart.getHighestVisibleX();
+
+        int leftIndex = Math.round(lowest);
+        if (leftIndex > lowest) {
+            leftIndex -= 1;
+        }
+
+        int rightIndex = Math.round(highest);
+        if (rightIndex < highest) {
+            rightIndex += 1;
+        }
+
         int index = Math.round(value);
         if (index == leftIndex || index == rightIndex) {
             return baseFormatter.getFormattedValue(value);
