@@ -611,7 +611,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 label.translatesAutoresizingMaskIntoConstraints = false
                 addSubview(label)
                 label.bottomAnchor.constraint(equalTo: bottomAnchor).isActive = true
-                label.leadingAnchor.constraint(equalTo: leadingAnchor).isActive = true
+                label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8).isActive = true
                 leftEdgeLabel = label
             }
             if rightEdgeLabel == nil {
@@ -619,10 +619,11 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 label.translatesAutoresizingMaskIntoConstraints = false
                 addSubview(label)
                 label.bottomAnchor.constraint(equalTo: bottomAnchor).isActive = true
-                label.trailingAnchor.constraint(equalTo: trailingAnchor).isActive = true
+                label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8).isActive = true
                 rightEdgeLabel = label
             }
             applyEdgeLabelStyle()
+            updateEdgeLabels(left: chart.lowestVisibleX, right: chart.highestVisibleX)
         } else {
             leftEdgeLabel?.removeFromSuperview()
             rightEdgeLabel?.removeFromSuperview()
@@ -640,13 +641,34 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         rightEdgeLabel?.font = font
         leftEdgeLabel?.textColor = color
         rightEdgeLabel?.textColor = color
+        leftEdgeLabel?.textAlignment = .left
+        rightEdgeLabel?.textAlignment = .right
     }
 
     private func updateEdgeLabels(left: Double, right: Double) {
         guard edgeLabelEnabled, let barLine = chart as? BarLineChartViewBase else { return }
         let formatter = barLine.xAxis.valueFormatter
-        leftEdgeLabel?.text = formatter.stringForValue(left, axis: barLine.xAxis)
-        rightEdgeLabel?.text = formatter.stringForValue(right, axis: barLine.xAxis)
+
+        let minX = barLine.chartXMin
+        let maxX = barLine.chartXMax
+
+        var leftIndex = Int(ceil(left))
+        var rightIndex = Int(floor(right))
+
+        if Double(leftIndex) < minX { leftIndex = Int(minX) }
+        if Double(leftIndex) > maxX { leftIndex = Int(maxX) }
+        if Double(rightIndex) < minX { rightIndex = Int(minX) }
+        if Double(rightIndex) > maxX { rightIndex = Int(maxX) }
+
+        leftEdgeLabel?.isHidden = false
+        rightEdgeLabel?.isHidden = false
+
+        leftEdgeLabel?.text = formatter.stringForValue(Double(leftIndex), axis: barLine.xAxis)
+        if rightIndex <= leftIndex {
+            rightEdgeLabel?.isHidden = true
+        } else {
+            rightEdgeLabel?.text = formatter.stringForValue(Double(rightIndex), axis: barLine.xAxis)
+        }
     }
 
     func sendEvent(_ action:String) {
