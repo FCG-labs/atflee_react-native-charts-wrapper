@@ -628,7 +628,11 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 rightEdgeLabel = label
             }
             applyEdgeLabelStyle()
-            updateEdgeLabels(left: chart.lowestVisibleX, right: chart.highestVisibleX)
+            let barLine = chart as? BarLineChartViewBase
+            if barLine != nil {
+                updateEdgeLabels(left: barLine!.lowestVisibleX, right: barLine!.highestVisibleX)
+            }
+            
             if let bar = self as? RNBarLineChartViewBase { bar.applyExtraOffsets() }
         } else {
             leftEdgeLabel?.removeFromSuperview()
@@ -675,11 +679,11 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         leftEdgeLabel?.isHidden = false
         rightEdgeLabel?.isHidden = false
 
-        leftEdgeLabel?.text = formatter.stringForValue(Double(leftIndex), axis: barLine.xAxis)
+        leftEdgeLabel?.text = formatter?.stringForValue(Double(leftIndex), axis: barLine.xAxis)
         if rightIndex <= leftIndex {
             rightEdgeLabel?.isHidden = true
         } else {
-            rightEdgeLabel?.text = formatter.stringForValue(Double(rightIndex), axis: barLine.xAxis)
+            rightEdgeLabel?.text = formatter?.stringForValue(Double(rightIndex), axis: barLine.xAxis)
         }
         if let bar = self as? RNBarLineChartViewBase { bar.applyExtraOffsets() }
     }
