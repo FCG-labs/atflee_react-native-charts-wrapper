@@ -16,8 +16,7 @@ import com.github.mikephil.charting.formatter.ValueFormatter;
 /** Helper for fixed edge labels overlayed on the chart. */
 public class EdgeLabelHelper {
     private static final float PADDING_DP_LEFT = 8f;
-    private static final float PADDING_DP_RIGHT = 26f;
-    private static final float PADDING_DP_TOP = 0f;
+    private static final float PADDING_DP_RIGHT = 32f;
     private static java.util.WeakHashMap<BarLineChartBase, Boolean> enabledMap = new java.util.WeakHashMap<>();
     private static java.util.WeakHashMap<BarLineChartBase, float[]> baseOffsets = new java.util.WeakHashMap<>();
     private static java.util.WeakHashMap<BarLineChartBase, View.OnLayoutChangeListener> layoutListeners = new java.util.WeakHashMap<>();
@@ -122,10 +121,9 @@ public class EdgeLabelHelper {
 
         int padLeft = px(chart, PADDING_DP_LEFT);
         int padRight = px(chart, PADDING_DP_RIGHT);
-        int padTop = px(chart, PADDING_DP_TOP);
 
-        left.layout(chartLeft + padLeft, chartBottom - leftH - padTop, chartLeft + padLeft + leftW, chartBottom);
-        right.layout(chartRight - rightW - padRight, chartBottom - rightH - padTop, chartRight - padRight, chartBottom);
+        left.layout(chartLeft + padLeft, chartBottom - leftH, chartLeft + padLeft + leftW, chartBottom);
+        right.layout(chartRight - rightW - padRight, chartBottom - rightH, chartRight - padRight, chartBottom);
 
         left.bringToFront();
         right.bringToFront();
