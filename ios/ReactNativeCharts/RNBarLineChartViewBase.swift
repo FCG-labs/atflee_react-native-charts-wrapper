@@ -18,6 +18,8 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
     var savedZoom : NSDictionary?
 
+    var savedExtraOffsets: NSDictionary?
+
     var _onYaxisMinMaxChange : RCTBubblingEventBlock?
     var timer : Timer?
 
@@ -227,18 +229,32 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
     }
 
     func setExtraOffsets(_ config: NSDictionary) {
-        let json = BridgeUtils.toJson(config)
+        savedExtraOffsets = config
+        applyExtraOffsets()
+    }
 
-        let left = json["left"].double != nil ? CGFloat(json["left"].doubleValue) : 0
-        let top = json["top"].double != nil ? CGFloat(json["top"].doubleValue) : 0
-        let right = json["right"].double != nil ? CGFloat(json["right"].doubleValue) : 0
-        let bottom = json["bottom"].double != nil ? CGFloat(json["bottom"].doubleValue) : 0
-
+    func applyExtraOffsets() {
+        var left: CGFloat = 0
+        var top: CGFloat = 0
+        var right: CGFloat = 0
+        var bottom: CGFloat = 0
+        if let config = savedExtraOffsets {
+            let json = BridgeUtils.toJson(config)
+            left = json["left"].double != nil ? CGFloat(json["left"].doubleValue) : 0
+            top = json["top"].double != nil ? CGFloat(json["top"].doubleValue) : 0
+            right = json["right"].double != nil ? CGFloat(json["right"].doubleValue) : 0
+            bottom = json["bottom"].double != nil ? CGFloat(json["bottom"].doubleValue) : 0
+        }
+        if edgeLabelEnabled {
+            bottom = edgeLabelHeight() / 2
+        }
         barLineChart.setExtraOffsets(left: left, top: top, right: right, bottom: bottom)
     }
 
     override func onAfterDataSetChanged() {
         super.onAfterDataSetChanged()
+
+        applyExtraOffsets()
 
         // clear zoom after applied, but keep visibleRange
         if let visibleRange = savedVisibleRange {

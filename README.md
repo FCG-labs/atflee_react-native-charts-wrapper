@@ -115,14 +115,15 @@ affects Android unless you provide an iOS implementation.
 
 `HorizontalBarChart` and `CombinedChart` expose the same prop.
 
-### Display xAxis labels only at the edges
+### Display fixed edge labels
 
-Sometimes you may want the x-axis to show labels only at the start and end of
-the visible range. Set `edgeLabelEnabled` to `true` to let the native layer
-automatically render labels only for the left and right edge. Internally a
-formatter looks up the current viewport boundaries and hides the other
-labels. The edge labels always show the values at the exact start and end of
-the visible range so they update as you pan or zoom.
+Enable `edgeLabelEnabled` to hide the regular x-axis labels and instead draw two
+fixed labels anchored to the left and right edges of the chart. The labels show
+the formatted values at the current visible range boundaries and update
+automatically as you pan or zoom. Padding is added on the sides and above the
+axis line so the text does not touch the chart edges. The chart automatically
+adds bottom padding equal to half the label height so the overlay never obstructs the
+data, and the helper keeps the values visible while scrolling or zooming.
 
 ```jsx
 <LineChart
