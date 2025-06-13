@@ -617,20 +617,22 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 let label = UILabel()
                 label.translatesAutoresizingMaskIntoConstraints = false
                 label.numberOfLines = 0
+                label.lineBreakMode = .byWordWrapping
                 addSubview(label)
                 leftEdgeConstraint = label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -edgeLabelTopPadding)
                 leftEdgeConstraint?.isActive = true
-                label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8).isActive = true
+                label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12).isActive = true
                 leftEdgeLabel = label
             }
             if rightEdgeLabel == nil {
                 let label = UILabel()
                 label.translatesAutoresizingMaskIntoConstraints = false
                 label.numberOfLines = 0
+                label.lineBreakMode = .byWordWrapping
                 addSubview(label)
                 rightEdgeConstraint = label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -edgeLabelTopPadding)
                 rightEdgeConstraint?.isActive = true
-                label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8).isActive = true
+                label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -32).isActive = true
                 rightEdgeLabel = label
             }
             applyEdgeLabelStyle()
@@ -660,12 +662,13 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         rightEdgeLabel?.font = font
         leftEdgeLabel?.textColor = color
         rightEdgeLabel?.textColor = color
-        leftEdgeLabel?.textAlignment = .left
-        rightEdgeLabel?.textAlignment = .right
+        leftEdgeLabel?.textAlignment = .center
+        rightEdgeLabel?.textAlignment = .center
         leftEdgeLabel?.numberOfLines = 0
         rightEdgeLabel?.numberOfLines = 0
-
-        let offset = -(axis.labelFont.lineHeight + edgeLabelTopPadding)
+        leftEdgeLabel?.lineBreakMode = .byWordWrapping
+        rightEdgeLabel?.lineBreakMode = .byWordWrapping
+        let offset = -(axis.labelFont.lineHeight + edgeLabelHeight() / 2 + edgeLabelTopPadding)
         leftEdgeConstraint?.constant = offset
         rightEdgeConstraint?.constant = offset
         layoutIfNeeded()
