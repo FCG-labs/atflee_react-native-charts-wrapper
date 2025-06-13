@@ -42,7 +42,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     private var leftEdgeLabel: UILabel?
     private var rightEdgeLabel: UILabel?
     var edgeLabelEnabled: Bool = false
-    private let edgeLabelTopPadding: CGFloat = 8
+    let edgeLabelTopPadding: CGFloat = 8
 
     private var group: String?
 
@@ -614,16 +614,18 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             if leftEdgeLabel == nil {
                 let label = UILabel()
                 label.translatesAutoresizingMaskIntoConstraints = false
+                label.numberOfLines = 0
                 addSubview(label)
-                label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -8).isActive = true
+                label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -edgeLabelTopPadding).isActive = true
                 label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8).isActive = true
                 leftEdgeLabel = label
             }
             if rightEdgeLabel == nil {
                 let label = UILabel()
                 label.translatesAutoresizingMaskIntoConstraints = false
+                label.numberOfLines = 0
                 addSubview(label)
-                label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -8).isActive = true
+                label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -edgeLabelTopPadding).isActive = true
                 label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8).isActive = true
                 rightEdgeLabel = label
             }
@@ -654,6 +656,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         rightEdgeLabel?.textColor = color
         leftEdgeLabel?.textAlignment = .left
         rightEdgeLabel?.textAlignment = .right
+        leftEdgeLabel?.numberOfLines = 0
+        rightEdgeLabel?.numberOfLines = 0
     }
 
     func edgeLabelHeight() -> CGFloat {
@@ -679,11 +683,15 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         leftEdgeLabel?.isHidden = false
         rightEdgeLabel?.isHidden = false
 
-        leftEdgeLabel?.text = formatter?.stringForValue(Double(leftIndex), axis: barLine.xAxis)
+        if let value = formatter?.stringForValue(Double(leftIndex), axis: barLine.xAxis) {
+            leftEdgeLabel?.text = value.components(separatedBy: "\n").last ?? value
+        }
         if rightIndex <= leftIndex {
             rightEdgeLabel?.isHidden = true
         } else {
-            rightEdgeLabel?.text = formatter?.stringForValue(Double(rightIndex), axis: barLine.xAxis)
+            if let value = formatter?.stringForValue(Double(rightIndex), axis: barLine.xAxis) {
+                rightEdgeLabel?.text = value.components(separatedBy: "\n").last ?? value
+            }
         }
         if let bar = self as? RNBarLineChartViewBase { bar.applyExtraOffsets() }
     }
