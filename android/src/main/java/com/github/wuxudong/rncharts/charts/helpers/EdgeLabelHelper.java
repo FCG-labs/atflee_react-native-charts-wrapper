@@ -3,6 +3,7 @@ package com.github.wuxudong.rncharts.charts.helpers;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.View.OnLayoutChangeListener;
 import android.widget.TextView;
 
 import com.github.mikephil.charting.data.ChartData;
@@ -19,7 +20,6 @@ public class EdgeLabelHelper {
     private static final float PADDING_DP_TOP = 8f;
     private static java.util.WeakHashMap<BarLineChartBase, Boolean> enabledMap = new java.util.WeakHashMap<>();
     private static java.util.WeakHashMap<BarLineChartBase, float[]> baseOffsets = new java.util.WeakHashMap<>();
-    
     private static String leftTag(Chart chart) {
         return "edgeLabelLeft-" + chart.getId();
     }
@@ -50,10 +50,14 @@ public class EdgeLabelHelper {
 
         TextView left = parent.findViewWithTag(leftTag(chart));
         TextView right = parent.findViewWithTag(rightTag(chart));
-
+        OnLayoutChangeListener listener = layoutListeners.get(chart);
         if (!enabled) {
             if (left != null) parent.removeView(left);
             if (right != null) parent.removeView(right);
+            if (listener != null) {
+                chart.removeOnLayoutChangeListener(listener);
+                layoutListeners.remove(chart);
+            }
             applyPadding(chart);
             return;
         }
@@ -71,6 +75,21 @@ public class EdgeLabelHelper {
             right.setFocusable(false);
             parent.addView(right);
             right.setTag(rightTag(chart));
+        }
+
+        if (listener == null) {
+            final BarLineChartBase c = chart;
+            listener = new OnLayoutChangeListener() {
+                @Override
+                public void onLayoutChange(View v, int leftL, int topL, int rightL, int bottomL,
+                                           int oldLeft, int oldTop, int oldRight, int oldBottom) {
+                    if (leftL != oldLeft || topL != oldTop || rightL != oldRight || bottomL != oldBottom) {
+                        reposition(c);
+                    }
+                }
+            };
+            chart.addOnLayoutChangeListener(listener);
+            layoutListeners.put(chart, listener);
         }
 
         style(chart);
@@ -100,12 +119,11 @@ public class EdgeLabelHelper {
         int chartRight = chart.getRight();
         int chartBottom = chart.getBottom();
 
-        int padLeft = px(chart, PADDING_DP_LEFT);
-        int padRight = px(chart, PADDING_DP_RIGHT);
-        int padTop = px(chart, PADDING_DP_TOP);
+        int padX = px(chart, PADDING_DP);
+        int padY = px(chart, TOP_PADDING_DP);
 
-        left.layout(chartLeft + padLeft, chartBottom - leftH - padTop, chartLeft + padLeft + leftW, chartBottom - padTop);
-        right.layout(chartRight - rightW - padRight, chartBottom - rightH - padTop, chartRight - padRight, chartBottom - padTop);
+        left.layout(chartLeft + padX, chartBottom - leftH - padY, chartLeft + padX + leftW, chartBottom - padY);
+        right.layout(chartRight - rightW - padX, chartBottom - rightH - padY, chartRight - padX, chartBottom - padY);
 
         left.bringToFront();
         right.bringToFront();
@@ -196,7 +214,7 @@ public class EdgeLabelHelper {
         float[] b = base(chart);
         float bottom = b[3];
         if (isEnabled(chart)) {
-            bottom += overlayHeight(chart) + px(chart, TOP_PADDING_DP);
+            bottom = (float) overlayHeight(chart) / 2f;
         }
         chart.setExtraOffsets(b[0], b[1], b[2], bottom);
     }

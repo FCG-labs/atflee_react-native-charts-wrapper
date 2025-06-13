@@ -246,7 +246,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             bottom = json["bottom"].double != nil ? CGFloat(json["bottom"].doubleValue) : 0
         }
         if edgeLabelEnabled {
-            bottom += edgeLabelHeight() + edgeLabelTopPadding
+            bottom = edgeLabelHeight() / 2
         }
         barLineChart.setExtraOffsets(left: left, top: top, right: right, bottom: bottom)
     }
