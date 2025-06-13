@@ -20,6 +20,7 @@ public class EdgeLabelHelper {
     private static final float PADDING_DP_TOP = 8f;
     private static java.util.WeakHashMap<BarLineChartBase, Boolean> enabledMap = new java.util.WeakHashMap<>();
     private static java.util.WeakHashMap<BarLineChartBase, float[]> baseOffsets = new java.util.WeakHashMap<>();
+    private static java.util.WeakHashMap<BarLineChartBase, View.OnLayoutChangeListener> layoutListeners = new java.util.WeakHashMap<>();
     private static String leftTag(Chart chart) {
         return "edgeLabelLeft-" + chart.getId();
     }
