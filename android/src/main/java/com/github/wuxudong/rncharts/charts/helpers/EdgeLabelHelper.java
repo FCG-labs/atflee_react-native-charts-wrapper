@@ -119,11 +119,12 @@ public class EdgeLabelHelper {
         int chartRight = chart.getRight();
         int chartBottom = chart.getBottom();
 
-        int padX = px(chart, PADDING_DP);
-        int padY = px(chart, TOP_PADDING_DP);
+        int padLeft = px(chart, PADDING_DP_LEFT);
+        int padRight = px(chart, PADDING_DP_RIGHT);
+        int padTop = px(chart, PADDING_DP_TOP);
 
-        left.layout(chartLeft + padX, chartBottom - leftH - padY, chartLeft + padX + leftW, chartBottom - padY);
-        right.layout(chartRight - rightW - padX, chartBottom - rightH - padY, chartRight - padX, chartBottom - padY);
+        left.layout(chartLeft + padLeft, chartBottom - leftH - padTop, chartLeft + padLeft + leftW, chartBottom);
+        right.layout(chartRight - rightW - padRight, chartBottom - rightH - padTop, chartRight - padRight, chartBottom);
 
         left.bringToFront();
         right.bringToFront();
