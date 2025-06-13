@@ -15,11 +15,11 @@ import com.github.mikephil.charting.formatter.ValueFormatter;
 
 /** Helper for fixed edge labels overlayed on the chart. */
 public class EdgeLabelHelper {
-    private static final float PADDING_DP = 8f;
-    private static final float TOP_PADDING_DP = 8f;
+    private static final float PADDING_DP_LEFT = 8f;
+    private static final float PADDING_DP_RIGHT = 24f;
+    private static final float PADDING_DP_TOP = 8f;
     private static java.util.WeakHashMap<BarLineChartBase, Boolean> enabledMap = new java.util.WeakHashMap<>();
     private static java.util.WeakHashMap<BarLineChartBase, float[]> baseOffsets = new java.util.WeakHashMap<>();
-    private static java.util.WeakHashMap<BarLineChartBase, View.OnLayoutChangeListener> layoutListeners = new java.util.WeakHashMap<>();
     private static String leftTag(Chart chart) {
         return "edgeLabelLeft-" + chart.getId();
     }
@@ -51,7 +51,6 @@ public class EdgeLabelHelper {
         TextView left = parent.findViewWithTag(leftTag(chart));
         TextView right = parent.findViewWithTag(rightTag(chart));
         OnLayoutChangeListener listener = layoutListeners.get(chart);
-
         if (!enabled) {
             if (left != null) parent.removeView(left);
             if (right != null) parent.removeView(right);
