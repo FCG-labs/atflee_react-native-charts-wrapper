@@ -41,6 +41,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
     private var leftEdgeLabel: UILabel?
     private var rightEdgeLabel: UILabel?
+    private var leftEdgeConstraint: NSLayoutConstraint?
+    private var rightEdgeConstraint: NSLayoutConstraint?
     var edgeLabelEnabled: Bool = false
     let edgeLabelTopPadding: CGFloat = 8
 
@@ -616,7 +618,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 label.translatesAutoresizingMaskIntoConstraints = false
                 label.numberOfLines = 0
                 addSubview(label)
-                label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -edgeLabelTopPadding).isActive = true
+                leftEdgeConstraint = label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -edgeLabelTopPadding)
+                leftEdgeConstraint?.isActive = true
                 label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8).isActive = true
                 leftEdgeLabel = label
             }
@@ -625,7 +628,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 label.translatesAutoresizingMaskIntoConstraints = false
                 label.numberOfLines = 0
                 addSubview(label)
-                label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -edgeLabelTopPadding).isActive = true
+                rightEdgeConstraint = label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -edgeLabelTopPadding)
+                rightEdgeConstraint?.isActive = true
                 label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8).isActive = true
                 rightEdgeLabel = label
             }
@@ -641,6 +645,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             rightEdgeLabel?.removeFromSuperview()
             leftEdgeLabel = nil
             rightEdgeLabel = nil
+            leftEdgeConstraint = nil
+            rightEdgeConstraint = nil
             if let bar = self as? RNBarLineChartViewBase { bar.applyExtraOffsets() }
         }
     }
@@ -658,11 +664,17 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         rightEdgeLabel?.textAlignment = .right
         leftEdgeLabel?.numberOfLines = 0
         rightEdgeLabel?.numberOfLines = 0
+
+        let offset = -(axis.labelFont.lineHeight + edgeLabelTopPadding)
+        leftEdgeConstraint?.constant = offset
+        rightEdgeConstraint?.constant = offset
+        layoutIfNeeded()
     }
 
     func edgeLabelHeight() -> CGFloat {
-        guard let label = leftEdgeLabel else { return 0 }
-        return label.intrinsicContentSize.height
+        let leftHeight = leftEdgeLabel?.intrinsicContentSize.height ?? 0
+        let rightHeight = rightEdgeLabel?.intrinsicContentSize.height ?? 0
+        return max(leftHeight, rightHeight)
     }
 
     private func updateEdgeLabels(left: Double, right: Double) {
@@ -684,15 +696,16 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         rightEdgeLabel?.isHidden = false
 
         if let value = formatter?.stringForValue(Double(leftIndex), axis: barLine.xAxis) {
-            leftEdgeLabel?.text = value.components(separatedBy: "\n").last ?? value
+            leftEdgeLabel?.text = value
         }
         if rightIndex <= leftIndex {
             rightEdgeLabel?.isHidden = true
         } else {
             if let value = formatter?.stringForValue(Double(rightIndex), axis: barLine.xAxis) {
-                rightEdgeLabel?.text = value.components(separatedBy: "\n").last ?? value
+                rightEdgeLabel?.text = value
             }
         }
+        layoutIfNeeded()
         if let bar = self as? RNBarLineChartViewBase { bar.applyExtraOffsets() }
     }
 
