@@ -114,7 +114,7 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
         event.putString("action", action);
 
         if (chart instanceof BarLineChartBase) {
-            BarLineChartBase barLineChart = (BarLineChartBase) chart;
+//            BarLineChartBase barLineChart = (BarLineChartBase) chart;
             ViewPortHandler viewPortHandler = chart.getViewPortHandler();
             event.putDouble("scaleX", chart.getScaleX());
             event.putDouble("scaleY", chart.getScaleY());
@@ -135,8 +135,8 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
             float minX = chart.getData() != null ? chart.getData().getXMin() : Float.MIN_VALUE;
             float maxX = chart.getData() != null ? chart.getData().getXMax() : Float.MAX_VALUE;
 
-            float spaceMin = ((BarLineChartBase) chart).getXAxis().getSpaceMin();
-            float spaceMax = ((BarLineChartBase) chart).getXAxis().getSpaceMax();
+            float spaceMin = chart.getXAxis().getSpaceMin();
+            float spaceMax = chart.getXAxis().getSpaceMax();
 
             double allowedMin = minX - spaceMin;
             double allowedMax = maxX + spaceMax;

@@ -619,7 +619,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 label.numberOfLines = 0
                 label.lineBreakMode = .byWordWrapping
                 addSubview(label)
-                leftEdgeConstraint = label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -edgeLabelTopPadding)
+                leftEdgeConstraint = label.topAnchor.constraint(equalTo: bottomAnchor, constant: -edgeLabelTopPadding)
                 leftEdgeConstraint?.isActive = true
                 label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12).isActive = true
                 leftEdgeLabel = label
@@ -630,7 +630,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 label.numberOfLines = 0
                 label.lineBreakMode = .byWordWrapping
                 addSubview(label)
-                rightEdgeConstraint = label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -edgeLabelTopPadding)
+                rightEdgeConstraint = label.topAnchor.constraint(equalTo: bottomAnchor, constant: -edgeLabelTopPadding)
                 rightEdgeConstraint?.isActive = true
                 label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -32).isActive = true
                 rightEdgeLabel = label
@@ -668,9 +668,9 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         rightEdgeLabel?.numberOfLines = 0
         leftEdgeLabel?.lineBreakMode = .byWordWrapping
         rightEdgeLabel?.lineBreakMode = .byWordWrapping
-        let offset = -(axis.labelFont.lineHeight + edgeLabelHeight() / 2 + edgeLabelTopPadding)
-        leftEdgeConstraint?.constant = offset
-        rightEdgeConstraint?.constant = offset
+        let offset = 27.3 - (font.lineHeight * 2 + edgeLabelHeight() * 2)
+        leftEdgeConstraint?.constant = -(26.5 + offset)
+        rightEdgeConstraint?.constant = -(26.5 + offset)
         layoutIfNeeded()
     }
 

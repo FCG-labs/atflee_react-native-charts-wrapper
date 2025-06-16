@@ -85,13 +85,14 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
 
                 MPPointD leftBottom = barLineChart.getValuesByTouchPoint(handler.contentLeft(), handler.contentBottom(), YAxis.AxisDependency.LEFT);
                 MPPointD rightTop = barLineChart.getValuesByTouchPoint(handler.contentRight(), handler.contentTop(), YAxis.AxisDependency.LEFT);
-
-                event.putDouble("left", leftBottom.x);
+                double leftValue = barLineChart.getLowestVisibleX();
+                double rightValue = barLineChart.getHighestVisibleX();
+                event.putDouble("left", leftValue);
                 event.putDouble("bottom", leftBottom.y);
-                event.putDouble("right", rightTop.x);
+                event.putDouble("right", rightValue);
                 event.putDouble("top", rightTop.y);
 
-                EdgeLabelHelper.update(barLineChart, leftBottom.x, rightTop.x);
+                EdgeLabelHelper.update(barLineChart, leftValue, rightValue);
             }
         }
 
@@ -759,8 +760,12 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
                 @Override
                 public boolean onPreDraw() {
                     chart.getViewTreeObserver().removeOnPreDrawListener(this);
-                    sendLoadCompleteEvent(chart);
-                    loadCompleteMap.put(chart, true);
+//                    sendLoadCompleteEvent(chart);
+//                    loadCompleteMap.put(chart, true);
+                    chart.post(() -> {
+                        sendLoadCompleteEvent(chart);
+                        loadCompleteMap.put(chart, true);
+                    });
                     return true;
                 }
             });
