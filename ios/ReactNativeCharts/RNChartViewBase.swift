@@ -41,10 +41,12 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
     private var leftEdgeLabel: UILabel?
     private var rightEdgeLabel: UILabel?
+    private var leftEdgeLabelHasNewline = false
+    private var rightEdgeLabelHasNewline = false
     private var leftEdgeConstraint: NSLayoutConstraint?
     private var rightEdgeConstraint: NSLayoutConstraint?
     var edgeLabelEnabled: Bool = false
-    let edgeLabelTopPadding: CGFloat = 8
+    let edgeLabelTopPadding: CGFloat = 0
 
     private var group: String?
 
@@ -668,9 +670,15 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         rightEdgeLabel?.numberOfLines = 0
         leftEdgeLabel?.lineBreakMode = .byWordWrapping
         rightEdgeLabel?.lineBreakMode = .byWordWrapping
-        let offset = 27.3 - (font.lineHeight * 2 + edgeLabelHeight() * 2)
-        leftEdgeConstraint?.constant = -(26.5 + offset)
-        rightEdgeConstraint?.constant = -(26.5 + offset)
+        
+        if ((leftEdgeLabel?.text?.contains("\n")) ?? false || (rightEdgeLabel?.text?.contains("\n")) ?? false) {
+            leftEdgeConstraint?.constant = -(font.lineHeight + 15)
+            rightEdgeConstraint?.constant = -(font.lineHeight + 15)
+        } else {
+            leftEdgeConstraint?.constant = -(font.lineHeight)
+            rightEdgeConstraint?.constant = -(font.lineHeight)
+        }
+        
         layoutIfNeeded()
     }
 
@@ -700,14 +708,22 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
         if let value = formatter?.stringForValue(Double(leftIndex), axis: barLine.xAxis) {
             leftEdgeLabel?.text = value
+            leftEdgeLabelHasNewline = value.contains("\n")
+        } else {
+            leftEdgeLabelHasNewline = false
         }
         if rightIndex <= leftIndex {
             rightEdgeLabel?.isHidden = true
+            rightEdgeLabelHasNewline = false
         } else {
             if let value = formatter?.stringForValue(Double(rightIndex), axis: barLine.xAxis) {
                 rightEdgeLabel?.text = value
+                rightEdgeLabelHasNewline = value.contains("\n")
+            } else {
+                rightEdgeLabelHasNewline = false
             }
         }
+        applyEdgeLabelStyle()
         layoutIfNeeded()
         if let bar = self as? RNBarLineChartViewBase { bar.applyExtraOffsets() }
     }
