@@ -114,7 +114,18 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         if (BridgeUtils.validate(propMap, ReadableType.Map, "x")) {
             ReadableMap x = propMap.getMap("x");
             if (BridgeUtils.validate(x, ReadableType.Number, "min")) {
-                chart.setVisibleXRangeMinimum((float) x.getDouble("min"));
+                double min = x.getDouble("min");
+                int count = chart.getData() != null ? chart.getData().getEntryCount() : 0;
+                if (count > 0 && count < min) {
+                    XAxis xAxis = chart.getXAxis();
+                    float spaceMin = xAxis.getSpaceMin();
+                    float spaceMax = xAxis.getSpaceMax();
+                    float axisMin = chart.getXChartMin() - spaceMin;
+                    xAxis.setAxisMinimum(axisMin);
+                    xAxis.setAxisMaximum(axisMin + (float) min - 1 + spaceMin + spaceMax);
+                } else {
+                    chart.setVisibleXRangeMinimum((float) min);
+                }
             }
 
             if (BridgeUtils.validate(x, ReadableType.Number, "max")) {
