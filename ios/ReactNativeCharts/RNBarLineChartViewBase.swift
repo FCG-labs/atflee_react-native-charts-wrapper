@@ -171,6 +171,20 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         }
     }
 
+    func setMinScale(_ config: NSDictionary) {
+        let json = BridgeUtils.toJson(config)
+
+        let minScaleX = json["x"]
+        if minScaleX.double != nil {
+            barLineChart.viewPortHandler.setMinimumScaleX(minScaleX.doubleValue)
+        }
+
+        let minScaleY = json["y"]
+        if minScaleY.double != nil {
+            barLineChart.viewPortHandler.setMinimumScaleY(minScaleY.doubleValue)
+        }
+    }
+
     func setAutoScaleMinMaxEnabled(_  enabled: Bool) {
         barLineChart.autoScaleMinMaxEnabled = enabled
     }
