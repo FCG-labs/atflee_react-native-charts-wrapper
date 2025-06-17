@@ -28,6 +28,7 @@ import javax.annotation.Nullable;
 
 class ChartExtraProperties {
     public ReadableMap savedVisibleRange = null;
+    public ReadableMap savedZoom = null;
     public String group = null;
     public String identifier = null;
     public boolean syncX = true;
@@ -110,7 +111,7 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
 
     }
 
-    private void updateVisibleRange(BarLineChartBase chart, ReadableMap propMap) {
+    private void updateVisibleRange(BarLineChartBase chart, ReadableMap propMap, boolean sendEvent) {
         if (BridgeUtils.validate(propMap, ReadableType.Map, "x")) {
             ReadableMap x = propMap.getMap("x");
             if (BridgeUtils.validate(x, ReadableType.Number, "min")) {
@@ -148,7 +149,9 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
             }
         }
 
-        sendLoadCompleteEvent(chart);
+        if (sendEvent) {
+            sendLoadCompleteEvent(chart);
+        }
     }
 
     @ReactProp(name = "autoScaleMinMaxEnabled")
@@ -202,22 +205,25 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                 BridgeUtils.validate(propMap, ReadableType.Number, "scaleY") &&
                 BridgeUtils.validate(propMap, ReadableType.Number, "xValue") &&
                 BridgeUtils.validate(propMap, ReadableType.Number, "yValue")) {
-
-            YAxis.AxisDependency axisDependency = YAxis.AxisDependency.LEFT;
-            if (propMap.hasKey("axisDependency") &&
-                    propMap.getString("axisDependency").equalsIgnoreCase("RIGHT")) {
-                axisDependency = YAxis.AxisDependency.RIGHT;
-            }
-
-            chart.zoom(
-                    (float) propMap.getDouble("scaleX") / chart.getScaleX(),
-                    (float) propMap.getDouble("scaleY") / chart.getScaleY(),
-                    (float) propMap.getDouble("xValue"),
-                    (float) propMap.getDouble("yValue"),
-                    axisDependency
-            );
-            sendLoadCompleteEvent(chart);
+            extraPropertiesHolder.getExtraProperties(chart).savedZoom = propMap;
         }
+    }
+
+    private void updateZoom(BarLineChartBase chart, ReadableMap propMap) {
+        YAxis.AxisDependency axisDependency = YAxis.AxisDependency.LEFT;
+        if (propMap.hasKey("axisDependency") &&
+                propMap.getString("axisDependency").equalsIgnoreCase("RIGHT")) {
+            axisDependency = YAxis.AxisDependency.RIGHT;
+        }
+
+        chart.zoom(
+                (float) propMap.getDouble("scaleX") / chart.getScaleX(),
+                (float) propMap.getDouble("scaleY") / chart.getScaleY(),
+                (float) propMap.getDouble("xValue"),
+                (float) propMap.getDouble("yValue"),
+                axisDependency
+        );
+        sendLoadCompleteEvent(chart);
     }
 
     // Note: Offset aren't updated until first touch event: https://github.com/PhilJay/MPAndroidChart/issues/892
@@ -353,7 +359,7 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         root.setData((getDataExtract().extract(root, map)));
         ReadableMap savedVisibleRange = extraPropertiesHolder.getExtraProperties(root).savedVisibleRange;
         if (savedVisibleRange != null) {
-            updateVisibleRange(root, savedVisibleRange);
+            updateVisibleRange(root, savedVisibleRange, true);
         }
 
         MPPointD newPixelForOriginalCenter = transformer.getPixelForValues((float) originalCenterValue.x, (float) originalCenterValue.y);
@@ -400,9 +406,14 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         ChartExtraProperties extraProperties = extraPropertiesHolder.getExtraProperties(chart);
 
         if (extraProperties.savedVisibleRange != null) {
-            updateVisibleRange(chart, extraProperties.savedVisibleRange);
+            updateVisibleRange(chart, extraProperties.savedVisibleRange, extraProperties.savedZoom == null);
+            extraProperties.savedVisibleRange = null;
         }
 
+        if (extraProperties.savedZoom != null) {
+            updateZoom(chart, extraProperties.savedZoom);
+            extraProperties.savedZoom = null;
+        }
 
         if (extraProperties.group != null && extraProperties.identifier != null) {
             OnChartGestureListener onChartGestureListener = chart.getOnChartGestureListener();

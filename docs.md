@@ -519,10 +519,12 @@ type combinedData {
 
 ## Callbacks
 
+`chartLoadComplete` is emitted after the chart finishes rendering. When both `zoom` and `visibleRange` props are set, the event fires once they have been applied.
+
 ```jsx
 const handleChange = e => {
   if (e.nativeEvent.action === 'chartLoadComplete') {
-    // zoom and visibleRange props have been applied; scaleX/scaleY are valid
+    // zoom and visibleRange props (if provided) have been applied
   }
 };
 <LineChart onChange={handleChange} ... />
