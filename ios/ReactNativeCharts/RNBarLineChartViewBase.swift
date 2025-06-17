@@ -21,8 +21,6 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
     var visibleRangeMin: Double?
     var minimumSize: Double?
 
-    static let PREDEFINED_SCALE: CGFloat = 0.5
-
     var savedExtraOffsets: NSDictionary?
 
     private var hasSentLoadCompleteEvent = false
