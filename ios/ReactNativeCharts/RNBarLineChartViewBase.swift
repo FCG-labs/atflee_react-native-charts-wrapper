@@ -309,11 +309,10 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
         if let visibleRange = savedVisibleRange {
             updateVisibleRange(visibleRange)
-            barLineChart.moveViewToX(barLineChart.chartXMax)
             applied = true
         }
 
-        if applied && !hasSentLoadCompleteEvent {
+        if applied {
             sendEvent("chartLoadComplete")
             hasSentLoadCompleteEvent = true
         }
