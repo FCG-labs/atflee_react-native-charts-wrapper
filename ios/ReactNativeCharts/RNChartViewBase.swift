@@ -314,14 +314,6 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             xAxis.labelPosition = BridgeUtils.parseXAxisLabelPosition(json["position"].stringValue)
         }
 
-        if json["spaceMin"].number != nil {
-            xAxis.spaceMin = CGFloat(truncating: json["spaceMin"].numberValue)
-        }
-
-        if json["spaceMax"].number != nil {
-            xAxis.spaceMax = CGFloat(truncating: json["spaceMax"].numberValue)
-        }
-
         if let barLine = chart as? BarLineChartViewBase, json["edgeLabelEnabled"].bool != nil {
             let enable = json["edgeLabelEnabled"].boolValue
             xAxis.drawLabelsEnabled = !enable
@@ -760,7 +752,6 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 let maxX = barLineChart.chartXMax
                 // let dragOffset = handler.dragOffsetX
 
-                let spaceMin = barLineChart.xAxis.spaceMin
                 let spaceMax = barLineChart.xAxis.spaceMax
 
                 let allowedMin = minX
@@ -782,11 +773,6 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
                 if leftValue < allowedMin { leftValue = allowedMin }
                 if rightValue > allowedMax { rightValue = allowedMax }
-
-                if action == "chartLoadComplete" {
-                    leftValue += spaceMin
-                    rightValue -= spaceMax
-                }
 
                 dict["left"] = leftValue
                 dict["bottom"] = leftBottom.y

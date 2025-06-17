@@ -124,9 +124,6 @@ automatically as you pan or zoom. Padding is added on the sides and above the
 axis line so the text does not touch the chart edges. The chart automatically
 adds bottom padding equal to half the label height so the overlay never obstructs the
 data, and the helper keeps the values visible while scrolling or zooming.
-By default the x-axis reserves `0.75` units of spacing on each side. If you need
-to tweak this spacing for a custom layout, pass `spaceMin` and `spaceMax` in the
-`xAxis` config.
 
 ```jsx
 <LineChart

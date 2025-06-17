@@ -75,8 +75,6 @@
 | `labelRotationAngle`     | `number` |         |      |
 | `avoidFirstLastClipping` | `bool`   |         |      |
 | `edgeLabelEnabled`       | `bool`   |         | Hide normal x-axis labels and draw two padded labels at the visible range edges. The chart adds bottom padding equal to half the label height so they never overlap the data. The labels include top padding and update automatically as you scroll or zoom |
-| `spaceMin`               | `number` | 0.75    | Extra spacing on the left side of the x-axis |
-| `spaceMax`               | `number` | 0.75    | Extra spacing on the right side of the x-axis |
 | `position`               | `string` |         | Should be in upper case. you will get an error in android if the position is in lower case      |
 | `valueFormatterPattern`  | `string` |         |      |
 
