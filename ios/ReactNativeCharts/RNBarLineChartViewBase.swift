@@ -241,8 +241,6 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
                     xValue: json["xValue"].doubleValue,
                     yValue: json["yValue"].doubleValue,
                     axis: axisDependency)
-
-            sendEvent("chartLoadComplete")
         }
     }
 
@@ -288,14 +286,14 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
         // clear zoom after applied, but keep visibleRange
         var applied = false
-        if let visibleRange = savedVisibleRange {
-            updateVisibleRange(visibleRange)
-            applied = true
-        }
-
         if let zoom = savedZoom {
             updateZoom(zoom)
             savedZoom = nil
+            applied = true
+        }
+
+        if let visibleRange = savedVisibleRange {
+            updateVisibleRange(visibleRange)
             applied = true
         }
 
