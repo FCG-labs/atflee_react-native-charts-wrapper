@@ -85,8 +85,14 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
 
                 MPPointD leftBottom = barLineChart.getValuesByTouchPoint(handler.contentLeft(), handler.contentBottom(), YAxis.AxisDependency.LEFT);
                 MPPointD rightTop = barLineChart.getValuesByTouchPoint(handler.contentRight(), handler.contentTop(), YAxis.AxisDependency.LEFT);
+
                 double leftValue = barLineChart.getLowestVisibleX();
                 double rightValue = barLineChart.getHighestVisibleX();
+
+                // Ignore extra x-axis spacing when reporting visible range
+                leftValue += barLineChart.getXAxis().getSpaceMin();
+                rightValue -= barLineChart.getXAxis().getSpaceMax();
+
                 event.putDouble("left", leftValue);
                 event.putDouble("bottom", leftBottom.y);
                 event.putDouble("right", rightValue);
@@ -315,6 +321,14 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
         }
         if (BridgeUtils.validate(propMap, ReadableType.String, "position")) {
             axis.setPosition(XAxisPosition.valueOf(propMap.getString("position")));
+        }
+
+        if (BridgeUtils.validate(propMap, ReadableType.Number, "spaceMin")) {
+            axis.setSpaceMin((float) propMap.getDouble("spaceMin"));
+        }
+
+        if (BridgeUtils.validate(propMap, ReadableType.Number, "spaceMax")) {
+            axis.setSpaceMax((float) propMap.getDouble("spaceMax"));
         }
 
         if (BridgeUtils.validate(propMap, ReadableType.Boolean, "edgeLabelEnabled")) {
