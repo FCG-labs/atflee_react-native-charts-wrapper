@@ -10,6 +10,7 @@ import com.facebook.react.uimanager.annotations.ReactProp;
 import com.github.mikephil.charting.charts.BarLineChartBase;
 import com.github.mikephil.charting.charts.Chart;
 import com.github.mikephil.charting.components.YAxis;
+import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.jobs.ZoomJob;
 import com.github.mikephil.charting.listener.BarLineChartTouchListener;
@@ -209,10 +210,20 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                 axisDependency = YAxis.AxisDependency.RIGHT;
             }
 
+            double minX = chart.getData() != null ? chart.getData().getXMin() : 0d;
+            double maxX = chart.getData() != null ? chart.getData().getXMax() : 0d;
+            float spaceMax = chart.getXAxis().getSpaceMax();
+            double allowedMin = minX;
+            double allowedMax = maxX + spaceMax;
+
+            double xValue = propMap.getDouble("xValue");
+            if (xValue < allowedMin) xValue = allowedMin;
+            if (xValue > allowedMax) xValue = allowedMax;
+
             chart.zoom(
                     (float) propMap.getDouble("scaleX") / chart.getScaleX(),
                     (float) propMap.getDouble("scaleY") / chart.getScaleY(),
-                    (float) propMap.getDouble("xValue"),
+                    (float) xValue,
                     (float) propMap.getDouble("yValue"),
                     axisDependency
             );
@@ -364,6 +375,16 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
 
         double newVisibleXRange = root.getVisibleXRange();
         double newVisibleYRange = getVisibleYRange(root, axisDependency);
+
+        if (savedVisibleRange != null && savedVisibleRange.hasKey("x") && savedVisibleRange.getType("x") == ReadableType.Map) {
+            ReadableMap xRange = savedVisibleRange.getMap("x");
+            if (xRange.hasKey("min") && xRange.getType("min") == ReadableType.Number) {
+                double minX = xRange.getDouble("min");
+                if (newVisibleXRange < minX) {
+                    newVisibleXRange = minX;
+                }
+            }
+        }
 
         double scaleX = (newVisibleXRange / originalVisibleXRange);
         double scaleY = (newVisibleYRange / originalVisibleYRange);

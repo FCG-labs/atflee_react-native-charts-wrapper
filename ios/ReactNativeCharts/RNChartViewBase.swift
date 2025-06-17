@@ -752,10 +752,9 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 let maxX = barLineChart.chartXMax
                 // let dragOffset = handler.dragOffsetX
 
-                let spaceMin = barLineChart.xAxis.spaceMin
                 let spaceMax = barLineChart.xAxis.spaceMax
-                
-                let allowedMin = minX - spaceMin
+
+                let allowedMin = minX
                 let allowedMax = maxX + spaceMax
 
                 let originalWidth = rightTop.x - leftBottom.x
