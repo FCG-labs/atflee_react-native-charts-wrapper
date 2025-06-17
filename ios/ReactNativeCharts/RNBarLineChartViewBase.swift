@@ -294,6 +294,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
         if let visibleRange = savedVisibleRange {
             updateVisibleRange(visibleRange)
+            barLineChart.moveViewToX(barLineChart.chartXMax)
             applied = true
         }
 
