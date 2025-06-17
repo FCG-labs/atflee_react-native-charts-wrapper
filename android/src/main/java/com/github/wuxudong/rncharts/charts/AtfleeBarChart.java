@@ -33,7 +33,7 @@ public class AtfleeBarChart extends BarChart {
 
         setHighlighter(new BarHighlighter(this));
 
-        getXAxis().setSpaceMin(0.75f);
+        getXAxis().setSpaceMin(0f);
         getXAxis().setSpaceMax(0.75f);
     }
 
