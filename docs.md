@@ -127,7 +127,7 @@
 | `borderWidth`            | `number`                                                                                                                                                        |         |      |
 | `minOffset`              | `number`                                                                                                                                                        |         |      |
 | `maxVisibleValueCount`   | `number`                                                                                                                                                        |         |      |
-| `visibleRange`           | `{`<br />`x: { min: number, max: number },`<br />`y: {`<br />`left: { min: number, max: number },`<br />`right: { min: number, max: number }`<br />`}`<br />`}` |         |      |
+| `visibleRange`           | `{`<br />`x: { min: number, max: number },`<br />`y: {`<br />`left: { min: number, max: number },`<br />`right: { min: number, max: number }`<br />`}`<br />`}` |         | If `x.min` exceeds the data range, the chart pads the x-axis so the zoom level remains unchanged. |
 | `autoScaleMinMaxEnabled` | `bool`                                                                                                                                                          |         |      |
 | `keepPositionOnRotation` | `bool`                                                                                                                                                          |         |      |
 | `scaleEnabled`           | `bool`                                                                                                                                                          |         |      |
