@@ -775,6 +775,10 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 if leftValue < allowedMin { leftValue = allowedMin }
                 if rightValue > allowedMax { rightValue = allowedMax }
 
+                if leftValue < 0 {
+                    leftValue = 0
+                }
+
                 dict["left"] = leftValue
                 dict["bottom"] = leftBottom.y
                 dict["right"] = rightValue
