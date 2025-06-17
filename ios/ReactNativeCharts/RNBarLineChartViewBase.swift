@@ -295,11 +295,8 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         barLineChart.data = dataExtract.extract(json)
         barLineChart.notifyDataSetChanged()
 
-        if let config = savedVisibleRange {
-            updateVisibleRange(config)
-        }
 
-        let newVisibleXRange = barLineChart.visibleXRange - barLineChart.xAxis.spaceMax
+        let newVisibleXRange = barLineChart.visibleXRange
         let newVisibleYRange = getVisibleYRange(axis)
 
         var targetVisibleXRange = newVisibleXRange
@@ -319,6 +316,10 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         // We apply visibleRange both before and after zoom to mirror Android behavior
 
         barLineChart.zoom(scaleX: CGFloat(scaleX), scaleY: CGFloat(scaleY), xValue: Double(originCenterValue.x), yValue: Double(originCenterValue.y), axis: axis)
+
+        if let config = savedVisibleRange {
+            updateVisibleRange(config)
+        }
         barLineChart.notifyDataSetChanged()
 
         sendEvent("chartLoadComplete")
