@@ -128,6 +128,7 @@
 | `minOffset`              | `number`                                                                                                                                                        |         |      |
 | `maxVisibleValueCount`   | `number`                                                                                                                                                        |         |      |
 | `visibleRange`           | `{`<br />`minimumSize: number,`<br />`x: { min: number, max: number },`<br />`y: {`<br />`left: { min: number, max: number },`<br />`right: { min: number, max: number }`<br />`}`<br />`}` |         |  Applied after chart data loads. Use `chartLoadComplete` to detect when zoom and visible range are fully applied. |
+| `minScale`               | `{`<br />`x: number,`<br />`y: number`<br />`}` |         |  Sets the minimum allowed zoom scale for each axis. |
 | `autoScaleMinMaxEnabled` | `bool`                                                                                                                                                          |         |      |
 | `keepPositionOnRotation` | `bool`                                                                                                                                                          |         |      |
 | `scaleEnabled`           | `bool`                                                                                                                                                          |         |      |

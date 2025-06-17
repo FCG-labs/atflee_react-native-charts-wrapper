@@ -226,6 +226,17 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         chart.setDoubleTapToZoomEnabled(enabled);
     }
 
+    @ReactProp(name = "minScale")
+    public void setMinScale(BarLineChartBase chart, ReadableMap propMap) {
+        if (BridgeUtils.validate(propMap, ReadableType.Number, "x")) {
+            chart.getViewPortHandler().setMinimumScaleX((float) propMap.getDouble("x"));
+        }
+
+        if (BridgeUtils.validate(propMap, ReadableType.Number, "y")) {
+            chart.getViewPortHandler().setMinimumScaleY((float) propMap.getDouble("y"));
+        }
+    }
+
     @ReactProp(name = "zoom")
     public void setZoom(BarLineChartBase chart, ReadableMap propMap) {
         if (BridgeUtils.validate(propMap, ReadableType.Number, "scaleX") &&
