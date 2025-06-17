@@ -118,7 +118,13 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
         let x = json["x"]
         if x["min"].double != nil {
-            barLineChart.setVisibleXRangeMinimum(x["min"].doubleValue)
+            let minRange = x["min"].doubleValue
+            let axis = barLineChart.xAxis
+            let currentRange = axis.axisMaximum - axis.axisMinimum
+            if currentRange < minRange {
+                axis.axisMaximum = axis.axisMinimum + minRange
+            }
+            barLineChart.setVisibleXRangeMinimum(minRange)
         }
         if x["max"].double != nil {
             barLineChart.setVisibleXRangeMaximum(x["max"].doubleValue)
@@ -290,12 +296,19 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             updateVisibleRange(config)
         }
 
-
         let newSpace = barLineChart.xAxis.spaceMin + barLineChart.xAxis.spaceMax
         let newVisibleXRange = barLineChart.visibleXRange - newSpace
         let newVisibleYRange = getVisibleYRange(axis)
 
-        let scaleX = newVisibleXRange / originalVisibleXRange
+        var targetVisibleXRange = newVisibleXRange
+        if let config = savedVisibleRange {
+            let rangeJson = BridgeUtils.toJson(config)
+            if let minX = rangeJson["x"]["min"].double {
+                targetVisibleXRange = max(CGFloat(minX), newVisibleXRange)
+            }
+        }
+
+        let scaleX = targetVisibleXRange / originalVisibleXRange
         let scaleY = newVisibleYRange / originalVisibleYRange
 
         // in iOS Charts chart.zoom scaleX: CGFloat, scaleY: CGFloat, xValue: Double, yValue: Double, axis: YAxis.AxisDependency)
@@ -304,11 +317,6 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         // We apply visibleRange both before and after zoom to mirror Android behavior
 
         barLineChart.zoom(scaleX: CGFloat(scaleX), scaleY: CGFloat(scaleY), xValue: Double(originCenterValue.x), yValue: Double(originCenterValue.y), axis: axis)
-
-        if let config = savedVisibleRange {
-            updateVisibleRange(config)
-        }
-
         barLineChart.notifyDataSetChanged()
 
         sendEvent("chartLoadComplete")

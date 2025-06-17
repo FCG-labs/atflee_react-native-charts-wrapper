@@ -10,6 +10,7 @@ import com.facebook.react.uimanager.annotations.ReactProp;
 import com.github.mikephil.charting.charts.BarLineChartBase;
 import com.github.mikephil.charting.charts.Chart;
 import com.github.mikephil.charting.components.YAxis;
+import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.jobs.ZoomJob;
 import com.github.mikephil.charting.listener.BarLineChartTouchListener;
@@ -114,7 +115,13 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         if (BridgeUtils.validate(propMap, ReadableType.Map, "x")) {
             ReadableMap x = propMap.getMap("x");
             if (BridgeUtils.validate(x, ReadableType.Number, "min")) {
-                chart.setVisibleXRangeMinimum((float) x.getDouble("min"));
+                float min = (float) x.getDouble("min");
+                XAxis axis = chart.getXAxis();
+                float range = axis.getAxisMaximum() - axis.getAxisMinimum();
+                if (range < min) {
+                    axis.setAxisMaximum(axis.getAxisMinimum() + min);
+                }
+                chart.setVisibleXRangeMinimum(min);
             }
 
             if (BridgeUtils.validate(x, ReadableType.Number, "max")) {
@@ -364,6 +371,16 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
 
         double newVisibleXRange = root.getVisibleXRange();
         double newVisibleYRange = getVisibleYRange(root, axisDependency);
+
+        if (savedVisibleRange != null && savedVisibleRange.hasKey("x") && savedVisibleRange.getType("x") == ReadableType.Map) {
+            ReadableMap xRange = savedVisibleRange.getMap("x");
+            if (xRange.hasKey("min") && xRange.getType("min") == ReadableType.Number) {
+                double minX = xRange.getDouble("min");
+                if (newVisibleXRange < minX) {
+                    newVisibleXRange = minX;
+                }
+            }
+        }
 
         double scaleX = (newVisibleXRange / originalVisibleXRange);
         double scaleY = (newVisibleYRange / originalVisibleYRange);
