@@ -59,8 +59,6 @@ class ExtraPropertiesHolder {
 
 public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U extends Entry> extends YAxisChartBase<T, U> {
 
-    private static final float PREDEFINED_SCALE = 0.5f;
-
     private ExtraPropertiesHolder extraPropertiesHolder = new ExtraPropertiesHolder();
 
     @Override
@@ -478,16 +476,7 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
     protected void sendLoadCompleteEvent(Chart chart) {
         if (chart instanceof BarLineChartBase) {
             BarLineChartBase barLineChart = (BarLineChartBase) chart;
-            ChartExtraProperties extras = extraPropertiesHolder.getExtraProperties(barLineChart);
             float scaleX = barLineChart.getScaleX();
-            if (extras.visibleRangeMin != null && extras.visibleRangeMin > 0) {
-                float dataRange = barLineChart.getXChartMax() - barLineChart.getXChartMin();
-                if (dataRange < extras.visibleRangeMin) {
-                    scaleX = dataRange / extras.visibleRangeMin;
-                } else if (extras.minimumSize != null && extras.minimumSize.equals(extras.visibleRangeMin)) {
-                    scaleX = PREDEFINED_SCALE;
-                }
-            }
 
             WritableMap event = Arguments.createMap();
             event.putString("action", "chartLoadComplete");
