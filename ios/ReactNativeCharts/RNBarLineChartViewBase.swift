@@ -293,7 +293,15 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         let newVisibleXRange = barLineChart.visibleXRange
         let newVisibleYRange = getVisibleYRange(axis)
 
-        let scaleX = newVisibleXRange / originalVisibleXRange
+        var targetVisibleXRange = newVisibleXRange
+        if let config = savedVisibleRange {
+            let rangeJson = BridgeUtils.toJson(config)
+            if let minX = rangeJson["x"]["min"].double {
+                targetVisibleXRange = max(CGFloat(minX), newVisibleXRange)
+            }
+        }
+
+        let scaleX = targetVisibleXRange / originalVisibleXRange
         let scaleY = newVisibleYRange / originalVisibleYRange
 
         // in iOS Charts chart.zoom scaleX: CGFloat, scaleY: CGFloat, xValue: Double, yValue: Double, axis: YAxis.AxisDependency)
