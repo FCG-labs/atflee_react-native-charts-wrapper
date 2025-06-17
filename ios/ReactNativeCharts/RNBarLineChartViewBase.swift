@@ -25,8 +25,23 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
     var savedExtraOffsets: NSDictionary?
 
+    private var hasSentLoadCompleteEvent = false
+
     var _onYaxisMinMaxChange : RCTBubblingEventBlock?
     var timer : Timer?
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+
+        if !hasSentLoadCompleteEvent,
+           bounds.width > 0,
+           bounds.height > 0,
+           let range = savedVisibleRange {
+            updateVisibleRange(range)
+            barLineChart.moveViewToX(barLineChart.chartXMax)
+            hasSentLoadCompleteEvent = true
+        }
+    }
 
     override func setYAxis(_ config: NSDictionary) {
         let json = BridgeUtils.toJson(config)
@@ -299,6 +314,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
         if applied {
             sendEvent("chartLoadComplete")
+            hasSentLoadCompleteEvent = true
         }
     }
 
@@ -339,7 +355,10 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         }
         barLineChart.notifyDataSetChanged()
 
-        sendEvent("chartLoadComplete")
+        if !hasSentLoadCompleteEvent {
+            sendEvent("chartLoadComplete")
+            hasSentLoadCompleteEvent = true
+        }
     }
 
     func getVisibleYRange(_ axis: YAxis.AxisDependency) -> CGFloat {
