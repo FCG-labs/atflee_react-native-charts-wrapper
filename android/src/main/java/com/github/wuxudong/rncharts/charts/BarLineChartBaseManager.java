@@ -5,6 +5,10 @@ import android.graphics.RectF;
 import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.ReadableType;
+import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.ReactContext;
+import com.facebook.react.uimanager.events.RCTEventEmitter;
 import com.facebook.react.common.MapBuilder;
 import com.facebook.react.uimanager.annotations.ReactProp;
 import com.github.mikephil.charting.charts.BarLineChartBase;
@@ -28,6 +32,8 @@ import javax.annotation.Nullable;
 
 class ChartExtraProperties {
     public ReadableMap savedVisibleRange = null;
+    public ReadableMap savedZoom = null;
+    public Float visibleRangeMin = null;
     public String group = null;
     public String identifier = null;
     public boolean syncX = true;
@@ -106,15 +112,28 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
     @ReactProp(name = "visibleRange")
     public void setVisibleXRangeMinimum(BarLineChartBase chart, ReadableMap propMap) {
         // delay visibleRange handling until chart data is set
-        extraPropertiesHolder.getExtraProperties(chart).savedVisibleRange = propMap;
+        ChartExtraProperties extras = extraPropertiesHolder.getExtraProperties(chart);
+        extras.savedVisibleRange = propMap;
+        if (BridgeUtils.validate(propMap, ReadableType.Map, "x")) {
+            ReadableMap x = propMap.getMap("x");
+            if (BridgeUtils.validate(x, ReadableType.Number, "min")) {
+                extras.visibleRangeMin = (float) x.getDouble("min");
+            } else {
+                extras.visibleRangeMin = null;
+            }
+        } else {
+            extras.visibleRangeMin = null;
+        }
 
     }
 
     private void updateVisibleRange(BarLineChartBase chart, ReadableMap propMap) {
+        ChartExtraProperties extras = extraPropertiesHolder.getExtraProperties(chart);
         if (BridgeUtils.validate(propMap, ReadableType.Map, "x")) {
             ReadableMap x = propMap.getMap("x");
             if (BridgeUtils.validate(x, ReadableType.Number, "min")) {
                 chart.setVisibleXRangeMinimum((float) x.getDouble("min"));
+                extras.visibleRangeMin = (float) x.getDouble("min");
             }
 
             if (BridgeUtils.validate(x, ReadableType.Number, "max")) {
@@ -147,8 +166,6 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                 }
             }
         }
-
-        sendLoadCompleteEvent(chart);
     }
 
     @ReactProp(name = "autoScaleMinMaxEnabled")
@@ -202,22 +219,25 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                 BridgeUtils.validate(propMap, ReadableType.Number, "scaleY") &&
                 BridgeUtils.validate(propMap, ReadableType.Number, "xValue") &&
                 BridgeUtils.validate(propMap, ReadableType.Number, "yValue")) {
-
-            YAxis.AxisDependency axisDependency = YAxis.AxisDependency.LEFT;
-            if (propMap.hasKey("axisDependency") &&
-                    propMap.getString("axisDependency").equalsIgnoreCase("RIGHT")) {
-                axisDependency = YAxis.AxisDependency.RIGHT;
-            }
-
-            chart.zoom(
-                    (float) propMap.getDouble("scaleX") / chart.getScaleX(),
-                    (float) propMap.getDouble("scaleY") / chart.getScaleY(),
-                    (float) propMap.getDouble("xValue"),
-                    (float) propMap.getDouble("yValue"),
-                    axisDependency
-            );
-            sendLoadCompleteEvent(chart);
+            ChartExtraProperties extras = extraPropertiesHolder.getExtraProperties(chart);
+            extras.savedZoom = propMap;
         }
+    }
+
+    private void applyZoom(BarLineChartBase chart, ReadableMap propMap) {
+        YAxis.AxisDependency axisDependency = YAxis.AxisDependency.LEFT;
+        if (propMap.hasKey("axisDependency") &&
+                propMap.getString("axisDependency").equalsIgnoreCase("RIGHT")) {
+            axisDependency = YAxis.AxisDependency.RIGHT;
+        }
+
+        chart.zoom(
+                (float) propMap.getDouble("scaleX") / chart.getScaleX(),
+                (float) propMap.getDouble("scaleY") / chart.getScaleY(),
+                (float) propMap.getDouble("xValue"),
+                (float) propMap.getDouble("yValue"),
+                axisDependency
+        );
     }
 
     // Note: Offset aren't updated until first touch event: https://github.com/PhilJay/MPAndroidChart/issues/892
@@ -399,10 +419,21 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
 
         ChartExtraProperties extraProperties = extraPropertiesHolder.getExtraProperties(chart);
 
+        boolean appliedRange = false;
         if (extraProperties.savedVisibleRange != null) {
             updateVisibleRange(chart, extraProperties.savedVisibleRange);
+            appliedRange = true;
         }
 
+        if (extraProperties.savedZoom != null) {
+            applyZoom(chart, extraProperties.savedZoom);
+            extraProperties.savedZoom = null;
+            appliedRange = true;
+        }
+
+        if (appliedRange) {
+            sendLoadCompleteEvent(chart);
+        }
 
         if (extraProperties.group != null && extraProperties.identifier != null) {
             OnChartGestureListener onChartGestureListener = chart.getOnChartGestureListener();
@@ -414,6 +445,53 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
             }
 
             ChartGroupHolder.addChart(extraProperties.group, extraProperties.identifier, chart, extraProperties.syncX, extraProperties.syncY);
+        }
+    }
+
+    @Override
+    protected void sendLoadCompleteEvent(Chart chart) {
+        if (chart instanceof BarLineChartBase) {
+            BarLineChartBase barLineChart = (BarLineChartBase) chart;
+            ChartExtraProperties extras = extraPropertiesHolder.getExtraProperties(barLineChart);
+            float scaleX = barLineChart.getScaleX();
+            if (extras.visibleRangeMin != null && extras.visibleRangeMin > 0) {
+                float dataRange = barLineChart.getXChartMax() - barLineChart.getXChartMin();
+                if (dataRange < extras.visibleRangeMin) {
+                    scaleX = dataRange / extras.visibleRangeMin;
+                }
+            }
+
+            WritableMap event = Arguments.createMap();
+            event.putString("action", "chartLoadComplete");
+            ViewPortHandler handler = chart.getViewPortHandler();
+            event.putDouble("scaleX", scaleX);
+            event.putDouble("scaleY", chart.getScaleY());
+
+            if (handler != null) {
+                MPPointD center = barLineChart.getValuesByTouchPoint(handler.getContentCenter().getX(), handler.getContentCenter().getY(), YAxis.AxisDependency.LEFT);
+                event.putDouble("centerX", center.x);
+                event.putDouble("centerY", center.y);
+
+                MPPointD leftBottom = barLineChart.getValuesByTouchPoint(handler.contentLeft(), handler.contentBottom(), YAxis.AxisDependency.LEFT);
+                MPPointD rightTop = barLineChart.getValuesByTouchPoint(handler.contentRight(), handler.contentTop(), YAxis.AxisDependency.LEFT);
+                double leftValue = barLineChart.getLowestVisibleX();
+                if (leftValue < 0) leftValue = 0;
+                double rightValue = barLineChart.getHighestVisibleX();
+                event.putDouble("left", leftValue);
+                event.putDouble("bottom", leftBottom.y);
+                event.putDouble("right", rightValue);
+                event.putDouble("top", rightTop.y);
+
+                EdgeLabelHelper.update(barLineChart, leftValue, rightValue);
+            }
+
+            if (chart.getContext() instanceof ReactContext) {
+                ReactContext reactContext = (ReactContext) chart.getContext();
+                reactContext.getJSModule(RCTEventEmitter.class)
+                        .receiveEvent(chart.getId(), "topChange", event);
+            }
+        } else {
+            super.sendLoadCompleteEvent(chart);
         }
     }
 }
