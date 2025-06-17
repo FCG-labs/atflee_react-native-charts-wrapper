@@ -127,7 +127,7 @@
 | `borderWidth`            | `number`                                                                                                                                                        |         |      |
 | `minOffset`              | `number`                                                                                                                                                        |         |      |
 | `maxVisibleValueCount`   | `number`                                                                                                                                                        |         |      |
-| `visibleRange`           | `{`<br />`x: { min: number, max: number },`<br />`y: {`<br />`left: { min: number, max: number },`<br />`right: { min: number, max: number }`<br />`}`<br />`}` |         | Range is applied only after chart data is set. Listen for `chartLoadComplete` to confirm both this range and `zoom` have been applied. |
+| `visibleRange`           | `{`<br />`x: { min: number, max: number },`<br />`y: {`<br />`left: { min: number, max: number },`<br />`right: { min: number, max: number }`<br />`}`<br />`}` |         |  Applied after chart data loads. Use `chartLoadComplete` to detect when zoom and visible range are fully applied. |
 | `autoScaleMinMaxEnabled` | `bool`                                                                                                                                                          |         |      |
 | `keepPositionOnRotation` | `bool`                                                                                                                                                          |         |      |
 | `scaleEnabled`           | `bool`                                                                                                                                                          |         |      |
@@ -528,6 +528,9 @@ const handleChange = e => {
   }
 };
 <LineChart onChange={handleChange} ... />
+// visibleRange is applied only after chart data is set. Use this event to know
+// when both visibleRange and zoom are active.
 ```
 
 Payload fields: `scaleX`, `scaleY`, `centerX`, `centerY`, `left`, `right`, `top`, `bottom`.
+`left` is never negative for `chartTranslated` and `chartPanEnd`.

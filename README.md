@@ -248,12 +248,14 @@ const handleChange = e => {
   }
 };
 <LineChart onChange={handleChange} ... />
+// visibleRange is applied only after the chart data is set. Listen for
+// `chartLoadComplete` to know when both visibleRange and zoom have taken effect.
 ```
 
 The `visibleRange` prop takes effect only after chart data has been set. Use the `chartLoadComplete` event to know when both `visibleRange` and any `zoom` settings are fully applied.
 
 Payload fields: `scaleX`, `scaleY`, `centerX`, `centerY`, `left`, `right`, `top`, `bottom`.
-The `left` value reported by `chartTranslated` and `chartPanEnd` will never be below `0`.
+For `chartTranslated` and `chartPanEnd`, the `left` value is clamped to `0`.
 
 ## Direct Function Call
 

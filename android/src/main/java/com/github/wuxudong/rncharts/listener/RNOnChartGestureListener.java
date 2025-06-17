@@ -157,6 +157,7 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
 
             if (leftValue < allowedMin) leftValue = allowedMin;
             if (rightValue > allowedMax) rightValue = allowedMax;
+            if (leftValue < 0) leftValue = 0;
 
             if (leftValue < 0) {
                 leftValue = 0;

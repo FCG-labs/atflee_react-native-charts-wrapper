@@ -18,6 +18,8 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
     var savedZoom : NSDictionary?
 
+    var visibleRangeMin: Double?
+
     var savedExtraOffsets: NSDictionary?
 
     var _onYaxisMinMaxChange : RCTBubblingEventBlock?
@@ -111,6 +113,11 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
     func setVisibleRange(_ config: NSDictionary) {
         // delay visibleRange handling until chart data is set
         savedVisibleRange = config
+        let json = BridgeUtils.toJson(config)
+        let x = json["x"]
+        if let min = x["min"].double {
+            visibleRangeMin = min
+        }
     }
 
     func updateVisibleRange(_ config: NSDictionary) {
@@ -119,6 +126,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         let x = json["x"]
         if x["min"].double != nil {
             barLineChart.setVisibleXRangeMinimum(x["min"].doubleValue)
+            visibleRangeMin = x["min"].doubleValue
         }
         if x["max"].double != nil {
             barLineChart.setVisibleXRangeMaximum(x["max"].doubleValue)
@@ -138,8 +146,6 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         if y["right"]["max"].double != nil {
             barLineChart.setVisibleYRangeMaximum(y["right"]["max"].doubleValue, axis: YAxis.AxisDependency.right)
         }
-
-        sendEvent("chartLoadComplete")
     }
 
     func setMaxScale(_ config: NSDictionary) {
@@ -258,13 +264,20 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         applyExtraOffsets()
 
         // clear zoom after applied, but keep visibleRange
+        var applied = false
         if let visibleRange = savedVisibleRange {
             updateVisibleRange(visibleRange)
+            applied = true
         }
 
         if let zoom = savedZoom {
             updateZoom(zoom)
             savedZoom = nil
+            applied = true
+        }
+
+        if applied {
+            sendEvent("chartLoadComplete")
         }
     }
 
