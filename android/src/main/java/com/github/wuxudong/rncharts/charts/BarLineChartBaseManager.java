@@ -34,6 +34,7 @@ class ChartExtraProperties {
     public ReadableMap savedVisibleRange = null;
     public ReadableMap savedZoom = null;
     public Float visibleRangeMin = null;
+    public Float minimumSize = null;
     public String group = null;
     public String identifier = null;
     public boolean syncX = true;
@@ -55,6 +56,8 @@ class ExtraPropertiesHolder {
 }
 
 public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U extends Entry> extends YAxisChartBase<T, U> {
+
+    private static final float PREDEFINED_SCALE = 0.5f;
 
     private ExtraPropertiesHolder extraPropertiesHolder = new ExtraPropertiesHolder();
 
@@ -114,6 +117,11 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         // delay visibleRange handling until chart data is set
         ChartExtraProperties extras = extraPropertiesHolder.getExtraProperties(chart);
         extras.savedVisibleRange = propMap;
+        if (BridgeUtils.validate(propMap, ReadableType.Number, "minimumSize")) {
+            extras.minimumSize = (float) propMap.getDouble("minimumSize");
+        } else {
+            extras.minimumSize = null;
+        }
         if (BridgeUtils.validate(propMap, ReadableType.Map, "x")) {
             ReadableMap x = propMap.getMap("x");
             if (BridgeUtils.validate(x, ReadableType.Number, "min")) {
@@ -129,6 +137,11 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
 
     private void updateVisibleRange(BarLineChartBase chart, ReadableMap propMap) {
         ChartExtraProperties extras = extraPropertiesHolder.getExtraProperties(chart);
+        if (BridgeUtils.validate(propMap, ReadableType.Number, "minimumSize")) {
+            extras.minimumSize = (float) propMap.getDouble("minimumSize");
+        } else {
+            extras.minimumSize = null;
+        }
         if (BridgeUtils.validate(propMap, ReadableType.Map, "x")) {
             ReadableMap x = propMap.getMap("x");
             if (BridgeUtils.validate(x, ReadableType.Number, "min")) {
@@ -458,6 +471,8 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                 float dataRange = barLineChart.getXChartMax() - barLineChart.getXChartMin();
                 if (dataRange < extras.visibleRangeMin) {
                     scaleX = dataRange / extras.visibleRangeMin;
+                } else if (extras.minimumSize != null && extras.minimumSize.equals(extras.visibleRangeMin)) {
+                    scaleX = PREDEFINED_SCALE;
                 }
             }
 

@@ -742,6 +742,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                     let dataRange = barLineChart.chartXMax - barLineChart.chartXMin
                     if dataRange < min {
                         eventScaleX = dataRange / min
+                    } else if let minimumSize = bar.minimumSize, minimumSize == min {
+                        eventScaleX = RNBarLineChartViewBase.PREDEFINED_SCALE
                     }
                 }
             }

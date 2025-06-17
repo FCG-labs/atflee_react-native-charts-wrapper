@@ -19,6 +19,9 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
     var savedZoom : NSDictionary?
 
     var visibleRangeMin: Double?
+    var minimumSize: Double?
+
+    static let PREDEFINED_SCALE: CGFloat = 0.5
 
     var savedExtraOffsets: NSDictionary?
 
@@ -114,6 +117,9 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         // delay visibleRange handling until chart data is set
         savedVisibleRange = config
         let json = BridgeUtils.toJson(config)
+        if let minimum = json["minimumSize"].double {
+            minimumSize = minimum
+        }
         let x = json["x"]
         if let min = x["min"].double {
             visibleRangeMin = min
@@ -123,6 +129,9 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
     func updateVisibleRange(_ config: NSDictionary) {
         let json = BridgeUtils.toJson(config)
 
+        if let minimum = json["minimumSize"].double {
+            minimumSize = minimum
+        }
         let x = json["x"]
         if x["min"].double != nil {
             barLineChart.setVisibleXRangeMinimum(x["min"].doubleValue)
