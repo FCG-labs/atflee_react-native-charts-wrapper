@@ -373,7 +373,7 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         root.setData((getDataExtract().extract(root, map)));
         ReadableMap savedVisibleRange = extraPropertiesHolder.getExtraProperties(root).savedVisibleRange;
         if (savedVisibleRange != null) {
-            updateVisibleRange(root, savedVisibleRange);
+            updateVisibleRange(root, savedVisibleRange, true);
         }
 
         MPPointD newPixelForOriginalCenter = transformer.getPixelForValues((float) originalCenterValue.x, (float) originalCenterValue.y);

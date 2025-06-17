@@ -228,10 +228,10 @@ Triggered for various supported events on each platform. Due to the different na
 
 | Event Name | Description | iOS | Android |
 | --------------- | -------- | ------- | ---- |
-| `chartLoadComplete` | Fired after the chart renders or when zoom/visibleRange props update. | ✅ | ✅ |
+| `chartLoadComplete` | Fired after the chart renders. When both `zoom` and `visibleRange` props are provided, this event fires once after they have been applied. | ✅ | ✅ |
 | `chartScaled`       | When a chart is scaled/zoomed via a pinch zoom gesture. | ✅ | ✅ |
-| `chartTranslated`   | When a chart is moved/translated via a drag gesture. | ✅ | ✅ |
-| `chartPanEnd`       | When a chart pan gesture ends. | ✅ | ❌ |
+| `chartTranslated`   | When a chart is moved/translated via a drag gesture. The `left` value is clamped to 0. | ✅ | ✅ |
+| `chartPanEnd`       | When a chart pan gesture ends. The `left` value is clamped to 0. | ✅ | ❌ |
 | `chartGestureStart` | When a chart gesture starts. | ❌ | ✅ |
 | `chartGestureEnd`   | When a chart gesture ends. | ❌ | ✅ |
 | `chartLongPress`    | When a chart is long pressed. | ❌ | ✅ |
@@ -244,13 +244,15 @@ check Example->MultipleChart for details.
 ```jsx
 const handleChange = e => {
   if (e.nativeEvent.action === 'chartLoadComplete') {
-    // chart has applied zoom/visible range; scaleX/scaleY reflect the current state
+    // zoom and visibleRange props (if provided) have been applied
   }
 };
 <LineChart onChange={handleChange} ... />
 // visibleRange is applied only after the chart data is set. Listen for
 // `chartLoadComplete` to know when both visibleRange and zoom have taken effect.
 ```
+
+The `visibleRange` prop takes effect only after chart data has been set. Use the `chartLoadComplete` event to know when both `visibleRange` and any `zoom` settings are fully applied.
 
 Payload fields: `scaleX`, `scaleY`, `centerX`, `centerY`, `left`, `right`, `top`, `bottom`.
 For `chartTranslated` and `chartPanEnd`, the `left` value is clamped to `0`.
