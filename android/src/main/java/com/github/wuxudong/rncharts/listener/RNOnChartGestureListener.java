@@ -138,7 +138,7 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
             float spaceMin = chart.getXAxis().getSpaceMin();
             float spaceMax = chart.getXAxis().getSpaceMax();
 
-            double allowedMin = minX;
+            double allowedMin = minX - spaceMin;
             double allowedMax = maxX + spaceMax;
 
             double originalWidth = rightTop.x - leftBottom.x;

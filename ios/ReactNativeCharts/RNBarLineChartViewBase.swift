@@ -207,21 +207,11 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
                 axisDependency = YAxis.AxisDependency.right
             }
 
-            let minX = barLineChart.chartXMin
-            let maxX = barLineChart.chartXMax
-            let spaceMax = barLineChart.xAxis.spaceMax
-            let allowedMin = minX
-            let allowedMax = maxX + spaceMax
-
-            var xValue = json["xValue"].doubleValue
-            if xValue < allowedMin { xValue = allowedMin }
-            if xValue > allowedMax { xValue = allowedMax }
-
             barLineChart.zoom(scaleX: CGFloat(json["scaleX"].floatValue),
-                              scaleY: CGFloat(json["scaleY"].floatValue),
-                              xValue: xValue,
-                              yValue: json["yValue"].doubleValue,
-                              axis: axisDependency)
+                    scaleY: CGFloat(json["scaleY"].floatValue),
+                    xValue: json["xValue"].doubleValue,
+                    yValue: json["yValue"].doubleValue,
+                    axis: axisDependency)
 
             sendEvent("chartLoadComplete")
         }
@@ -287,7 +277,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
         let originCenterValue = barLineChart.valueForTouchPoint(point: CGPoint(x: contentRect.midX, y: contentRect.midY), axis: axis)
 
-        let originalVisibleXRange = barLineChart.visibleXRange - barLineChart.xAxis.spaceMax
+        let originalVisibleXRange = barLineChart.visibleXRange
         let originalVisibleYRange = getVisibleYRange(axis)
 
         barLineChart.fitScreen()
@@ -299,21 +289,14 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         let newVisibleXRange = barLineChart.visibleXRange
         let newVisibleYRange = getVisibleYRange(axis)
 
-        var targetVisibleXRange = newVisibleXRange
-        if let config = savedVisibleRange {
-            let rangeJson = BridgeUtils.toJson(config)
-            if let minX = rangeJson["x"]["min"].double {
-                targetVisibleXRange = max(CGFloat(minX), newVisibleXRange)
-            }
-        }
-
-        let scaleX = targetVisibleXRange / originalVisibleXRange
+        let scaleX = newVisibleXRange / originalVisibleXRange
         let scaleY = newVisibleYRange / originalVisibleYRange
 
         // in iOS Charts chart.zoom scaleX: CGFloat, scaleY: CGFloat, xValue: Double, yValue: Double, axis: YAxis.AxisDependency)
-        // the scale is absolute and overwrites the current matrix directly.
-        // MpAndroidChart applies zoom relatively via ZoomJob.
-        // We apply visibleRange both before and after zoom to mirror Android behavior
+        // the scale is absolute scale, it will overwrite touchMatrix scale directly
+        // but in android MpAndroidChart, ZoomJob getInstance(viewPortHandler, scaleX, scaleY, xValue, yValue, trans, axis, v)
+        // the scale is relative scale, touchMatrix.scaleX = touchMatrix.scaleX * scaleX
+        // so in iOS, we updateVisibleRange after zoom
 
         barLineChart.zoom(scaleX: CGFloat(scaleX), scaleY: CGFloat(scaleY), xValue: Double(originCenterValue.x), yValue: Double(originCenterValue.y), axis: axis)
 
