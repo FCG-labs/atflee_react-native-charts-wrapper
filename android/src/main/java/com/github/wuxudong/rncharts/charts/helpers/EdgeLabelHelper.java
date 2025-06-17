@@ -122,8 +122,8 @@ public class EdgeLabelHelper {
         int padLeft = px(chart, PADDING_DP_LEFT);
         int padRight = px(chart, PADDING_DP_RIGHT);
 
-        left.layout(chartLeft + padLeft, chartBottom - leftH + 8, chartLeft + padLeft + leftW, chartBottom);
-        right.layout(chartRight - rightW - padRight, chartBottom - rightH + 8, chartRight - padRight, chartBottom);
+        left.layout(chartLeft + padLeft, chartBottom - leftH, chartLeft + padLeft + leftW, chartBottom);
+        right.layout(chartRight - rightW - padRight, chartBottom - rightH, chartRight - padRight, chartBottom);
 
         left.bringToFront();
         right.bringToFront();
