@@ -285,6 +285,10 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         barLineChart.data = dataExtract.extract(json)
         barLineChart.notifyDataSetChanged()
 
+        if let config = savedVisibleRange {
+            updateVisibleRange(config)
+        }
+
 
         let newVisibleXRange = barLineChart.visibleXRange
         let newVisibleYRange = getVisibleYRange(axis)
@@ -299,10 +303,6 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         // so in iOS, we updateVisibleRange after zoom
 
         barLineChart.zoom(scaleX: CGFloat(scaleX), scaleY: CGFloat(scaleY), xValue: Double(originCenterValue.x), yValue: Double(originCenterValue.y), axis: axis)
-
-        if let config = savedVisibleRange {
-            updateVisibleRange(config)
-        }
         barLineChart.notifyDataSetChanged()
 
         sendEvent("chartLoadComplete")
