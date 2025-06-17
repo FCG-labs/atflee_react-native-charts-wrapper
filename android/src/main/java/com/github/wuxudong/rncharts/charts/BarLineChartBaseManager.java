@@ -21,6 +21,8 @@ import com.github.mikephil.charting.listener.OnChartGestureListener;
 import com.github.mikephil.charting.utils.MPPointD;
 import com.github.mikephil.charting.utils.MPPointF;
 import com.github.mikephil.charting.utils.Transformer;
+import com.github.mikephil.charting.utils.ViewPortHandler;
+import com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper;
 import com.github.wuxudong.rncharts.listener.RNOnChartGestureListener;
 import com.github.wuxudong.rncharts.utils.BridgeUtils;
 
@@ -397,7 +399,7 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         root.setData((getDataExtract().extract(root, map)));
         ReadableMap savedVisibleRange = extraPropertiesHolder.getExtraProperties(root).savedVisibleRange;
         if (savedVisibleRange != null) {
-            updateVisibleRange(root, savedVisibleRange, true);
+            updateVisibleRange(root, savedVisibleRange);
         }
 
         MPPointD newPixelForOriginalCenter = transformer.getPixelForValues((float) originalCenterValue.x, (float) originalCenterValue.y);
