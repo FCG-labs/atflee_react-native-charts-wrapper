@@ -207,11 +207,21 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
                 axisDependency = YAxis.AxisDependency.right
             }
 
+            let minX = barLineChart.chartXMin
+            let maxX = barLineChart.chartXMax
+            let spaceMax = barLineChart.xAxis.spaceMax
+            let allowedMin = minX
+            let allowedMax = maxX + spaceMax
+
+            var xValue = json["xValue"].doubleValue
+            if xValue < allowedMin { xValue = allowedMin }
+            if xValue > allowedMax { xValue = allowedMax }
+
             barLineChart.zoom(scaleX: CGFloat(json["scaleX"].floatValue),
-                    scaleY: CGFloat(json["scaleY"].floatValue),
-                    xValue: json["xValue"].doubleValue,
-                    yValue: json["yValue"].doubleValue,
-                    axis: axisDependency)
+                              scaleY: CGFloat(json["scaleY"].floatValue),
+                              xValue: xValue,
+                              yValue: json["yValue"].doubleValue,
+                              axis: axisDependency)
 
             sendEvent("chartLoadComplete")
         }

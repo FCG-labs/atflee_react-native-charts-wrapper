@@ -210,10 +210,20 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                 axisDependency = YAxis.AxisDependency.RIGHT;
             }
 
+            double minX = chart.getData() != null ? chart.getData().getXMin() : 0d;
+            double maxX = chart.getData() != null ? chart.getData().getXMax() : 0d;
+            float spaceMax = chart.getXAxis().getSpaceMax();
+            double allowedMin = minX;
+            double allowedMax = maxX + spaceMax;
+
+            double xValue = propMap.getDouble("xValue");
+            if (xValue < allowedMin) xValue = allowedMin;
+            if (xValue > allowedMax) xValue = allowedMax;
+
             chart.zoom(
                     (float) propMap.getDouble("scaleX") / chart.getScaleX(),
                     (float) propMap.getDouble("scaleY") / chart.getScaleY(),
-                    (float) propMap.getDouble("xValue"),
+                    (float) xValue,
                     (float) propMap.getDouble("yValue"),
                     axisDependency
             );
