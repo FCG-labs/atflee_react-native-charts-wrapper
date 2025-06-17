@@ -283,7 +283,8 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
         let originCenterValue = barLineChart.valueForTouchPoint(point: CGPoint(x: contentRect.midX, y: contentRect.midY), axis: axis)
 
-        let originalVisibleXRange = barLineChart.visibleXRange
+        let originalSpace = barLineChart.xAxis.spaceMin + barLineChart.xAxis.spaceMax
+        let originalVisibleXRange = barLineChart.visibleXRange - originalSpace
         let originalVisibleYRange = getVisibleYRange(axis)
 
         barLineChart.fitScreen()
@@ -295,8 +296,8 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             updateVisibleRange(config)
         }
 
-
-        let newVisibleXRange = barLineChart.visibleXRange
+        let newSpace = barLineChart.xAxis.spaceMin + barLineChart.xAxis.spaceMax
+        let newVisibleXRange = barLineChart.visibleXRange - newSpace
         let newVisibleYRange = getVisibleYRange(axis)
 
         var targetVisibleXRange = newVisibleXRange
@@ -311,10 +312,9 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         let scaleY = newVisibleYRange / originalVisibleYRange
 
         // in iOS Charts chart.zoom scaleX: CGFloat, scaleY: CGFloat, xValue: Double, yValue: Double, axis: YAxis.AxisDependency)
-        // the scale is absolute scale, it will overwrite touchMatrix scale directly
-        // but in android MpAndroidChart, ZoomJob getInstance(viewPortHandler, scaleX, scaleY, xValue, yValue, trans, axis, v)
-        // the scale is relative scale, touchMatrix.scaleX = touchMatrix.scaleX * scaleX
-        // so in iOS, we updateVisibleRange after zoom
+        // the scale is absolute and overwrites the current matrix directly.
+        // MpAndroidChart applies zoom relatively via ZoomJob.
+        // We apply visibleRange both before and after zoom to mirror Android behavior
 
         barLineChart.zoom(scaleX: CGFloat(scaleX), scaleY: CGFloat(scaleY), xValue: Double(originCenterValue.x), yValue: Double(originCenterValue.y), axis: axis)
         barLineChart.notifyDataSetChanged()
