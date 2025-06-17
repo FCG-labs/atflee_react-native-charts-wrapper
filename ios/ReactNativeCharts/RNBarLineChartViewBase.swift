@@ -117,10 +117,8 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         let json = BridgeUtils.toJson(config)
 
         let x = json["x"]
-        var minRange: Double? = nil
         if x["min"].double != nil {
-            minRange = x["min"].doubleValue
-            barLineChart.setVisibleXRangeMinimum(minRange!)
+            barLineChart.setVisibleXRangeMinimum(x["min"].doubleValue)
         }
         if x["max"].double != nil {
             barLineChart.setVisibleXRangeMaximum(x["max"].doubleValue)
@@ -139,14 +137,6 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         }
         if y["right"]["max"].double != nil {
             barLineChart.setVisibleYRangeMaximum(y["right"]["max"].doubleValue, axis: YAxis.AxisDependency.right)
-        }
-
-        if let range = minRange {
-            let axis = barLineChart.xAxis
-            if axis.axisMaximum - axis.axisMinimum < range {
-                axis.axisMaximum = axis.axisMinimum + range
-                barLineChart.notifyDataSetChanged()
-            }
         }
 
         sendEvent("chartLoadComplete")

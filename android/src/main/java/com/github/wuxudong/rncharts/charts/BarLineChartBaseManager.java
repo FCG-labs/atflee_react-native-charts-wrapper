@@ -112,12 +112,10 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
     }
 
     private void updateVisibleRange(BarLineChartBase chart, ReadableMap propMap) {
-        float minRange = Float.NaN;
         if (BridgeUtils.validate(propMap, ReadableType.Map, "x")) {
             ReadableMap x = propMap.getMap("x");
             if (BridgeUtils.validate(x, ReadableType.Number, "min")) {
-                minRange = (float) x.getDouble("min");
-                chart.setVisibleXRangeMinimum(minRange);
+                chart.setVisibleXRangeMinimum((float) x.getDouble("min"));
             }
 
             if (BridgeUtils.validate(x, ReadableType.Number, "max")) {
@@ -148,16 +146,6 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                 if (BridgeUtils.validate(right, ReadableType.Number, "max")) {
                     chart.setVisibleYRangeMaximum((float) right.getDouble("max"), YAxis.AxisDependency.RIGHT);
                 }
-            }
-        }
-
-        if (!Float.isNaN(minRange)) {
-            XAxis axis = chart.getXAxis();
-            float axisMin = axis.getAxisMinimum();
-            float axisMax = axis.getAxisMaximum();
-            if (axisMax - axisMin < minRange) {
-                axis.setAxisMaximum(axisMin + minRange);
-                chart.notifyDataSetChanged();
             }
         }
 
