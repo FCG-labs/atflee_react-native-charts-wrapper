@@ -118,7 +118,13 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
         let x = json["x"]
         if x["min"].double != nil {
-            barLineChart.setVisibleXRangeMinimum(x["min"].doubleValue)
+            let minRange = x["min"].doubleValue
+            let axis = barLineChart.xAxis
+            let currentRange = axis.axisMaximum - axis.axisMinimum
+            if currentRange < minRange {
+                axis.axisMaximum = axis.axisMinimum + minRange
+            }
+            barLineChart.setVisibleXRangeMinimum(minRange)
         }
         if x["max"].double != nil {
             barLineChart.setVisibleXRangeMaximum(x["max"].doubleValue)
