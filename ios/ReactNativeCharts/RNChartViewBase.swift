@@ -82,7 +82,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         super.reactSetFrame(frame);
 
         let chartFrame = CGRect(x: 0, y: 0, width: frame.width, height: frame.height)
-        chart.xAxis.spaceMin = 0.75
+        chart.xAxis.spaceMin = 0
         chart.xAxis.spaceMax = 0.75
         chart.reactSetFrame(chartFrame)
     }
@@ -752,10 +752,9 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 let maxX = barLineChart.chartXMax
                 // let dragOffset = handler.dragOffsetX
 
-                let spaceMin = barLineChart.xAxis.spaceMin
                 let spaceMax = barLineChart.xAxis.spaceMax
-                
-                let allowedMin = minX - spaceMin
+
+                let allowedMin = minX
                 let allowedMax = maxX + spaceMax
 
                 let originalWidth = rightTop.x - leftBottom.x

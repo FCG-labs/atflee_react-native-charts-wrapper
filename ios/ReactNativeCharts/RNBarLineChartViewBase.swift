@@ -118,13 +118,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
         let x = json["x"]
         if x["min"].double != nil {
-            let minRange = x["min"].doubleValue
-            let axis = barLineChart.xAxis
-            let currentRange = axis.axisMaximum - axis.axisMinimum
-            if currentRange < minRange {
-                axis.axisMaximum = axis.axisMinimum + minRange
-            }
-            barLineChart.setVisibleXRangeMinimum(minRange)
+            barLineChart.setVisibleXRangeMinimum(x["min"].doubleValue)
         }
         if x["max"].double != nil {
             barLineChart.setVisibleXRangeMaximum(x["max"].doubleValue)
@@ -283,8 +277,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
         let originCenterValue = barLineChart.valueForTouchPoint(point: CGPoint(x: contentRect.midX, y: contentRect.midY), axis: axis)
 
-        let originalSpace = barLineChart.xAxis.spaceMin + barLineChart.xAxis.spaceMax
-        let originalVisibleXRange = barLineChart.visibleXRange - originalSpace
+        let originalVisibleXRange = barLineChart.visibleXRange - barLineChart.xAxis.spaceMax
         let originalVisibleYRange = getVisibleYRange(axis)
 
         barLineChart.fitScreen()
@@ -296,8 +289,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             updateVisibleRange(config)
         }
 
-        let newSpace = barLineChart.xAxis.spaceMin + barLineChart.xAxis.spaceMax
-        let newVisibleXRange = barLineChart.visibleXRange - newSpace
+        let newVisibleXRange = barLineChart.visibleXRange - barLineChart.xAxis.spaceMax
         let newVisibleYRange = getVisibleYRange(axis)
 
         var targetVisibleXRange = newVisibleXRange
