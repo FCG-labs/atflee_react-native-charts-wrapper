@@ -25,8 +25,25 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
     var savedExtraOffsets: NSDictionary?
 
+    private var hasSentLoadCompleteEvent = false
+
     var _onYaxisMinMaxChange : RCTBubblingEventBlock?
     var timer : Timer?
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+
+        if !hasSentLoadCompleteEvent,
+           bounds.width > 0,
+           bounds.height > 0,
+           barLineChart.data != nil,
+           let range = savedVisibleRange {
+            updateVisibleRange(range)
+            barLineChart.moveViewToX(barLineChart.chartXMax)
+            barLineChart.setNeedsDisplay()
+            hasSentLoadCompleteEvent = true
+        }
+    }
 
     override func setYAxis(_ config: NSDictionary) {
         let json = BridgeUtils.toJson(config)
@@ -155,6 +172,8 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         if y["right"]["max"].double != nil {
             barLineChart.setVisibleYRangeMaximum(y["right"]["max"].doubleValue, axis: YAxis.AxisDependency.right)
         }
+
+        barLineChart.setNeedsDisplay()
     }
 
     func setMaxScale(_ config: NSDictionary) {
@@ -241,8 +260,6 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
                     xValue: json["xValue"].doubleValue,
                     yValue: json["yValue"].doubleValue,
                     axis: axisDependency)
-
-            sendEvent("chartLoadComplete")
         }
     }
 
@@ -288,19 +305,22 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
         // clear zoom after applied, but keep visibleRange
         var applied = false
-        if let visibleRange = savedVisibleRange {
-            updateVisibleRange(visibleRange)
-            applied = true
-        }
-
         if let zoom = savedZoom {
             updateZoom(zoom)
             savedZoom = nil
             applied = true
         }
 
-        if applied {
+        if let visibleRange = savedVisibleRange {
+            updateVisibleRange(visibleRange)
+            barLineChart.moveViewToX(barLineChart.chartXMax)
+            barLineChart.setNeedsDisplay()
+            applied = true
+        }
+
+        if applied && !hasSentLoadCompleteEvent {
             sendEvent("chartLoadComplete")
+            hasSentLoadCompleteEvent = true
         }
     }
 
@@ -341,7 +361,10 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         }
         barLineChart.notifyDataSetChanged()
 
-        sendEvent("chartLoadComplete")
+        if !hasSentLoadCompleteEvent {
+            sendEvent("chartLoadComplete")
+            hasSentLoadCompleteEvent = true
+        }
     }
 
     func getVisibleYRange(_ axis: YAxis.AxisDependency) -> CGFloat {
