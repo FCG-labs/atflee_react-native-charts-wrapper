@@ -365,6 +365,16 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         double newVisibleXRange = root.getVisibleXRange();
         double newVisibleYRange = getVisibleYRange(root, axisDependency);
 
+        if (savedVisibleRange != null && savedVisibleRange.hasKey("x") && savedVisibleRange.getType("x") == ReadableType.Map) {
+            ReadableMap xRange = savedVisibleRange.getMap("x");
+            if (xRange.hasKey("min") && xRange.getType("min") == ReadableType.Number) {
+                double minX = xRange.getDouble("min");
+                if (newVisibleXRange < minX) {
+                    newVisibleXRange = minX;
+                }
+            }
+        }
+
         double scaleX = (newVisibleXRange / originalVisibleXRange);
         double scaleY = (newVisibleYRange / originalVisibleYRange);
 
