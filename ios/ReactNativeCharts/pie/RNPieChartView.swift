@@ -139,6 +139,7 @@ class RNPieChartView: RNChartViewBase {
         if json["left"].float != nil
         {
             leftOffset = CGFloat(json["left"].floatValue)
+            if leftOffset < 0 { leftOffset = 0 }
         }
         if json["top"].float != nil
         {
