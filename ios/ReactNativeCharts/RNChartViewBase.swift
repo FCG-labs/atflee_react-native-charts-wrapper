@@ -690,42 +690,36 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
     private func updateEdgeLabels(left: Double, right: Double) {
         guard edgeLabelEnabled, let barLine = chart as? BarLineChartViewBase else { return }
-        let formatter = barLine.xAxis.valueFormatter
+        
+        // 1. 상한 계산
+        let axisMaxIdx = Int(barLine.xAxis.axisMaximum) - 1          // ← 핵심
+        let formatter  = barLine.xAxis.valueFormatter
+        let labelMax   = (formatter as? IndexAxisValueFormatter)
+                         .map { $0.values.count - 1 } ?? axisMaxIdx
+        let safeMaxIdx = min(axisMaxIdx, labelMax)
 
-        let minX = barLine.chartXMin
-        let maxX = barLine.chartXMax
+        // 2. 인덱스 보정
+        let leftIdx  = max(Int(ceil(left)), 0)
+        let rightIdx = min(Int(floor(right)), safeMaxIdx)
 
-        var leftIndex = Int(ceil(left))
-        var rightIndex = Int(floor(right))
+        // 3. 라벨 표시
+        leftEdgeLabel?.isHidden  = false
+        rightEdgeLabel?.isHidden = rightIdx <= leftIdx
 
-        if Double(leftIndex) < minX { leftIndex = Int(minX) }
-        if Double(leftIndex) > maxX { leftIndex = Int(maxX) }
-        if Double(rightIndex) < minX { rightIndex = Int(minX) }
-        if Double(rightIndex) > maxX { rightIndex = Int(maxX) }
-
-        leftEdgeLabel?.isHidden = false
-        rightEdgeLabel?.isHidden = false
-
-        if let value = formatter?.stringForValue(Double(leftIndex), axis: barLine.xAxis) {
-            leftEdgeLabel?.text = value
-            leftEdgeLabelHasNewline = value.contains("\n")
-        } else {
-            leftEdgeLabelHasNewline = false
+        if let v = formatter?.stringForValue(Double(leftIdx), axis: barLine.xAxis) {
+            leftEdgeLabel?.text = v
+            leftEdgeLabelHasNewline = v.contains("\n")
         }
-        if rightIndex <= leftIndex {
-            rightEdgeLabel?.isHidden = true
-            rightEdgeLabelHasNewline = false
-        } else {
-            if let value = formatter?.stringForValue(Double(rightIndex), axis: barLine.xAxis) {
-                rightEdgeLabel?.text = value
-                rightEdgeLabelHasNewline = value.contains("\n")
-            } else {
-                rightEdgeLabelHasNewline = false
-            }
+
+        if !rightEdgeLabel!.isHidden,
+           let v = formatter?.stringForValue(Double(rightIdx), axis: barLine.xAxis) {
+            rightEdgeLabel?.text = v
+            rightEdgeLabelHasNewline = v.contains("\n")
         }
+
         applyEdgeLabelStyle()
         layoutIfNeeded()
-        if let bar = self as? RNBarLineChartViewBase { bar.applyExtraOffsets() }
+        (self as? RNBarLineChartViewBase)?.applyExtraOffsets()
     }
 
     func sendEvent(_ action:String) {
