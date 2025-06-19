@@ -127,7 +127,8 @@
 | `borderWidth`            | `number`                                                                                                                                                        |         |      |
 | `minOffset`              | `number`                                                                                                                                                        |         |      |
 | `maxVisibleValueCount`   | `number`                                                                                                                                                        |         |      |
-| `visibleRange`           | `{`<br />`x: { min: number, max: number },`<br />`y: {`<br />`left: { min: number, max: number },`<br />`right: { min: number, max: number }`<br />`}`<br />`}` |         |      |
+| `visibleRange`           | `{`<br />`minimumSize: number,`<br />`x: { min: number, max: number },`<br />`y: {`<br />`left: { min: number, max: number },`<br />`right: { min: number, max: number }`<br />`}`<br />`}` |         |  Applied after chart data loads. Use `chartLoadComplete` to detect when zoom and visible range are fully applied. |
+| `minScale`               | `{`<br />`x: number,`<br />`y: number`<br />`}` |         |  Sets the minimum allowed zoom scale for each axis. |
 | `autoScaleMinMaxEnabled` | `bool`                                                                                                                                                          |         |      |
 | `keepPositionOnRotation` | `bool`                                                                                                                                                          |         |      |
 | `scaleEnabled`           | `bool`                                                                                                                                                          |         |      |
@@ -519,13 +520,18 @@ type combinedData {
 
 ## Callbacks
 
+`chartLoadComplete` is emitted after the chart finishes rendering. When both `zoom` and `visibleRange` props are set, the event fires once they have been applied.
+
 ```jsx
 const handleChange = e => {
   if (e.nativeEvent.action === 'chartLoadComplete') {
-    // zoom and visibleRange props have been applied; scaleX/scaleY are valid
+    // zoom and visibleRange props (if provided) have been applied
   }
 };
 <LineChart onChange={handleChange} ... />
+// visibleRange is applied only after chart data is set. Use this event to know
+// when both visibleRange and zoom are active.
 ```
 
 Payload fields: `scaleX`, `scaleY`, `centerX`, `centerY`, `left`, `right`, `top`, `bottom`.
+`left` is never negative for `chartTranslated` and `chartPanEnd`.
