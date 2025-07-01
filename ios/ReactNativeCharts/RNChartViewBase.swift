@@ -314,8 +314,15 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             xAxis.labelPosition = BridgeUtils.parseXAxisLabelPosition(json["position"].stringValue)
         }
 
-        if let barLine = chart as? BarLineChartViewBase, json["edgeLabelEnabled"].bool != nil {
-            let enable = json["edgeLabelEnabled"].boolValue
+        if let barLine = chart as? BarLineChartViewBase {
+            let provided = json["edgeLabelEnabled"].bool
+            var enable: Bool
+            if let explicit = provided {
+                enable = explicit
+            } else {
+                // 자동 결정: 라벨에 개행이 없으면 edgeLabel 사용, 있으면 기본 라벨 사용
+                enable = !axisLabelsContainNewline(axis: xAxis)
+            }
             xAxis.drawLabelsEnabled = !enable
             configureEdgeLabels(enable)
         }
@@ -612,6 +619,20 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         // 이건 좌우스크롤 highlightPerDragEnabled과 연관있으므로, 오버레이 터치 삭제하면 안됨
     }
 
+    /// Returns true if any xAxis valueFormatter label contains a newline.
+    private func axisLabelsContainNewline(axis: XAxis) -> Bool {
+        guard let formatter = axis.valueFormatter else { return false }
+        let maxIdx = Int(axis.axisMaximum)
+        let formatterCount = (formatter as? IndexAxisValueFormatter)?.values.count ?? 0
+        let upper = max(maxIdx, formatterCount)
+        for i in 0..<upper {
+            if formatter.stringForValue(Double(i), axis: axis).contains("\n") {
+                return true
+            }
+        }
+        return false
+    }
+
     private func configureEdgeLabels(_ enable: Bool) {
         edgeLabelEnabled = enable
         if enable {
@@ -815,10 +836,10 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
     override open func didSetProps(_ changedProps: [String]!) {
         super.didSetProps(changedProps)
-        chart.notifyDataSetChanged()
+        // chart.notifyDataSetChanged()
         onAfterDataSetChanged()
-        chart.setNeedsLayout()
-        chart.layoutIfNeeded()
+        // chart.setNeedsLayout()
+        // chart.layoutIfNeeded()
 
         if !hasSentLoadComplete && bounds.width > 0 && bounds.height > 0 {
             DispatchQueue.main.async { [weak self] in

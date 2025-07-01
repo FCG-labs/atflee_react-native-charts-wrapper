@@ -240,8 +240,8 @@ open class AtfleeMarker: MarkerView {
         let itemCount = [labelSize.width > 0, iconExists, arrowExists].filter { $0 }.count
         totalWidth += itemSpacing * CGFloat(max(itemCount - 1, 0))
 
-        // x좌표 시작점 계산
-        let startX = paddedRect.origin.x
+        // x좌표 시작점 계산 – arrowImage 를 항상 우측 정렬하기 위해
+        let startX = paddedRect.maxX - totalWidth
         var currX = startX
         let baseY = paddedRect.maxY - labelSize.height // arrow, icon, label 모두 같은 Y축 기준
 
@@ -451,9 +451,9 @@ open class AtfleeMarker: MarkerView {
         overlayButton.clickHandler = { [weak chartView] in
             guard let chartView = chartView,
                 let base = chartView.superview as? RNChartViewBase,
-                let onMarkerClick = base.onMarkerClick else { 
+                let onMarkerClick = base.onMarkerClick else {
                     self.resetState()
-                    return 
+                    return
                 }
 
             let dict: [AnyHashable: Any] = [
