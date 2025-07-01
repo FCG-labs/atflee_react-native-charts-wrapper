@@ -671,6 +671,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         leftEdgeLabel?.lineBreakMode = .byWordWrapping
         rightEdgeLabel?.lineBreakMode = .byWordWrapping
         
+        // Ensure new text has updated intrinsic size before computing height
+        layoutIfNeeded()
         let height = edgeLabelHeight()
         if height > 0 {
             leftEdgeConstraint?.constant = -height
@@ -679,8 +681,6 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             leftEdgeConstraint?.constant = -(font.lineHeight)
             rightEdgeConstraint?.constant = -(font.lineHeight)
         }
-        
-        layoutIfNeeded()
     }
 
     func edgeLabelHeight() -> CGFloat {
