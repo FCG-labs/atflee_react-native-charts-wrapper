@@ -262,7 +262,7 @@ open class AtfleeMarker: MarkerView {
 
         // arrowImage (항상 표시)
         if let img = arrowImage {
-            let arrowY = baseY + (labelSize.height - arrowSize) / 2
+            let arrowY = baseY + (labelSize.height - arrowSize)
             let arrowRect = CGRect(x: currX, y: arrowY, width: arrowSize, height: arrowSize)
             img.draw(in: arrowRect)
         }
