@@ -249,18 +249,16 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             bottom = json["bottom"].double != nil ? CGFloat(json["bottom"].doubleValue) : 0
         }
         let beforeBottomOffset = barLineChart.viewPortHandler.offsetBottom
-        print("[applyExtraOffsets] START left: \(left), top: \(top), right: \(right), bottom(saved): \(bottom), currentBottomOffset: \(beforeBottomOffset), edgeLabelEnabled: \(edgeLabelEnabled)")
         if edgeLabelEnabled {
             var axisHeight = barLineChart.xAxis.labelFont.lineHeight / 2
             if xAxisContainsNewline() {
                 axisHeight = barLineChart.xAxis.labelFont.lineHeight
             }
-            bottom = axisHeight + edgeLabelHeight()// + edgeLabelTopPadding
-            print("[applyExtraOffsets] edgeLabel branch ⇒ axisHeight: \(axisHeight), edgeLabelHeight: \(edgeLabelHeight()), computedBottom: \(bottom)")
+            bottom = axisHeight + edgeLabelHeight()
         }
 
         barLineChart.setExtraOffsets(left: left, top: top, right: right, bottom: bottom)
-        print("[applyExtraOffsets] AFTER layout → updatedBottomOffset: \(barLineChart.viewPortHandler.offsetBottom)\n")
+        barLineChart.notifyDataSetChanged()
     }
 
     private func xAxisContainsNewline() -> Bool {
