@@ -671,15 +671,16 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         leftEdgeLabel?.lineBreakMode = .byWordWrapping
         rightEdgeLabel?.lineBreakMode = .byWordWrapping
         
-        if ((leftEdgeLabel?.text?.contains("\n")) ?? false || (rightEdgeLabel?.text?.contains("\n")) ?? false) {
-            leftEdgeConstraint?.constant = -(font.lineHeight + 15)
-            rightEdgeConstraint?.constant = -(font.lineHeight + 15)
+        // Ensure new text has updated intrinsic size before computing height
+        layoutIfNeeded()
+        let height = edgeLabelHeight()
+        if height > 0 {
+            leftEdgeConstraint?.constant = -height
+            rightEdgeConstraint?.constant = -height
         } else {
             leftEdgeConstraint?.constant = -(font.lineHeight)
             rightEdgeConstraint?.constant = -(font.lineHeight)
         }
-        
-        layoutIfNeeded()
     }
 
     func edgeLabelHeight() -> CGFloat {
