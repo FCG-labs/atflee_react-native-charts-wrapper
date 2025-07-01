@@ -248,11 +248,25 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             bottom = json["bottom"].double != nil ? CGFloat(json["bottom"].doubleValue) : 0
         }
         if edgeLabelEnabled {
-            // Use the rendered label height so multi-line labels get adequate space
-            let axisHeight = barLineChart.xAxis.labelRotatedHeight
-            bottom = axisHeight + edgeLabelHeight() // + edgeLabelTopPadding
+            var axisHeight = barLineChart.xAxis.labelFont.lineHeight / 2
+            if xAxisContainsNewline() {
+                axisHeight = barLineChart.xAxis.labelFont.lineHeight
+            }
+            bottom = axisHeight + edgeLabelHeight()// + edgeLabelTopPadding
         }
         barLineChart.setExtraOffsets(left: left, top: top, right: right, bottom: bottom)
+    }
+
+    private func xAxisContainsNewline() -> Bool {
+        let axis = barLineChart.xAxis
+        guard let formatter = axis.valueFormatter else { return false }
+        let maxIdx = Int(axis.axisMaximum)
+        for i in 0..<maxIdx {
+            if formatter.stringForValue(Double(i), axis: axis).contains("\n") {
+                return true
+            }
+        }
+        return false
     }
 
     override func onAfterDataSetChanged() {
