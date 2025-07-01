@@ -817,6 +817,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         super.didSetProps(changedProps)
         chart.notifyDataSetChanged()
         onAfterDataSetChanged()
+        chart.setNeedsLayout()
+        chart.layoutIfNeeded()
 
         if !hasSentLoadComplete && bounds.width > 0 && bounds.height > 0 {
             DispatchQueue.main.async { [weak self] in
