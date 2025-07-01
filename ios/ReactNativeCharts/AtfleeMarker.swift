@@ -225,45 +225,34 @@ open class AtfleeMarker: MarkerView {
         let arrowSize: CGFloat = 20
         let iconSize: CGFloat = CGFloat(imageSize)
 
-        // label, icon, arrowImage width 측정 (좌→우 순서 고정)
+        // label, icon, arrowImage 배치 (label/image 는 좌측, arrowImage 는 우측 정렬)
         var labelSize = CGSize.zero
         if let lbl = labelns, lbl.length > 0 {
             labelSize = lbl.size(withAttributes: _drawAttributes)
         }
 
-        // 총 width 계산 (존재하는 요소만)
-        var totalWidth: CGFloat = 0
-        if labelSize.width > 0 { totalWidth += labelSize.width }
-        if iconExists { totalWidth += iconSize }
-        if arrowExists { totalWidth += arrowSize }
-        // 간격 계산 (존재하는 요소 개수-1 만큼)
-        let itemCount = [labelSize.width > 0, iconExists, arrowExists].filter { $0 }.count
-        totalWidth += itemSpacing * CGFloat(max(itemCount - 1, 0))
-
-        // x좌표 시작점 계산 – arrowImage 를 항상 우측 정렬하기 위해
-        let startX = paddedRect.maxX - totalWidth
-        var currX = startX
         let baseY = paddedRect.maxY - labelSize.height // arrow, icon, label 모두 같은 Y축 기준
 
-        // labelns
+        // ① 좌측 정렬: label → emotion icon
+        var currX = paddedRect.minX
         if labelSize.width > 0 {
             let labelRect = CGRect(x: currX, y: baseY, width: labelSize.width, height: labelSize.height)
             labelns?.draw(in: labelRect, withAttributes: _drawAttributes)
             currX += labelSize.width + itemSpacing
         }
 
-        // imageEmotion
         if let img = imageEmotion {
             let iconY = baseY + (labelSize.height - iconSize)
             let iconRect = CGRect(x: currX, y: iconY, width: iconSize, height: iconSize)
             img.draw(in: iconRect)
-            currX += iconSize + itemSpacing
+            // currX 업데이트는 추후 확장을 위해 남겨두지 않음
         }
 
-        // arrowImage (항상 표시)
+        // ② 우측 정렬: arrowImage
         if let img = arrowImage {
             let arrowY = baseY + (labelSize.height - arrowSize)
-            let arrowRect = CGRect(x: currX, y: arrowY, width: arrowSize, height: arrowSize)
+            let arrowX = paddedRect.maxX - arrowSize
+            let arrowRect = CGRect(x: arrowX, y: arrowY, width: arrowSize, height: arrowSize)
             img.draw(in: arrowRect)
         }
 
