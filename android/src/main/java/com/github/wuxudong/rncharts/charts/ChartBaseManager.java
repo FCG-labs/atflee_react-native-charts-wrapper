@@ -753,6 +753,7 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
         super.onAfterUpdateTransaction(chart);
         chart.notifyDataSetChanged();
         onAfterDataSetChanged(chart);
+        chart.requestLayout();
         chart.postInvalidate();
         Boolean sent = loadCompleteMap.get(chart);
         if (sent == null || !sent) {
