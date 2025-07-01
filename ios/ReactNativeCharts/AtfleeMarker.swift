@@ -377,58 +377,55 @@ open class AtfleeMarker: MarkerView {
         if let raw = labelns as String?, raw.containsEmoji {
             labelSize.height = labelFont.lineHeight
         }
-        let maxWidth = max(titleSize.width, labelSize.width)
-        let maxHeight = max(titleSize.height, labelSize.height)
-        _labelSize = CGSize(width: maxWidth, height: maxHeight + 8) // 패딩줬기때문에 라벨 하단 짤려서 넣어줘야함
-        _size.width = _labelSize.width + self.insets.left + self.insets.right
-        _size.height = _labelSize.height + self.insets.top + self.insets.bottom
-        _size.width = max(minimumSize.width, _size.width)
-        _size.height = max(minimumSize.height, _size.height)
-
-        // 감정 이모티콘
-        label = ""
+        // 감정 이모티콘 코드 확인
+        var emotionCode = ""
         if let object = entry.data as? JSON {
             if object["markerEmotion"].exists() {
-                label = object["markerEmotion"].stringValue;
+                emotionCode = object["markerEmotion"].stringValue
             }
         }
 
         arrowImage = arrowHidden ? nil : UIImage(named: "arrow_right_circle")
 
-        if label.isEmpty {
+        switch emotionCode {
+        case "1":
+            imageEmotion = UIImage(named: "emotion1")
+        case "2":
+            imageEmotion = UIImage(named: "emotion2")
+        case "3":
+            imageEmotion = UIImage(named: "emotion3")
+        case "4":
+            imageEmotion = UIImage(named: "emotion4")
+        case "5":
+            imageEmotion = UIImage(named: "emotion5")
+        default:
             imageEmotion = nil
-            
-            if let _ = arrowImage {
-                let arrowSize: CGFloat = 20   // draw에서 쓴 arrowSize와 맞춰야함
-                let arrowPadding: CGFloat = 6
-                _size.width = max(_size.width, arrowSize + arrowPadding)
-            }
-        } else {
-            switch label {
-            case "1":
-                imageEmotion = UIImage(named: "emotion1")
-            case "2":
-                imageEmotion = UIImage(named: "emotion2")
-            case "3":
-                imageEmotion = UIImage(named: "emotion3")
-            case "4":
-                imageEmotion = UIImage(named: "emotion4")
-            case "5":
-                imageEmotion = UIImage(named: "emotion5")
-            default:
-                imageEmotion = nil
-            }
-
-            if imageEmotion != nil {
-                if let _ = arrowImage {
-                    let arrowSize: CGFloat = 20   // draw에서 쓴 arrowSize와 맞춰야함
-                    let arrowPadding: CGFloat = 6
-                    _size.width = max(_size.width, arrowSize + arrowPadding + imageSize)
-                } else {
-                    _size.width = max(_size.width, _size.width + imageSize)
-                }
-            }
         }
+
+        // width 계산: label, icon, arrow 포함
+        let arrowExists = arrowImage != nil
+        let iconExists = imageEmotion != nil
+        let itemSpacing: CGFloat = 8
+        let arrowSize: CGFloat = 20
+        let iconSize: CGFloat = CGFloat(imageSize)
+
+        var itemWidths: [CGFloat] = []
+        if labelSize.width > 0 { itemWidths.append(labelSize.width) }
+        if iconExists { itemWidths.append(iconSize) }
+        if arrowExists { itemWidths.append(arrowSize) }
+
+        var bottomRowWidth: CGFloat = 0
+        if !itemWidths.isEmpty {
+            bottomRowWidth = itemWidths.reduce(0, +) + itemSpacing * CGFloat(itemWidths.count - 1)
+        }
+
+        let contentWidth = max(titleSize.width, bottomRowWidth)
+        let maxHeight = max(titleSize.height, labelSize.height)
+        _labelSize = CGSize(width: contentWidth, height: maxHeight + 8) // 패딩줬기때문에 라벨 하단 짤려서 넣어줘야함
+        _size.width = _labelSize.width + self.insets.left + self.insets.right
+        _size.height = _labelSize.height + self.insets.top + self.insets.bottom
+        _size.width = max(minimumSize.width, _size.width)
+        _size.height = max(minimumSize.height, _size.height)
 
         self.lastEntry = entry
     }
