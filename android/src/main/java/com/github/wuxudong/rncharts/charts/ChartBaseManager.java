@@ -733,7 +733,8 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
                             v.getParent().requestDisallowInterceptTouchEvent(false);
                             break;
                         }
-                        case MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE: {
+                        case MotionEvent.ACTION_DOWN:
+                        case MotionEvent.ACTION_MOVE: {
                             v.getParent().requestDisallowInterceptTouchEvent(true);
                             break;
                         }
