@@ -752,7 +752,18 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             let viewPortHandler = chart.viewPortHandler
             let barLineChart = chart as! BarLineChartViewBase
 
-            dict["scaleX"] = barLineChart.scaleX
+            var eventScaleX = barLineChart.scaleX
+            if action == "chartLoadComplete" {
+                if let bar = self as? RNBarLineChartViewBase, let min = bar.visibleRangeMin, min > 0 {
+                    let dataRange = barLineChart.chartXMax - barLineChart.chartXMin
+                    if dataRange < min {
+                        eventScaleX = dataRange / min
+                    } else if let minimumSize = bar.minimumSize, minimumSize == min {
+                        eventScaleX = RNBarLineChartViewBase.PREDEFINED_SCALE
+                    }
+                }
+            }
+            dict["scaleX"] = eventScaleX
             dict["scaleY"] = barLineChart.scaleY
 
             if viewPortHandler != nil {
@@ -790,6 +801,11 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
                 if leftValue < allowedMin { leftValue = allowedMin }
                 if rightValue > allowedMax { rightValue = allowedMax }
+                if leftValue < 0 { leftValue = 0 }
+
+                if leftValue < 0 {
+                    leftValue = 0
+                }
 
                 if leftValue < 0 {
                     leftValue = 0
