@@ -82,9 +82,9 @@ public class AtfleeBarChartRenderer extends BarChartRenderer {
 
             // ② markerTop 계산
             float markerTop = (float) p.y;
-            if (mChart instanceof BarLineChartBase<?> chartBase) {
-              if (chartBase.isDrawMarkersEnabled()) {
-                    IMarker marker = chartBase.getMarker();
+            if (mChart instanceof BarLineChartBase) {
+              if (((BarLineChartBase) mChart).isDrawMarkersEnabled()) {
+                    IMarker marker = ((BarLineChartBase) mChart).getMarker();
                     if (marker != null) {
                         MPPointF off = marker.getOffsetForDrawingAtPoint((float) p.x, (float) p.y);
                         markerTop += off.y;                    // 보통 음수 → barTop보다 위
