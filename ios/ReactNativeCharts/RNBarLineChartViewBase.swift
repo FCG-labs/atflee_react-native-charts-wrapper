@@ -140,7 +140,10 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             barLineChart.setVisibleYRangeMaximum(y["right"]["max"].doubleValue, axis: YAxis.AxisDependency.right)
         }
 
-        sendEvent("chartLoadComplete")
+        // Fire after one run-loop so viewPortHandler has updated with new visible range.
+        DispatchQueue.main.async { [weak self] in
+            self?.sendEvent("visibleRangeChanged")
+        }
     }
 
     func setMaxScale(_ config: NSDictionary) {
@@ -214,7 +217,10 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
                     yValue: json["yValue"].doubleValue,
                     axis: axisDependency)
 
-            sendEvent("chartLoadComplete")
+            // Dispatch asynchronously to ensure matrix is updated before we read values.
+            DispatchQueue.main.async { [weak self] in
+                self?.sendEvent("zoomChanged")
+            }
         }
     }
 

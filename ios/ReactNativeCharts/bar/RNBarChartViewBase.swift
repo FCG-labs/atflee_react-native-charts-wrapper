@@ -58,4 +58,10 @@ class RNBarChartViewBase: RNBarLineChartViewBase {
             vertical.setNeedsDisplay()
         }
     }
+
+    // Auto-fit bars so that edge bars are fully visible (replaces JS axisMaximum hack)
+    override func setData(_ data: NSDictionary) {
+        super.setData(data)
+        barChart.fitBars = true
+    }
 }
