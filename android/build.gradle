@@ -30,6 +30,11 @@ android {
         versionCode 1
         versionName "1.0"
     }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
 }
 repositories {
     mavenCentral()
@@ -42,4 +47,8 @@ dependencies {
     implementation "com.facebook.react:react-native:+"  // From node_modules
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
     implementation 'com.github.lihangleo2:ShadowLayout:3.3.3' // 그림자 효과 적용
+}
+
+tasks.withType(JavaCompile).configureEach {
+    if (it.options.respondsTo('release')) it.options.release.set(17)
 }
