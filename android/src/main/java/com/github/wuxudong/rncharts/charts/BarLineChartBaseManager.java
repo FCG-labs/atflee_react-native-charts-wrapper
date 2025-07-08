@@ -179,6 +179,7 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                 }
             }
         }
+        sendLoadCompleteEvent(chart);
     }
 
     @ReactProp(name = "autoScaleMinMaxEnabled")
@@ -248,6 +249,7 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
             );
 
             extraPropertiesHolder.getExtraProperties(chart).zoomScaleX = (float) propMap.getDouble("scaleX");
+            sendLoadCompleteEvent(chart);
         }
     }
 
