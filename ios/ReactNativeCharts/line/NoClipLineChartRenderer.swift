@@ -130,48 +130,11 @@ open class NoClipLineChartRenderer: LineChartRenderer {
 
     // MARK: - Highlight & Marker
     open override func drawHighlighted(context: CGContext, indices: [Highlight]) {
-        guard
-            let dataProvider = dataProvider,
-            let lineData     = dataProvider.lineData,
-            let chartBase    = dataProvider as? BarLineChartViewBase
-        else { return }
-
+        // Disable clipping so highlight lines & markers can draw into extra offset area
         context.saveGState()
-        context.resetClip() // allow highlight line to extend into extraOffsets
-
-        let phaseY = animator.phaseY
-
-        for high in indices {
-            guard
-                high.dataSetIndex < lineData.dataSets.count,
-                let set = lineData.dataSets[high.dataSetIndex] as? LineChartDataSetProtocol,
-                set.isHighlightEnabled
-            else { continue }
-
-            if let e = set.entryForXValue(high.x, closestToY: high.y) {
-                let trans = dataProvider.getTransformer(forAxis: set.axisDependency)
-                var pt    = trans.pixelForValues(x: e.x, y: e.y * phaseY)
-
-                // record for MarkerView
-                high.setDraw(x: pt.x, y: pt.y)
-
-                // draw vertical highlight line up to marker anchor Y(=pt.y) or full height
-                context.saveGState()
-                context.setStrokeColor(set.highlightColor.cgColor)
-                context.setLineWidth(max(set.highlightLineWidth, 1))
-                if let dash = set.highlightLineDashLengths {
-                    context.setLineDash(phase: 0, lengths: dash)
-                }
-
-                let top = chartBase.viewPortHandler.contentTop
-                let bottom = chartBase.viewPortHandler.contentBottom
-                context.move(to: CGPoint(x: pt.x, y: top))
-                context.addLine(to: CGPoint(x: pt.x, y: bottom))
-                context.strokePath()
-                context.restoreGState()
-            }
-        }
-
+        context.resetClip()
+        // Use default DGCharts highlight rendering (circles, vertical line etc.)
+        super.drawHighlighted(context: context, indices: indices)
         context.restoreGState()
     }
 }
