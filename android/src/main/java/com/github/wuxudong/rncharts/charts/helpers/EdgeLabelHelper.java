@@ -18,6 +18,7 @@ public class EdgeLabelHelper {
     private static final float PADDING_DP_LEFT = 8f;
     private static final float PADDING_DP_RIGHT = 32f;
     private static java.util.WeakHashMap<BarLineChartBase, Boolean> enabledMap = new java.util.WeakHashMap<>();
+    private static java.util.WeakHashMap<BarLineChartBase, Boolean> explicitMap = new java.util.WeakHashMap<>();
     private static java.util.WeakHashMap<BarLineChartBase, float[]> baseOffsets = new java.util.WeakHashMap<>();
     private static java.util.WeakHashMap<BarLineChartBase, View.OnLayoutChangeListener> layoutListeners = new java.util.WeakHashMap<>();
     private static String leftTag(Chart chart) {
@@ -220,5 +221,19 @@ public class EdgeLabelHelper {
             bottom = (float) overlayHeight(chart) / 2f;
         }
         chart.setExtraOffsets(b[0], b[1], b[2], bottom);
+    }
+
+    /** Saves explicit edgeLabelEnabled flag coming from JS. */
+    public static void setExplicitFlag(BarLineChartBase chart, Boolean explicit) {
+        if (explicit == null) {
+            explicitMap.remove(chart);
+        } else {
+            explicitMap.put(chart, explicit);
+        }
+    }
+
+    /** Returns explicit flag if provided; otherwise null (auto). */
+    public static java.lang.Boolean getExplicitFlag(BarLineChartBase chart) {
+        return explicitMap.get(chart);
     }
 }

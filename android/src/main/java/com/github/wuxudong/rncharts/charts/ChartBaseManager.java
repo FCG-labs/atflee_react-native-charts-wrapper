@@ -317,6 +317,11 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
             axis.setPosition(XAxisPosition.valueOf(propMap.getString("position")));
         }
 
+        Boolean explicitFlag = null;
+        if (BridgeUtils.validate(propMap, ReadableType.Boolean, "edgeLabelEnabled")) {
+            explicitFlag = propMap.getBoolean("edgeLabelEnabled");
+        }
+
         if (BridgeUtils.validate(propMap, ReadableType.Boolean, "edgeLabelEnabled")) {
             boolean enabled = propMap.getBoolean("edgeLabelEnabled");
             if (chart instanceof BarLineChartBase) {
@@ -327,9 +332,11 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
                     com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.update(barLineChart, barLineChart.getLowestVisibleX(), barLineChart.getHighestVisibleX());
                 }
                 com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.applyPadding(barLineChart);
+                com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.setExplicitFlag(barLineChart, explicitFlag);
             }
+        } else if (chart instanceof BarLineChartBase) {
+            com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.setExplicitFlag((BarLineChartBase) chart, null);
         }
-
     }
 
     @ReactProp(name = "marker")

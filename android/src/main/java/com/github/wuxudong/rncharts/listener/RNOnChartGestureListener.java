@@ -17,6 +17,9 @@ import com.github.mikephil.charting.utils.MPPointD;
 import com.github.mikephil.charting.utils.ViewPortHandler;
 import com.github.wuxudong.rncharts.charts.ChartGroupHolder;
 import com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper;
+import com.github.mikephil.charting.data.ChartData;
+import com.github.mikephil.charting.interfaces.datasets.IDataSet;
+import com.github.mikephil.charting.components.XAxis;
 
 import java.lang.ref.WeakReference;
 
@@ -75,12 +78,58 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
 
     @Override
     public void onChartScale(MotionEvent me, float scaleX, float scaleY) {
+        adjustValueAndEdgeLabels();
         sendEvent("chartScaled", me);
     }
 
     @Override
     public void onChartTranslate(MotionEvent me, float dX, float dY) {
+        adjustValueAndEdgeLabels();
         sendEvent("chartTranslated", me);
+    }
+
+    private void adjustValueAndEdgeLabels() {
+        Chart base = mWeakChart.get();
+        if (!(base instanceof BarLineChartBase)) return;
+        BarLineChartBase chart = (BarLineChartBase) base;
+
+        float visibleSpan = chart.getHighestVisibleX() - chart.getLowestVisibleX();
+        boolean isLandscape = chart.getWidth() > chart.getHeight();
+        double threshold = isLandscape ? 15.0 : 8.0;
+        boolean showValues = visibleSpan < threshold;
+
+        ChartData data = chart.getData();
+        if (data != null) {
+            for (Object obj : data.getDataSets()) {
+                if (obj instanceof IDataSet) {
+                    IDataSet set = (IDataSet) obj;
+                    if (set.isDrawValuesEnabled() != showValues) {
+                        set.setDrawValues(showValues);
+                    }
+                }
+            }
+        }
+
+        XAxis axis = chart.getXAxis();
+        boolean labelsDisabled = !axis.isDrawLabelsEnabled();
+
+        Boolean explicit = EdgeLabelHelper.getExplicitFlag(chart);
+        boolean desiredEdge;
+        if (explicit != null) {
+            desiredEdge = labelsDisabled ? true : explicit.booleanValue();
+        } else {
+            desiredEdge = labelsDisabled ? true : !showValues;
+        }
+
+        if (explicit == null && !labelsDisabled) {
+            axis.setDrawLabels(showValues);
+        }
+
+        EdgeLabelHelper.setEnabled(chart, desiredEdge);
+        EdgeLabelHelper.applyPadding(chart);
+        EdgeLabelHelper.update(chart, chart.getLowestVisibleX(), chart.getHighestVisibleX());
+
+        chart.invalidate();
     }
 
     private void sendEvent(String action, MotionEvent me) {
