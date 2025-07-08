@@ -40,7 +40,7 @@ class RoundedBarChartRenderer: BarChartRenderer {
             var markerY = pt.y
             if chartBase.drawMarkers, let marker = chartBase.marker {
                 let off   = marker.offsetForDrawing(atPoint: CGPoint(x: pt.x, y: pt.y))
-                let pad   = markerPadDp                // ← 곱하기 **삭제**
+                let pad   = markerPadDp                
                 markerY   = pt.y + off.y + pad         // off.y: 음수 → 위로
             }
             if markerY < viewPortHandler.contentTop {   // 위로 튀는 것 방지
@@ -124,6 +124,67 @@ class RoundedBarChartRenderer: BarChartRenderer {
             )
             context.addPath(path.cgPath)
             context.fillPath()
+        }
+    }
+
+    // MARK: - Value Labels (no-clip override)
+    override func drawValues(context: CGContext) {
+        guard
+            let dataProvider = dataProvider,
+            let barData      = dataProvider.barData,
+            isDrawingValuesAllowed(dataProvider: dataProvider)
+        else { return }
+
+        let phaseY           = animator.phaseY
+        let dataSets         = barData.dataSets
+        let valueOffsetPlus: CGFloat = 4.5
+
+        for dataSetIndex in 0..<dataSets.count {
+            guard
+                let dataSet = dataSets[dataSetIndex] as? BarChartDataSetProtocol,
+                dataSet.isVisible && (dataSet.isDrawValuesEnabled || dataSet.isDrawIconsEnabled)
+            else { continue }
+
+            let drawValueAboveBar = dataProvider.isDrawValueAboveBarEnabled
+            let valueFont         = dataSet.valueFont
+            let trans             = dataProvider.getTransformer(forAxis: dataSet.axisDependency)
+
+            // Offsets for positive / negative bars
+            let posOffset = drawValueAboveBar
+                ? valueOffsetPlus
+                : -(valueFont.lineHeight + valueOffsetPlus)
+            let negOffset = drawValueAboveBar
+                ? -(valueFont.lineHeight + valueOffsetPlus)
+                : valueOffsetPlus
+
+            // Entry count adjusted for animation phase
+            let entryCount = Int(min(ceil(Double(dataSet.entryCount) * animator.phaseX), Double(dataSet.entryCount)))
+            for j in 0..<entryCount {
+                guard let e = dataSet.entryForIndex(j) as? BarChartDataEntry else { continue }
+
+                // Prepare value text & colour
+                let valueTextColour = dataSet.valueTextColorAt(j)
+                let valueText       = dataSet.valueFormatter.stringForValue(e.y,
+                                                                            entry: e,
+                                                                            dataSetIndex: dataSetIndex,
+                                                                            viewPortHandler: viewPortHandler)
+
+                // Map value position to pixel
+                var pt = trans.pixelForValues(x: e.x, y: e.y * phaseY)
+                pt.y += (e.y >= 0.0 ? posOffset : negOffset)
+
+                // Cull if completely out of bounds (x only, y can overflow)
+                if !viewPortHandler.isInBoundsRight(pt.x) { break }
+                if !viewPortHandler.isInBoundsLeft(pt.x)  { continue }
+
+                context.drawText(valueText,
+                                 at: pt,
+                                 align: .center,
+                                 attributes: [
+                                    .font: valueFont,
+                                    .foregroundColor: valueTextColour
+                                 ])
+            }
         }
     }
 }

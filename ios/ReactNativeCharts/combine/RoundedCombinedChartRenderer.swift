@@ -45,7 +45,7 @@ class RoundedCombinedChartRenderer: CombinedChartRenderer {
             case .line:
                 if chart.lineData != nil {
                     customRenderers.append(
-                        LineChartRenderer(
+                        NoClipLineChartRenderer(
                             dataProvider: chart,
                             animator: animator,
                             viewPortHandler: viewPortHandler
