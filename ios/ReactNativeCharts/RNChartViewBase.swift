@@ -839,7 +839,13 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         // chart.setNeedsLayout()
         // chart.layoutIfNeeded()
 
-        if !hasSentLoadComplete && bounds.width > 0 && bounds.height > 0 {
+        if hasSentLoadComplete {
+            if changedProps.contains("data") || changedProps.contains("xAxis") || changedProps.contains("yAxis") || changedProps.contains("valueFormatter") {
+                DispatchQueue.main.async { [weak self] in
+                    self?.sendEvent("chartLoadComplete")
+                }
+            }
+        } else if bounds.width > 0 && bounds.height > 0 {
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
                 self.sendEvent("chartLoadComplete")

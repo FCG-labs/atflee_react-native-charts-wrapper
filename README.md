@@ -228,7 +228,7 @@ Triggered for various supported events on each platform. Due to the different na
 
 | Event Name | Description | iOS | Android |
 | --------------- | -------- | ------- | ---- |
-| `chartLoadComplete` | Fired after the chart initially renders or data is refreshed. | ✅ | ✅ |
+| `chartLoadComplete` | Fired after the chart initially renders or when chart data or axis props update. | ✅ | ✅ |
 | `chartScaled`       | When a chart is scaled/zoomed via a pinch zoom gesture. | ✅ | ✅ |
 | `chartTranslated`   | When a chart is moved/translated via a drag gesture. | ✅ | ✅ |
 | `chartPanEnd`       | When a chart pan gesture ends. | ✅ | ❌ |
