@@ -57,7 +57,10 @@ open class NoClipLineChartRenderer: LineChartRenderer {
 
                 // Abort early when past right bound; continue when outside left/top/bottom
                 if !viewPortHandler.isInBoundsRight(pt.x) { break }
-                if !viewPortHandler.isInBoundsLeft(pt.x)  || !viewPortHandler.isInBoundsY(pt.y) { continue }
+                // Allow Y coordinates to overflow so labels for max/min values
+                // can still be drawn inside the viewport. Mirror the default
+                // bar chart renderer which only checks X bounds here.
+                if !viewPortHandler.isInBoundsLeft(pt.x) { continue }
 
                 // Determine where to place the value label: above (default) or below the point.
                 let textHeight = valueFont.lineHeight
