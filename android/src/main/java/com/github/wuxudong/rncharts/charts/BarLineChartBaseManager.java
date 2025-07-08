@@ -263,6 +263,13 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         }
     }
 
+    @ReactProp(name = "landscapeOrientation")
+    public void setLandscapeOrientation(BarLineChartBase chart, boolean enabled) {
+        // Currently unused — layout for landscape mode is handled in JS.
+        // The presence of this setter simply prevents "unknown prop" warnings
+        // coming from React Native.
+    }
+
     // Note: Offset aren't updated until first touch event: https://github.com/PhilJay/MPAndroidChart/issues/892
     @ReactProp(name = "viewPortOffsets")
     public void setViewPortOffsets(BarLineChartBase chart, ReadableMap propMap) {

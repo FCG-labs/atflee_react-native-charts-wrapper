@@ -20,6 +20,7 @@ import com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper;
 import com.github.mikephil.charting.data.ChartData;
 import com.github.mikephil.charting.interfaces.datasets.IDataSet;
 import com.github.mikephil.charting.components.XAxis;
+import java.util.WeakHashMap;
 
 import java.lang.ref.WeakReference;
 
@@ -27,6 +28,13 @@ import java.lang.ref.WeakReference;
  * Created by xudong on 07/03/2017.
  */
 public class RNOnChartGestureListener implements OnChartGestureListener {
+
+    /**
+     * Keeps track of each IDataSet's initial drawValues flag supplied by JS.
+     * If the base flag is false, values will never be shown regardless of zoom/scroll.
+     * WeakHashMap avoids memory leaks when datasets are released.
+     */
+    private static final WeakHashMap<IDataSet, Boolean> BASE_DRAW_VALUES = new WeakHashMap<>();
 
     private WeakReference<Chart> mWeakChart;
 
@@ -108,8 +116,23 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
             for (Object obj : data.getDataSets()) {
                 if (obj instanceof IDataSet) {
                     IDataSet set = (IDataSet) obj;
-                    if (set.isDrawValuesEnabled() != showValues) {
-                        set.setDrawValues(showValues);
+                    Boolean baseDraw = BASE_DRAW_VALUES.get(set);
+                    if (baseDraw == null) {
+                        baseDraw = set.isDrawValuesEnabled();
+                        BASE_DRAW_VALUES.put(set, baseDraw);
+                    }
+
+                    // If user disabled values initially, keep them off.
+                    if (!baseDraw) {
+                        if (set.isDrawValuesEnabled()) {
+                            set.setDrawValues(false);
+                        }
+                        continue;
+                    }
+
+                    boolean desired = showValues;
+                    if (set.isDrawValuesEnabled() != desired) {
+                        set.setDrawValues(desired);
                     }
                 }
             }
