@@ -176,6 +176,8 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                             YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled() ?
                                     YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
                             chart.zoom(relativeScale, 1f, centerX, 0f, axis);
+                            // prevent repeated auto-zoom; run this logic only once
+                            extra.savedVisibleRange = null;
                         }
                     }
                 }
