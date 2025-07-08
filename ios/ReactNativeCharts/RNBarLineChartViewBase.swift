@@ -123,8 +123,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         let x = json["x"]
         if x["min"].double != nil {
             let min = x["min"].doubleValue
-            let adjust = Double(barLineChart.xAxis.spaceMin + barLineChart.xAxis.spaceMax)
-            barLineChart.setVisibleXRangeMinimum(min + adjust)
+            barLineChart.setVisibleXRangeMinimum(min)
         }
         if x["max"].double != nil {
             barLineChart.setVisibleXRangeMaximum(x["max"].doubleValue)
@@ -154,11 +153,9 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
                   let xMap = saved["x"] as? NSDictionary,
                   let min = xMap["min"] as? CGFloat,
                   min > 0 {
-            let adjust = barLineChart.xAxis.spaceMin + barLineChart.xAxis.spaceMax
-            let minRange = min + adjust
             let currentRange = barLineChart.visibleXRange
-            if currentRange > minRange {
-                let relative = currentRange / minRange
+            if currentRange > min {
+                let relative = currentRange / min
                 let centerX = barLineChart.data?.xMax ?? 0
                 let axis = barLineChart.getAxis(.left).isEnabled ? YAxis.AxisDependency.left : YAxis.AxisDependency.right
                 barLineChart.zoom(scaleX: relative, scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
