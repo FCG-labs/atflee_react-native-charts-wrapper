@@ -202,7 +202,11 @@ public class RNAtfleeMarkerView extends MarkerView {
                     return false; // do not consume so click can fire
                 });
 
-                ViewGroup.LayoutParams base = new ViewGroup.LayoutParams(getWidth(), getHeight());
+                int overlayW = getWidth() > 0 ? getWidth() : getMeasuredWidth();
+                int overlayH = getHeight() > 0 ? getHeight() : getMeasuredHeight();
+                if (overlayW <= 0) overlayW = ViewGroup.LayoutParams.WRAP_CONTENT;
+                if (overlayH <= 0) overlayH = ViewGroup.LayoutParams.WRAP_CONTENT;
+                ViewGroup.LayoutParams base = new ViewGroup.LayoutParams(overlayW, overlayH);
                 if (parent instanceof android.widget.FrameLayout) {
                     android.widget.FrameLayout.LayoutParams lp = new android.widget.FrameLayout.LayoutParams(base);
                     lp.leftMargin = (int) left;
