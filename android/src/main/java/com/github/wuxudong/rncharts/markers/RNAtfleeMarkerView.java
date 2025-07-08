@@ -301,7 +301,8 @@ public class RNAtfleeMarkerView extends MarkerView {
                 .receiveEvent(chart.getId(), "topMarkerClick", event);
         // Clear the current highlight without triggering listeners and
         // then reset marker-related state as done on iOS.
-        chart.highlightValue(null, false);
+        chart.highlightValue(null);
+        chart.invalidate();
         resetState();
     }
 
