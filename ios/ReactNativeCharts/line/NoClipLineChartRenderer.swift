@@ -1,4 +1,5 @@
 import Foundation
+import DGCharts
 import CoreGraphics
 
 /// Custom LineChart renderer that bypasses clipping and ensures value labels
@@ -36,7 +37,7 @@ open class NoClipLineChartRenderer: LineChartRenderer {
 
             let valueFont    = dataSet.valueFont
             let formatter    = dataSet.valueFormatter
-            let angleRadians = dataSet.valueLabelAngle.DEG2RAD
+            let angleRadians = dataSet.valueLabelAngle * .pi / 180.0
             let trans        = dataProvider.getTransformer(forAxis: dataSet.axisDependency)
             let valueMatrix  = trans.valueToPixelMatrix
             let iconsOffset  = dataSet.iconsOffset
@@ -46,9 +47,14 @@ open class NoClipLineChartRenderer: LineChartRenderer {
                 valOffset = valOffset / 2
             }
 
-            _xBounds.set(chart: dataProvider, dataSet: dataSet, animator: animator)
-            for j in _xBounds {
-                guard let e = dataSet.entryForIndex(j) else { break }
+            let lowestVisibleX  = dataProvider.lowestVisibleX
+            let highestVisibleX = dataProvider.highestVisibleX
+
+            for j in 0 ..< dataSet.entryCount {
+                guard let e = dataSet.entryForIndex(j) else { continue }
+
+                // Skip entries outside current visible range
+                if e.x < lowestVisibleX || e.x > highestVisibleX { continue }
 
                 // Translate entry position to pixels
                 pt.x = CGFloat(e.x)
