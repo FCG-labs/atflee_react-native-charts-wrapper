@@ -112,6 +112,9 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
     func setVisibleRange(_ config: NSDictionary) {
         // delay visibleRange handling until chart data is set
         savedVisibleRange = config
+        if barLineChart.data != nil {
+            updateVisibleRange(config)
+        }
     }
 
     func updateVisibleRange(_ config: NSDictionary) {
