@@ -3,6 +3,7 @@ package com.github.wuxudong.rncharts.markers;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
@@ -86,9 +87,9 @@ public class RNAtfleeMarkerView extends MarkerView {
 
         // 날짜(타이틀)
         String raw = getChartView()
-            .getXAxis()
-            .getValueFormatter()
-            .getFormattedValue(e.getX());
+                .getXAxis()
+                .getValueFormatter()
+                .getFormattedValue(e.getX());
 
         // 줄바꿈이 있을 경우 공백으로 대체
         String title = raw.replace("\n", " ");
@@ -160,7 +161,7 @@ public class RNAtfleeMarkerView extends MarkerView {
         if (image_arrow != null) {
             image_arrow.setVisibility(arrowHidden ? View.GONE : View.VISIBLE);
         }
-    
+
 
 
         Chart chart = getChartView();
@@ -181,6 +182,8 @@ public class RNAtfleeMarkerView extends MarkerView {
                 View view = new View(getContext());
                 view.setTag(OVERLAY_TAG);
                 view.setBackgroundColor(Color.TRANSPARENT);
+                view.setClickable(true);
+                view.setFocusable(true);
                 view.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
@@ -191,11 +194,12 @@ public class RNAtfleeMarkerView extends MarkerView {
                 // swiping. Without this, the overlay view blocks touch events
                 // from reaching the chart, preventing highlight updates.
                 view.setOnTouchListener((v, event) -> {
+                    Log.d("RNAtfleeMarkerView", "Overlay touch action=" + event.getAction());
                     Chart chartView = getChartView();
                     if (chartView != null) {
                         chartView.onTouchEvent(event);
                     }
-                    return true; // consume so click listener still works
+                    return false; // do not consume so click can fire
                 });
 
                 ViewGroup.LayoutParams base = new ViewGroup.LayoutParams(getWidth(), getHeight());
@@ -216,7 +220,9 @@ public class RNAtfleeMarkerView extends MarkerView {
                 }
 
                 parent.addView(view);
+                view.bringToFront();
                 overlayButton = view;
+                Log.d("RNAtfleeMarkerView", "Overlay added left=" + left + " top=" + top);
             }
         }
 
@@ -297,6 +303,13 @@ public class RNAtfleeMarkerView extends MarkerView {
         // then reset marker-related state as done on iOS.
         chart.highlightValue(null, false);
         resetState();
+    }
+
+    /**
+     * Called by external gesture listeners to simulate a user tap on the marker.
+     */
+    public void dispatchClick() {
+        handleClick();
     }
 
     private void removeOverlayButton() {

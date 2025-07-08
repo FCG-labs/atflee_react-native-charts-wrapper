@@ -20,6 +20,8 @@ import com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper;
 import com.github.mikephil.charting.data.ChartData;
 import com.github.mikephil.charting.interfaces.datasets.IDataSet;
 import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.highlight.Highlight;
+import com.github.wuxudong.rncharts.markers.RNAtfleeMarkerView;
 import java.util.WeakHashMap;
 
 import java.lang.ref.WeakReference;
@@ -77,6 +79,19 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
 
     @Override
     public void onChartSingleTapped(MotionEvent me) {
+        Chart chart = mWeakChart.get();
+        if (chart instanceof BarLineChartBase) {
+            BarLineChartBase barChart = (BarLineChartBase) chart;
+            if (barChart.getMarker() instanceof RNAtfleeMarkerView) {
+                RNAtfleeMarkerView marker = (RNAtfleeMarkerView) barChart.getMarker();
+                Highlight h = barChart.getHighlightByTouchPoint(me.getX(), me.getY());
+                if (h != null) {
+                    // forward to marker click handler
+                    marker.dispatchClick();
+                    return; // do not emit generic single tap
+                }
+            }
+        }
         sendEvent("chartSingleTap", me);
     }
 
@@ -115,10 +130,18 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
             if (rightX > maxX) rightX = maxX;
         }
 
-        int leftIdx = (int) Math.ceil(leftX);
-        int rightIdx = (int) Math.floor(rightX);
-        int visibleCount = rightIdx - leftIdx + 1;
-        if (visibleCount < 0) visibleCount = 0;
+        int visibleCount;
+        ChartData _d = chart.getData();
+        if (_d != null) {
+            int totalEntries = (int) (_d.getXMax() - _d.getXMin() + 1);
+            float scale = chart.getScaleX();
+            if (scale < 1f) scale = 1f; // safety guard
+            visibleCount = (int) Math.ceil(totalEntries / scale);
+            if (visibleCount < 1) visibleCount = 1;
+            if (visibleCount > totalEntries) visibleCount = totalEntries;
+        } else {
+            visibleCount = 0;
+        }
         Boolean landscapeOverride = EdgeLabelHelper.getLandscapeOverride(chart);
         boolean isLandscape = (landscapeOverride != null) ? landscapeOverride.booleanValue() : (chart.getWidth() > chart.getHeight());
         Log.d("RNChartDebug", "[adjust] landscapeOverride=" + landscapeOverride + ", isLandscape=" + isLandscape);
