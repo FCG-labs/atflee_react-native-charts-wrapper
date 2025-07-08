@@ -20,6 +20,9 @@ open class NoClipLineChartRenderer: LineChartRenderer {
     }
 
     open override func drawValues(context: CGContext) {
+        // Disable any clipping region so that value-labels can render outside contentRect if needed.
+        context.saveGState()
+        context.resetClip()
         guard
             let dataProvider = dataProvider,
             let lineData     = dataProvider.lineData,
@@ -73,13 +76,14 @@ open class NoClipLineChartRenderer: LineChartRenderer {
                 let offsetY    = CGFloat(valOffset)
                 var drawPoint  = pt
 
-                // Default position is ABOVE the value (baseline offset by `offsetY`).
-                var baseline = pt.y - offsetY
-                // If that would overflow beyond the chart top, draw BELOW instead.
-                if baseline - textHeight < viewPortHandler.contentTop {
-                    baseline = pt.y + offsetY + textHeight
+                // Try to draw ABOVE the point first.
+                let aboveY = pt.y - offsetY - textHeight
+                if aboveY >= viewPortHandler.contentTop {
+                    drawPoint.y = aboveY
+                } else {
+                    // Not enough space; draw BELOW the point instead (just below the circle).
+                    drawPoint.y = pt.y + offsetY
                 }
-                drawPoint.y = baseline
 
                 if dataSet.isDrawValuesEnabled {
                     let valueText = formatter.stringForValue(e.y,
@@ -104,5 +108,6 @@ open class NoClipLineChartRenderer: LineChartRenderer {
                 }
             }
         }
+        context.restoreGState()
     }
 }

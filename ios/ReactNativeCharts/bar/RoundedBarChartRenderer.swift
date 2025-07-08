@@ -177,13 +177,15 @@ class RoundedBarChartRenderer: BarChartRenderer {
                 if !viewPortHandler.isInBoundsRight(pt.x) { break }
                 if !viewPortHandler.isInBoundsLeft(pt.x)  { continue }
 
-                context.drawText(valueText,
-                                 at: pt,
-                                 align: .center,
-                                 attributes: [
-                                    .font: valueFont,
-                                    .foregroundColor: valueTextColour
-                                 ])
+                if dataSet.isDrawValuesEnabled {
+                    context.drawText(valueText,
+                                     at: pt,
+                                     align: .center,
+                                     attributes: [
+                                        .font: valueFont,
+                                        .foregroundColor: valueTextColour
+                                     ])
+                }
             }
         }
     }

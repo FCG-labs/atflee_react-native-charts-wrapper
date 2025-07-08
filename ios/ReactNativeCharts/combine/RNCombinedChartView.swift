@@ -58,16 +58,15 @@ class RNCombinedChartView: RNBarLineChartViewBase {
     func setBarRadius(_ radius: NSNumber) {
         barRadius = CGFloat(truncating: radius)
 
-        if barRadius > 0 {
-            if let renderer = _chart.renderer as? RoundedCombinedChartRenderer {
-                renderer.setRadius(barRadius)
-            } else {
-                _chart.renderer = RoundedCombinedChartRenderer(chart: _chart, animator: _chart.chartAnimator, viewPortHandler: _chart.viewPortHandler, barRadius: barRadius)
-            }
+        if let renderer = _chart.renderer as? RoundedCombinedChartRenderer {
+            renderer.setRadius(barRadius)
         } else {
-            if !(_chart.renderer is CombinedChartRenderer) {
-                _chart.renderer = CombinedChartRenderer(chart: _chart, animator: _chart.chartAnimator, viewPortHandler: _chart.viewPortHandler)
-            }
+            _chart.renderer = RoundedCombinedChartRenderer(
+                chart: _chart,
+                animator: _chart.chartAnimator,
+                viewPortHandler: _chart.viewPortHandler,
+                barRadius: barRadius
+            )
         }
         _chart.setNeedsDisplay()
     }
