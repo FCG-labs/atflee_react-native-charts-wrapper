@@ -55,8 +55,10 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     @objc var landscapeOrientation: NSNumber? {
         didSet {
             if let v = landscapeOrientation {
+                print("[RNChartViewBase] landscapeOrientation set: \(v.boolValue)")
                 landscapeOrientationOverride = v.boolValue
             } else {
+                print("[RNChartViewBase] landscapeOrientation set to nil")
                 landscapeOrientationOverride = nil
             }
             updateValueVisibility(chart)
@@ -335,6 +337,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         let provided = json["edgeLabelEnabled"].bool
         // remember explicit flag (true/false) or nil if not supplied
         edgeLabelExplicit = provided
+        print("[RNChartViewBase] setXAxis – edgeLabelEnabled provided: \(String(describing: provided))")
         var enable: Bool
         if let explicit = provided {
             enable = explicit
@@ -343,6 +346,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             enable = !axisLabelsContainNewline(axis: xAxis)
         }
         xAxis.drawLabelsEnabled = !enable
+        print("[RNChartViewBase] setXAxis – configureEdgeLabels enable: \(enable)")
         configureEdgeLabels(enable)
     }
 
@@ -643,13 +647,15 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     private func updateValueVisibility(_ chartView: ChartViewBase) {
         guard let barLine = chartView as? BarLineChartViewBase else { return }
 
+        let isLandscape = landscapeOrientationOverride ?? (barLine.bounds.width > barLine.bounds.height)
+        print("[RNChartViewBase] updateValueVisibility – isLandscape: \(isLandscape) override: \(String(describing: landscapeOrientationOverride))")
+
         // 1. Decide whether to display value texts based on number of visible entries
         var leftIdx = Int(ceil(barLine.lowestVisibleX))
         var rightIdx = Int(floor(barLine.highestVisibleX))
         var visibleCount = rightIdx - leftIdx + 1
         if visibleCount < 0 { visibleCount = 0 }
 
-        let isLandscape = landscapeOrientationOverride ?? (barLine.bounds.width > barLine.bounds.height)
         let threshold = isLandscape ? 15 : 8
         let showValues = visibleCount <= threshold
 
