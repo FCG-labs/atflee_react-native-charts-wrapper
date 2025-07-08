@@ -19,6 +19,8 @@ public class EdgeLabelHelper {
     private static final float PADDING_DP_RIGHT = 32f;
     private static java.util.WeakHashMap<BarLineChartBase, Boolean> enabledMap = new java.util.WeakHashMap<>();
     private static java.util.WeakHashMap<BarLineChartBase, Boolean> explicitMap = new java.util.WeakHashMap<>();
+    // orientation override: null means auto-detect
+    private static java.util.WeakHashMap<BarLineChartBase, Boolean> landscapeOverrideMap = new java.util.WeakHashMap<>();
     private static java.util.WeakHashMap<BarLineChartBase, float[]> baseOffsets = new java.util.WeakHashMap<>();
     private static java.util.WeakHashMap<BarLineChartBase, View.OnLayoutChangeListener> layoutListeners = new java.util.WeakHashMap<>();
     private static String leftTag(Chart chart) {
@@ -235,5 +237,19 @@ public class EdgeLabelHelper {
     /** Returns explicit flag if provided; otherwise null (auto). */
     public static java.lang.Boolean getExplicitFlag(BarLineChartBase chart) {
         return explicitMap.get(chart);
+    }
+
+    /** Stores optional landscape override flag from JS. */
+    public static void setLandscapeOverride(BarLineChartBase chart, java.lang.Boolean landscape) {
+        if (landscape == null) {
+            landscapeOverrideMap.remove(chart);
+        } else {
+            landscapeOverrideMap.put(chart, landscape);
+        }
+    }
+
+    /** Returns landscape override if provided; otherwise null. */
+    public static java.lang.Boolean getLandscapeOverride(BarLineChartBase chart) {
+        return landscapeOverrideMap.get(chart);
     }
 }

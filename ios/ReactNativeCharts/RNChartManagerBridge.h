@@ -30,5 +30,6 @@ RCT_EXPORT_VIEW_PROPERTY(onMarkerClick, RCTBubblingEventBlock) \
 RCT_EXPORT_VIEW_PROPERTY(group, NSString) \
 RCT_EXPORT_VIEW_PROPERTY(identifier, NSString) \
 RCT_EXPORT_VIEW_PROPERTY(syncX, BOOL) \
-RCT_EXPORT_VIEW_PROPERTY(syncY, BOOL)
+RCT_EXPORT_VIEW_PROPERTY(syncY, BOOL) \
+RCT_EXPORT_VIEW_PROPERTY(landscapeOrientation, BOOL)
 #endif /* RNChartManagerBridge_h */

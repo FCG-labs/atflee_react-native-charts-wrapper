@@ -339,6 +339,13 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
         }
     }
 
+    @ReactProp(name = "landscapeOrientation")
+    public void setLandscapeOrientation(Chart chart, boolean landscape) {
+        if (chart instanceof BarLineChartBase) {
+            com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.setLandscapeOverride((BarLineChartBase) chart, landscape);
+        }
+    }
+
     @ReactProp(name = "marker")
     public void setMarker(Chart chart, ReadableMap propMap) {
         if (!BridgeUtils.validate(propMap, ReadableType.Boolean, "enabled") || !propMap.getBoolean("enabled")) {

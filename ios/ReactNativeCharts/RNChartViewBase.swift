@@ -46,7 +46,20 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     private var leftEdgeConstraint: NSLayoutConstraint?
     private var rightEdgeConstraint: NSLayoutConstraint?
     var edgeLabelEnabled: Bool = false
+    // whether edgeLabelEnabled was explicitly provided from JS; nil means auto
+    private var edgeLabelExplicit: Bool? = nil
     let edgeLabelTopPadding: CGFloat = 0
+    // optional override from JS. nil means auto.
+    @objc var landscapeOrientation: NSNumber? {
+        didSet {
+            if let v = landscapeOrientation {
+                landscapeOrientationOverride = v.boolValue
+            } else {
+                landscapeOrientationOverride = nil
+            }
+        }
+    }
+    var landscapeOrientationOverride: Bool? = nil
 
     private var group: String?
 
@@ -182,7 +195,6 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             legend.formToTextSpace = CGFloat(truncating: json["formToTextSpace"].numberValue)
         }
 
-
         // Custom labels & colors
         if json["custom"].exists() {
             let customMap = json["custom"]
@@ -234,7 +246,6 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         if json["textSize"].float != nil {
             chartDescription.font = chartDescription.font.withSize(CGFloat(json["textSize"].floatValue))
         }
-
 
         if json["positionX"].number != nil && json["positionY"].number != nil {
             chartDescription.position = CGPoint(x: CGFloat(truncating: json["positionX"].numberValue), y: CGFloat(truncating: json["positionY"].numberValue))
@@ -314,18 +325,18 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             xAxis.labelPosition = BridgeUtils.parseXAxisLabelPosition(json["position"].stringValue)
         }
 
-        if let barLine = chart as? BarLineChartViewBase {
-            let provided = json["edgeLabelEnabled"].bool
-            var enable: Bool
-            if let explicit = provided {
-                enable = explicit
-            } else {
-                // 자동 결정: 라벨에 개행이 없으면 edgeLabel 사용, 있으면 기본 라벨 사용
-                enable = !axisLabelsContainNewline(axis: xAxis)
-            }
-            xAxis.drawLabelsEnabled = !enable
-            configureEdgeLabels(enable)
+        let provided = json["edgeLabelEnabled"].bool
+        // remember explicit flag (true/false) or nil if not supplied
+        edgeLabelExplicit = provided
+        var enable: Bool
+        if let explicit = provided {
+            enable = explicit
+        } else {
+            // 자동 결정: 라벨에 개행이 없으면 edgeLabel 사용, 있으면 기본 라벨 사용
+            enable = !axisLabelsContainNewline(axis: xAxis)
         }
+        xAxis.drawLabelsEnabled = !enable
+        configureEdgeLabels(enable)
     }
 
     func setCommonAxisConfig(_ axis: AxisBase, config: JSON) {
@@ -602,6 +613,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     
     @objc public func chartScaled(_ chartView: ChartViewBase, scaleX: CoreGraphics.CGFloat, scaleY: CoreGraphics.CGFloat) {
         sendEvent("chartScaled")
+        updateValueVisibility(chartView)
         chartView.subviews
             .filter { $0.tag == 999 }
             .forEach { $0.removeFromSuperview() }
@@ -609,6 +621,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
     @objc public func chartTranslated(_ chartView: ChartViewBase, dX: CoreGraphics.CGFloat, dY: CoreGraphics.CGFloat) {
         sendEvent("chartTranslated")
+        updateValueVisibility(chartView)
         chartView.subviews
             .filter { $0.tag == 999 }
             .forEach { $0.removeFromSuperview() }
@@ -617,6 +630,48 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     @objc public func chartViewDidEndPanning(_ chartView: ChartViewBase) {
         sendEvent("chartPanEnd")
         // 이건 좌우스크롤 highlightPerDragEnabled과 연관있으므로, 오버레이 터치 삭제하면 안됨
+    }
+
+    // MARK: - Value text / Edge label visibility based on zoom
+    private func updateValueVisibility(_ chartView: ChartViewBase) {
+        guard let barLine = chartView as? BarLineChartViewBase else { return }
+
+        // 1. Decide whether to display value texts based on zoom span
+        let visibleSpan = barLine.highestVisibleX - barLine.lowestVisibleX
+        let isLandscape = landscapeOrientationOverride ?? (barLine.bounds.width > barLine.bounds.height)
+        let threshold = isLandscape ? 15.0 : 8.0
+        let showValues = visibleSpan < threshold
+
+        if let data = barLine.data {
+            // update value text visibility only if it changes
+            if data.dataSets.first?.drawValuesEnabled != showValues {
+                data.dataSets.forEach { $0.drawValuesEnabled = showValues }
+            }
+        }
+
+        // 2. Determine desired edge-label state following USER rules
+        let labelsDisabled = (barLine.xAxis.drawLabelsEnabled == false)
+        var desiredEdge = false
+
+        if let explicit = edgeLabelExplicit {
+            // explicit flag from JS wins unless drawLabels disabled
+            desiredEdge = labelsDisabled ? true : explicit
+        } else {
+            // automatic: if labels disabled show edge label, else toggle with zoom
+            desiredEdge = labelsDisabled ? true : !showValues
+        }
+
+        // 3. Update x-axis label visibility only when not forced off by user
+        if edgeLabelExplicit == nil && !labelsDisabled {
+            barLine.xAxis.drawLabelsEnabled = showValues
+        }
+
+        // 4. Apply edge label change only if needed
+        if desiredEdge != edgeLabelEnabled {
+            configureEdgeLabels(desiredEdge)
+        }
+
+        barLine.setNeedsDisplay()
     }
 
     /// Returns true if any xAxis valueFormatter label contains a newline.

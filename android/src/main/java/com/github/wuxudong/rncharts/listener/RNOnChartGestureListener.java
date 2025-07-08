@@ -93,10 +93,15 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
         if (!(base instanceof BarLineChartBase)) return;
         BarLineChartBase chart = (BarLineChartBase) base;
 
-        float visibleSpan = chart.getHighestVisibleX() - chart.getLowestVisibleX();
-        boolean isLandscape = chart.getWidth() > chart.getHeight();
-        double threshold = isLandscape ? 15.0 : 8.0;
-        boolean showValues = visibleSpan < threshold;
+        // approximate number of x-entries currently visible (inclusive)
+        int leftIdx = (int) Math.ceil(chart.getLowestVisibleX());
+        int rightIdx = (int) Math.floor(chart.getHighestVisibleX());
+        int visibleCount = rightIdx - leftIdx + 1;
+        if (visibleCount < 0) visibleCount = 0;
+        Boolean landscapeOverride = EdgeLabelHelper.getLandscapeOverride(chart);
+        boolean isLandscape = (landscapeOverride != null) ? landscapeOverride.booleanValue() : (chart.getWidth() > chart.getHeight());
+        int threshold = isLandscape ? 15 : 8;
+        boolean showValues = visibleCount <= threshold;
 
         ChartData data = chart.getData();
         if (data != null) {
