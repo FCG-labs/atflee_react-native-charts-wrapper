@@ -66,8 +66,10 @@ open class NoClipLineChartRenderer: LineChartRenderer {
 
                 // Would the default (above) position overflow chart top?
                 if pt.y - offsetY - textHeight < viewPortHandler.contentTop {
-                    // Draw BELOW the point instead
-                    drawPoint.y += offsetY
+                    // Draw BELOW the point instead. Account for the label's
+                    // height so its baseline sits fully within the content
+                    // area, mirroring the offset used for the above case.
+                    drawPoint.y += offsetY + textHeight
                 } else {
                     // Draw ABOVE the point (original behaviour)
                     drawPoint.y -= offsetY + textHeight
