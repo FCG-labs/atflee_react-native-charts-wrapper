@@ -73,16 +73,13 @@ open class NoClipLineChartRenderer: LineChartRenderer {
                 let offsetY    = CGFloat(valOffset)
                 var drawPoint  = pt
 
-                // Would the default (above) position overflow chart top?
-                if pt.y - offsetY - textHeight < viewPortHandler.contentTop {
-                    // Draw BELOW the point instead. Account for the label's
-                    // height so its baseline sits fully within the content
-                    // area, mirroring the offset used for the above case.
-                    drawPoint.y += offsetY + textHeight
-                } else {
-                    // Draw ABOVE the point (original behaviour)
-                    drawPoint.y -= offsetY + textHeight
+                // Default position is ABOVE the value (baseline offset by `offsetY`).
+                var baseline = pt.y - offsetY
+                // If that would overflow beyond the chart top, draw BELOW instead.
+                if baseline - textHeight < viewPortHandler.contentTop {
+                    baseline = pt.y + offsetY + textHeight
                 }
+                drawPoint.y = baseline
 
                 if dataSet.isDrawValuesEnabled {
                     let valueText = formatter.stringForValue(e.y,
