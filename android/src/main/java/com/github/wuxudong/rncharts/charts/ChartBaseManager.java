@@ -342,7 +342,10 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
     @ReactProp(name = "landscapeOrientation")
     public void setLandscapeOrientation(Chart chart, boolean landscape) {
         if (chart instanceof BarLineChartBase) {
-            com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.setLandscapeOverride((BarLineChartBase) chart, landscape);
+            BarLineChartBase bar = (BarLineChartBase) chart;
+            com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.setLandscapeOverride(bar, landscape);
+            com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.applyPadding(bar);
+            com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.update(bar, bar.getLowestVisibleX(), bar.getHighestVisibleX());
         }
     }
 

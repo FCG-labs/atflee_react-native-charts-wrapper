@@ -127,8 +127,9 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
             desiredEdge = userDisabledLabels ? true : !showValues;
         }
 
+        boolean showAxis = desiredEdge ? false : showValues;
         if (explicit == null && userDraw == null) {
-            axis.setDrawLabels(showValues);
+            axis.setDrawLabels(showAxis);
         }
 
         EdgeLabelHelper.setEnabled(chart, desiredEdge);

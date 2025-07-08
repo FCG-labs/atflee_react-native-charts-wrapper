@@ -223,7 +223,7 @@ public class EdgeLabelHelper {
         float[] b = base(chart);
         float bottom = b[3];
         if (isEnabled(chart)) {
-            bottom = b[3] + (float) overlayHeight(chart);
+            bottom = b[3] + (float) overlayHeight(chart) / 2f;
         }
         chart.setExtraOffsets(b[0], b[1], b[2], bottom);
     }
