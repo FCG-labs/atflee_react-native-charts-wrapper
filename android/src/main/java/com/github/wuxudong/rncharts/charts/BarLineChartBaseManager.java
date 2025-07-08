@@ -179,7 +179,6 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                 }
             }
         }
-
         sendLoadCompleteEvent(chart);
     }
 
@@ -416,6 +415,8 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        sendLoadCompleteEvent(root);
 
     }
 
