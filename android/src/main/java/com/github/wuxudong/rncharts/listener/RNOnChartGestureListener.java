@@ -116,17 +116,18 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
         }
 
         XAxis axis = chart.getXAxis();
-        boolean labelsDisabled = !axis.isDrawLabelsEnabled();
+        Boolean userDraw = EdgeLabelHelper.getUserDrawLabels(chart);
+        boolean userDisabledLabels = userDraw != null && !userDraw.booleanValue();
 
         Boolean explicit = EdgeLabelHelper.getExplicitFlag(chart);
         boolean desiredEdge;
         if (explicit != null) {
-            desiredEdge = labelsDisabled ? true : explicit.booleanValue();
+            desiredEdge = userDisabledLabels ? true : explicit.booleanValue();
         } else {
-            desiredEdge = labelsDisabled ? true : !showValues;
+            desiredEdge = userDisabledLabels ? true : !showValues;
         }
 
-        if (explicit == null && !labelsDisabled) {
+        if (explicit == null && userDraw == null) {
             axis.setDrawLabels(showValues);
         }
 

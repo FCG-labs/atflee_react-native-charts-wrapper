@@ -48,6 +48,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     var edgeLabelEnabled: Bool = false
     // whether edgeLabelEnabled was explicitly provided from JS; nil means auto
     private var edgeLabelExplicit: Bool? = nil
+    // remembers initial xAxis.drawLabelsEnabled when provided via JS
+    private var userXAxisDrawLabels: Bool? = nil
     let edgeLabelTopPadding: CGFloat = 0
     // optional override from JS. nil means auto.
     @objc var landscapeOrientation: NSNumber? {
@@ -312,6 +314,10 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         let xAxis = chart.xAxis;
 
         setCommonAxisConfig(xAxis, config: json)
+
+        if json["drawLabels"].bool != nil {
+            userXAxisDrawLabels = json["drawLabels"].boolValue
+        }
 
         if json["labelRotationAngle"].number != nil {
             xAxis.labelRotationAngle = CGFloat(truncating: json["labelRotationAngle"].numberValue)
@@ -636,11 +642,15 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     private func updateValueVisibility(_ chartView: ChartViewBase) {
         guard let barLine = chartView as? BarLineChartViewBase else { return }
 
-        // 1. Decide whether to display value texts based on zoom span
-        let visibleSpan = barLine.highestVisibleX - barLine.lowestVisibleX
+        // 1. Decide whether to display value texts based on number of visible entries
+        var leftIdx = Int(ceil(barLine.lowestVisibleX))
+        var rightIdx = Int(floor(barLine.highestVisibleX))
+        var visibleCount = rightIdx - leftIdx + 1
+        if visibleCount < 0 { visibleCount = 0 }
+
         let isLandscape = landscapeOrientationOverride ?? (barLine.bounds.width > barLine.bounds.height)
-        let threshold = isLandscape ? 15.0 : 8.0
-        let showValues = visibleSpan < threshold
+        let threshold = isLandscape ? 15 : 8
+        let showValues = visibleCount <= threshold
 
         if let data = barLine.data {
             // update value text visibility only if it changes
@@ -650,19 +660,19 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         }
 
         // 2. Determine desired edge-label state following USER rules
-        let labelsDisabled = (barLine.xAxis.drawLabelsEnabled == false)
-        var desiredEdge = false
+        let userDisabledLabels = (userXAxisDrawLabels == false)
+        var desiredEdge: Bool
 
         if let explicit = edgeLabelExplicit {
-            // explicit flag from JS wins unless drawLabels disabled
-            desiredEdge = labelsDisabled ? true : explicit
+            // explicit flag from JS wins unless labels disabled by user
+            desiredEdge = userDisabledLabels ? true : explicit
         } else {
             // automatic: if labels disabled show edge label, else toggle with zoom
-            desiredEdge = labelsDisabled ? true : !showValues
+            desiredEdge = userDisabledLabels ? true : !showValues
         }
 
-        // 3. Update x-axis label visibility only when not forced off by user
-        if edgeLabelExplicit == nil && !labelsDisabled {
+        // 3. Update x-axis label visibility only when user has not specified drawLabels
+        if edgeLabelExplicit == nil && userXAxisDrawLabels == nil {
             barLine.xAxis.drawLabelsEnabled = showValues
         }
 
