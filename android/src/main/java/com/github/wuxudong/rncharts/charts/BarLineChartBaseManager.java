@@ -265,9 +265,11 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
 
     @ReactProp(name = "landscapeOrientation")
     public void setLandscapeOrientation(BarLineChartBase chart, boolean enabled) {
-        // Currently unused — layout for landscape mode is handled in JS.
-        // The presence of this setter simply prevents "unknown prop" warnings
-        // coming from React Native.
+        // Forward the override flag to EdgeLabelHelper so that value-label/edge-label logic
+        // respects the orientation provided by JS.
+        com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.setLandscapeOverride(chart, enabled);
+        com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.applyPadding(chart);
+        com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.update(chart, chart.getLowestVisibleX(), chart.getHighestVisibleX());
     }
 
     // Note: Offset aren't updated until first touch event: https://github.com/PhilJay/MPAndroidChart/issues/892

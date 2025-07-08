@@ -108,8 +108,10 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
         if (visibleCount < 0) visibleCount = 0;
         Boolean landscapeOverride = EdgeLabelHelper.getLandscapeOverride(chart);
         boolean isLandscape = (landscapeOverride != null) ? landscapeOverride.booleanValue() : (chart.getWidth() > chart.getHeight());
+        Log.d("RNChartDebug", "[adjust] landscapeOverride=" + landscapeOverride + ", isLandscape=" + isLandscape);
         int threshold = isLandscape ? 15 : 8;
         boolean showValues = visibleCount <= threshold;
+        Log.d("RNChartDebug", "[adjust] visibleCount=" + visibleCount + ", threshold=" + threshold + ", showValues=" + showValues);
 
         ChartData data = chart.getData();
         if (data != null) {
@@ -131,6 +133,7 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
                     }
 
                     boolean desired = showValues;
+                    Log.d("RNChartDebug", "[adjust] DataSet=" + set.getLabel() + ", baseDraw=" + baseDraw + ", desired=" + desired + ", current=" + set.isDrawValuesEnabled());
                     if (set.isDrawValuesEnabled() != desired) {
                         set.setDrawValues(desired);
                     }
