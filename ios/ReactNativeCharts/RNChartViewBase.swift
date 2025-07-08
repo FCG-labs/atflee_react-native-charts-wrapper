@@ -59,6 +59,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             } else {
                 landscapeOrientationOverride = nil
             }
+            updateValueVisibility(chart)
         }
     }
     var landscapeOrientationOverride: Bool? = nil
@@ -671,9 +672,10 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             desiredEdge = userDisabledLabels ? true : !showValues
         }
 
-        // 3. Update x-axis label visibility only when user has not specified drawLabels
+        // 3. Choose axis label visibility based on edge label state
+        let showAxis = desiredEdge ? false : showValues
         if edgeLabelExplicit == nil && userXAxisDrawLabels == nil {
-            barLine.xAxis.drawLabelsEnabled = showValues
+            barLine.xAxis.drawLabelsEnabled = showAxis
         }
 
         // 4. Apply edge label change only if needed
