@@ -115,18 +115,10 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
             if (rightX > maxX) rightX = maxX;
         }
 
-        int visibleCount;
-        ChartData _d = chart.getData();
-        if (_d != null) {
-            int totalEntries = (int) (_d.getXMax() - _d.getXMin() + 1);
-            float scale = chart.getScaleX();
-            if (scale < 1f) scale = 1f; // safety guard
-            visibleCount = (int) Math.ceil(totalEntries / scale);
-            if (visibleCount < 1) visibleCount = 1;
-            if (visibleCount > totalEntries) visibleCount = totalEntries;
-        } else {
-            visibleCount = 0;
-        }
+        int leftIdx = (int) Math.ceil(leftX);
+        int rightIdx = (int) Math.floor(rightX);
+        int visibleCount = rightIdx - leftIdx + 1;
+        if (visibleCount < 0) visibleCount = 0;
         Boolean landscapeOverride = EdgeLabelHelper.getLandscapeOverride(chart);
         boolean isLandscape = (landscapeOverride != null) ? landscapeOverride.booleanValue() : (chart.getWidth() > chart.getHeight());
         Log.d("RNChartDebug", "[adjust] landscapeOverride=" + landscapeOverride + ", isLandscape=" + isLandscape);
