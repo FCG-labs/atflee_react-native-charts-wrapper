@@ -762,8 +762,6 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
                 @Override
                 public boolean onPreDraw() {
                     chart.getViewTreeObserver().removeOnPreDrawListener(this);
-//                    sendLoadCompleteEvent(chart);
-//                    loadCompleteMap.put(chart, true);
                     chart.post(() -> {
                         sendLoadCompleteEvent(chart);
                         loadCompleteMap.put(chart, true);
@@ -771,6 +769,8 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
                     return true;
                 }
             });
+        } else {
+            chart.post(() -> sendLoadCompleteEvent(chart));
         }
     }
 
