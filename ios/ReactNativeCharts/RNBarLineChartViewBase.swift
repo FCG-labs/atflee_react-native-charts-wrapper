@@ -59,8 +59,6 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
           let minimum = axis.axisMinimum;
           let maximum = axis.axisMaximum;
           if lastMin != minimum || lastMax != maximum {
-            print("Update the view", minimum, lastMin, maximum, lastMax)
-
             guard let callback = self._onYaxisMinMaxChange else {
               return;
             }

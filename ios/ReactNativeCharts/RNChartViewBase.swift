@@ -808,10 +808,6 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             }
         }
 
-        #if DEBUG
-        print("[RNChart] \(action) payload:", dict)
-        #endif
-
         if let callback = self.onChange {
             callback(dict)
         }

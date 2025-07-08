@@ -32,6 +32,8 @@ open class NoClipLineChartRenderer: LineChartRenderer {
         let phaseY = animator.phaseY
         var pt     = CGPoint()
 
+        // DEBUG: begin drawing datasets
+        print("[NoClipLineChartRenderer] drawValues – lineDataSets: \(lineData.dataSetCount)")
         for i in lineData.indices {
             guard
                 let dataSet = lineData[i] as? LineChartDataSetProtocol,
@@ -71,18 +73,46 @@ open class NoClipLineChartRenderer: LineChartRenderer {
                 // bar chart renderer which only checks X bounds here.
                 if !viewPortHandler.isInBoundsLeft(pt.x) { continue }
 
-                // Determine where to place the value label: above (default) or below the point.
+                // Calculate text metrics once for smarter placement
+                let valueText = formatter.stringForValue(e.y,
+                                                         entry: e,
+                                                         dataSetIndex: i,
+                                                         viewPortHandler: viewPortHandler)
                 let textHeight = valueFont.lineHeight
+                let textWidth  = valueText.size(withAttributes: [.font: valueFont]).width
                 let offsetY    = CGFloat(valOffset)
                 var drawPoint  = pt
 
-                // Try to draw ABOVE the point first.
-                let aboveY = pt.y - offsetY - textHeight
-                if aboveY >= viewPortHandler.contentTop {
-                    drawPoint.y = aboveY
-                } else {
-                    // Not enough space; draw BELOW the point instead (just below the circle).
-                    drawPoint.y = pt.y + offsetY
+                let chartTop = viewPortHandler.contentTop
+                let aboveY   = pt.y - offsetY - textHeight
+
+                // ALWAYS draw above. If 공간 부족, 클램프해서 contentTop 안으로만 유지
+                drawPoint.y = max(aboveY, chartTop)
+
+                // 좌·우 경계 안쪽으로만 조정해 잘림 방지
+                let halfW = textWidth / 2.0
+                if drawPoint.x - halfW < viewPortHandler.contentLeft {
+                    drawPoint.x = viewPortHandler.contentLeft + halfW
+                }
+                if drawPoint.x + halfW > viewPortHandler.contentRight {
+                    drawPoint.x = viewPortHandler.contentRight - halfW
+                }
+
+                // DEBUG: log first 3 entries of each dataset
+                if j < 3 {
+                    print("[NoClipLineChartRenderer] dsIdx:\(i) entryIdx:\(j) y:\(e.y) aboveY:\(aboveY) finalY:\(drawPoint.y) contentTop:\(chartTop)")
+                }
+
+                // Finally draw the text
+                if dataSet.isDrawValuesEnabled {
+                    context.drawText(valueText,
+                                     at: drawPoint,
+                                     align: .center,
+                                     angleRadians: angleRadians,
+                                     attributes: [
+                                        .font: valueFont,
+                                        .foregroundColor: dataSet.valueTextColorAt(j)
+                                     ])
                 }
 
                 if dataSet.isDrawValuesEnabled {
