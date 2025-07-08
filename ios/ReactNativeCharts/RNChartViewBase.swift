@@ -674,7 +674,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
         // 3. Choose axis label visibility based on edge label state
         let showAxis = desiredEdge ? false : showValues
-        if edgeLabelExplicit == nil && userXAxisDrawLabels == nil {
+        // Update xAxis label visibility unless the user explicitly disabled labels (drawLabels: false)
+        if edgeLabelExplicit == nil && !userDisabledLabels {
             barLine.xAxis.drawLabelsEnabled = showAxis
         }
 
