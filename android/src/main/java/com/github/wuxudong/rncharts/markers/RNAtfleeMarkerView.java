@@ -359,8 +359,8 @@ public class RNAtfleeMarkerView extends MarkerView {
 
         Chart chart = getChartView();
         if (chart != null) {
-            // Clear any highlight without notifying listeners
-            chart.highlightValue(null, false);
+            // Clear the current highlight and redraw the chart
+            chart.highlightValue(null);
             chart.invalidate();
         }
 
