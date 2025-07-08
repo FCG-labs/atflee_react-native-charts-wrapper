@@ -703,6 +703,9 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     private func configureEdgeLabels(_ enable: Bool) {
         edgeLabelEnabled = enable
         if enable {
+            if let barLine = chart as? BarLineChartViewBase {
+                barLine.xAxis.drawLabelsEnabled = false
+            }
             if leftEdgeLabel == nil {
                 let label = UILabel()
                 label.translatesAutoresizingMaskIntoConstraints = false

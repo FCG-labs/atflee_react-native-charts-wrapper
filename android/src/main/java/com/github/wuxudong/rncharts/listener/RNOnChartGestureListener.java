@@ -61,6 +61,7 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
 
     @Override
     public void onChartGestureEnd(MotionEvent me, ChartTouchListener.ChartGesture lastPerformedGesture) {
+        adjustValueAndEdgeLabels();
         sendEvent("chartGestureEnd", me);
     }
 
@@ -151,9 +152,7 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
         }
 
         boolean showAxis = desiredEdge ? false : showValues;
-        if (explicit == null && userDraw == null) {
-            axis.setDrawLabels(showAxis);
-        }
+        axis.setDrawLabels(showAxis);
 
         EdgeLabelHelper.setEnabled(chart, desiredEdge);
         EdgeLabelHelper.applyPadding(chart);

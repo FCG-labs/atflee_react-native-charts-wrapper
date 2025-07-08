@@ -282,7 +282,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             if xAxisContainsNewline() {
                 axisHeight = barLineChart.xAxis.labelFont.lineHeight
             }
-            bottom = axisHeight + edgeLabelHeight()
+            bottom += axisHeight + edgeLabelHeight() / 2
         }
 
         barLineChart.setExtraOffsets(left: left, top: top, right: right, bottom: bottom)
