@@ -21,6 +21,8 @@ public class EdgeLabelHelper {
     private static java.util.WeakHashMap<BarLineChartBase, Boolean> explicitMap = new java.util.WeakHashMap<>();
     // orientation override: null means auto-detect
     private static java.util.WeakHashMap<BarLineChartBase, Boolean> landscapeOverrideMap = new java.util.WeakHashMap<>();
+    // remembers user-specified drawLabels flag for xAxis
+    private static java.util.WeakHashMap<BarLineChartBase, Boolean> userDrawLabelsMap = new java.util.WeakHashMap<>();
     private static java.util.WeakHashMap<BarLineChartBase, float[]> baseOffsets = new java.util.WeakHashMap<>();
     private static java.util.WeakHashMap<BarLineChartBase, View.OnLayoutChangeListener> layoutListeners = new java.util.WeakHashMap<>();
     private static String leftTag(Chart chart) {
@@ -125,8 +127,9 @@ public class EdgeLabelHelper {
         int padLeft = px(chart, PADDING_DP_LEFT);
         int padRight = px(chart, PADDING_DP_RIGHT);
 
-        left.layout(chartLeft + padLeft, chartBottom - leftH + 8, chartLeft + padLeft + leftW, chartBottom);
-        right.layout(chartRight - rightW - padRight, chartBottom - rightH + 8, chartRight - padRight, chartBottom);
+        int overlayH = overlayHeight(chart);
+        left.layout(chartLeft + padLeft, chartBottom - overlayH, chartLeft + padLeft + leftW, chartBottom);
+        right.layout(chartRight - rightW - padRight, chartBottom - overlayH, chartRight - padRight, chartBottom);
 
         left.bringToFront();
         right.bringToFront();
@@ -220,7 +223,7 @@ public class EdgeLabelHelper {
         float[] b = base(chart);
         float bottom = b[3];
         if (isEnabled(chart)) {
-            bottom = (float) overlayHeight(chart) / 2f;
+            bottom = b[3] + (float) overlayHeight(chart);
         }
         chart.setExtraOffsets(b[0], b[1], b[2], bottom);
     }
@@ -251,5 +254,19 @@ public class EdgeLabelHelper {
     /** Returns landscape override if provided; otherwise null. */
     public static java.lang.Boolean getLandscapeOverride(BarLineChartBase chart) {
         return landscapeOverrideMap.get(chart);
+    }
+
+    /** Remembers user-specified drawLabels flag for xAxis. */
+    public static void setUserDrawLabels(BarLineChartBase chart, java.lang.Boolean enabled) {
+        if (enabled == null) {
+            userDrawLabelsMap.remove(chart);
+        } else {
+            userDrawLabelsMap.put(chart, enabled);
+        }
+    }
+
+    /** Returns user-specified drawLabels flag for xAxis, or null if not provided. */
+    public static java.lang.Boolean getUserDrawLabels(BarLineChartBase chart) {
+        return userDrawLabelsMap.get(chart);
     }
 }

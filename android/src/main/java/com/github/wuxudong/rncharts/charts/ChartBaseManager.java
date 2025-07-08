@@ -520,7 +520,11 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
             axis.setEnabled(propMap.getBoolean("enabled"));
         }
         if (BridgeUtils.validate(propMap, ReadableType.Boolean, "drawLabels")) {
-            axis.setDrawLabels(propMap.getBoolean("drawLabels"));
+            boolean draw = propMap.getBoolean("drawLabels");
+            axis.setDrawLabels(draw);
+            if (chart instanceof BarLineChartBase && axis == chart.getXAxis()) {
+                com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.setUserDrawLabels((BarLineChartBase) chart, draw);
+            }
         }
         if (BridgeUtils.validate(propMap, ReadableType.Boolean, "drawAxisLine")) {
             axis.setDrawAxisLine(propMap.getBoolean("drawAxisLine"));
