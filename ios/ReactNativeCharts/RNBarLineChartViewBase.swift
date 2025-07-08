@@ -19,6 +19,8 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
     var savedZoom : NSDictionary?
 
+    var zoomScaleX: CGFloat?
+
     var savedExtraOffsets: NSDictionary?
 
     var _onYaxisMinMaxChange : RCTBubblingEventBlock?
@@ -138,6 +140,24 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             barLineChart.setVisibleYRangeMaximum(y["right"]["max"].doubleValue, axis: YAxis.AxisDependency.right)
         }
 
+        if let target = zoomScaleX, target > 0, barLineChart.scaleX != target {
+            let relative = target / barLineChart.scaleX
+            let centerX = barLineChart.data?.xMax ?? 0
+            let axis = barLineChart.getAxis(.left).isEnabled ? YAxis.AxisDependency.left : YAxis.AxisDependency.right
+            barLineChart.zoom(scaleX: relative, scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
+        } else if let saved = savedVisibleRange,
+                  let xMap = saved["x"] as? NSDictionary,
+                  let min = xMap["min"] as? CGFloat,
+                  min > 0 {
+            let currentRange = barLineChart.visibleXRange
+            if currentRange > min {
+                let relative = currentRange / min
+                let centerX = barLineChart.data?.xMax ?? 0
+                let axis = barLineChart.getAxis(.left).isEnabled ? YAxis.AxisDependency.left : YAxis.AxisDependency.right
+                barLineChart.zoom(scaleX: relative, scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
+            }
+        }
+
         // Fire after one run-loop so viewPortHandler has updated with new visible range.
         DispatchQueue.main.async { [weak self] in
             self?.sendEvent("visibleRangeChanged")
@@ -197,6 +217,10 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
     func setZoom(_ config: NSDictionary) {
         self.savedZoom = config
+        let json = BridgeUtils.toJson(config)
+        if json["scaleX"].float != nil {
+            self.zoomScaleX = CGFloat(json["scaleX"].floatValue)
+        }
     }
 
     func updateZoom(_ config: NSDictionary) {

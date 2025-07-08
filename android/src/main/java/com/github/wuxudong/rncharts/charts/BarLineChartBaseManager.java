@@ -159,6 +159,8 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                 YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled() ?
                         YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
                 chart.zoom(relativeScale, 1f, centerX, 0f, axis);
+                // clear initial zoom so that future manual zooms aren't overridden
+                extra.zoomScaleX = null;
             }
         } else {
             ReadableMap saved = extra.savedVisibleRange;
@@ -179,7 +181,6 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                 }
             }
         }
-        sendLoadCompleteEvent(chart);
     }
 
     @ReactProp(name = "autoScaleMinMaxEnabled")
@@ -248,8 +249,8 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                     axisDependency
             );
 
+            // sendLoadCompleteEvent(chart);
             extraPropertiesHolder.getExtraProperties(chart).zoomScaleX = (float) propMap.getDouble("scaleX");
-            sendLoadCompleteEvent(chart);
         }
     }
 
