@@ -189,7 +189,7 @@ open class AtfleeMarker: MarkerView {
     // ────────────── ★ ② draw(context:point:) 최소 패치 ★ ──────────────
     open override func draw(context: CGContext, point: CGPoint) {
         context.saveGState()
-
+        context.resetClip()
         let iconExists = imageEmotion != nil
         let arrowExists = arrowImage != nil // 항상 true(상시 표시)
         

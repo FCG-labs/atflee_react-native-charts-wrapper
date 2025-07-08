@@ -19,6 +19,7 @@ open class NoClipLineChartRenderer: LineChartRenderer {
         super.init(dataProvider: dataProvider, animator: animator, viewPortHandler: viewPortHandler)
     }
 
+    // MARK: - Values
     open override func drawValues(context: CGContext) {
         // Disable any clipping region so that value-labels can render outside contentRect if needed.
         context.saveGState()
@@ -84,10 +85,12 @@ open class NoClipLineChartRenderer: LineChartRenderer {
                 var drawPoint  = pt
 
                 let chartTop = viewPortHandler.contentTop
-                let aboveY   = pt.y - offsetY - textHeight
+                // Position baseline so that text sits fully above the marker: offset + half text height
+                let aboveY   = pt.y - offsetY - textHeight * 1
 
-                // ALWAYS draw above. If 공간 부족, 클램프해서 contentTop 안으로만 유지
-                drawPoint.y = max(aboveY, chartTop)
+                // Draw exactly at the calculated aboveY (no vertical clamp) so labels can use
+                // the extra top offset space provided by RN side.
+                drawPoint.y = aboveY
 
                 // 좌·우 경계 안쪽으로만 조정해 잘림 방지
                 let halfW = textWidth / 2.0
@@ -98,10 +101,7 @@ open class NoClipLineChartRenderer: LineChartRenderer {
                     drawPoint.x = viewPortHandler.contentRight - halfW
                 }
 
-                // DEBUG: log first 3 entries of each dataset
-                if j < 3 {
-                    print("[NoClipLineChartRenderer] dsIdx:\(i) entryIdx:\(j) y:\(e.y) aboveY:\(aboveY) finalY:\(drawPoint.y) contentTop:\(chartTop)")
-                }
+                print("[NoClipLineChartRenderer] dsIdx:\(i) entryIdx:\(j) y:\(e.y) aboveY:\(aboveY) finalY:\(drawPoint.y) contentTop:\(chartTop)")
 
                 // Finally draw the text
                 if dataSet.isDrawValuesEnabled {
@@ -115,20 +115,7 @@ open class NoClipLineChartRenderer: LineChartRenderer {
                                      ])
                 }
 
-                if dataSet.isDrawValuesEnabled {
-                    let valueText = formatter.stringForValue(e.y,
-                                                             entry: e,
-                                                             dataSetIndex: i,
-                                                             viewPortHandler: viewPortHandler)
-                    context.drawText(valueText,
-                                     at: drawPoint,
-                                     align: .center,
-                                     angleRadians: angleRadians,
-                                     attributes: [
-                                        .font: valueFont,
-                                        .foregroundColor: dataSet.valueTextColorAt(j)
-                                     ])
-                }
+
 
                 // Icons (if any) follow default renderer semantics
                 if let icon = e.icon, dataSet.isDrawIconsEnabled {
@@ -138,6 +125,53 @@ open class NoClipLineChartRenderer: LineChartRenderer {
                 }
             }
         }
+        context.restoreGState()
+    }
+
+    // MARK: - Highlight & Marker
+    open override func drawHighlighted(context: CGContext, indices: [Highlight]) {
+        guard
+            let dataProvider = dataProvider,
+            let lineData     = dataProvider.lineData,
+            let chartBase    = dataProvider as? BarLineChartViewBase
+        else { return }
+
+        context.saveGState()
+        context.resetClip() // allow highlight line to extend into extraOffsets
+
+        let phaseY = animator.phaseY
+
+        for high in indices {
+            guard
+                high.dataSetIndex < lineData.dataSets.count,
+                let set = lineData.dataSets[high.dataSetIndex] as? LineChartDataSetProtocol,
+                set.isHighlightEnabled
+            else { continue }
+
+            if let e = set.entryForXValue(high.x, closestToY: high.y) {
+                let trans = dataProvider.getTransformer(forAxis: set.axisDependency)
+                var pt    = trans.pixelForValues(x: e.x, y: e.y * phaseY)
+
+                // record for MarkerView
+                high.setDraw(x: pt.x, y: pt.y)
+
+                // draw vertical highlight line up to marker anchor Y(=pt.y) or full height
+                context.saveGState()
+                context.setStrokeColor(set.highlightColor.cgColor)
+                context.setLineWidth(max(set.highlightLineWidth, 1))
+                if let dash = set.highlightLineDashLengths {
+                    context.setLineDash(phase: 0, lengths: dash)
+                }
+
+                let top = chartBase.viewPortHandler.contentTop
+                let bottom = chartBase.viewPortHandler.contentBottom
+                context.move(to: CGPoint(x: pt.x, y: top))
+                context.addLine(to: CGPoint(x: pt.x, y: bottom))
+                context.strokePath()
+                context.restoreGState()
+            }
+        }
+
         context.restoreGState()
     }
 }
