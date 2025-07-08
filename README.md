@@ -228,7 +228,7 @@ Triggered for various supported events on each platform. Due to the different na
 
 | Event Name | Description | iOS | Android |
 | --------------- | -------- | ------- | ---- |
-| `chartLoadComplete` | Fired after the chart renders or when zoom/visibleRange props update. | ✅ | ✅ |
+| `chartLoadComplete` | Fired after the chart initially renders or data is refreshed. | ✅ | ✅ |
 | `chartScaled`       | When a chart is scaled/zoomed via a pinch zoom gesture. | ✅ | ✅ |
 | `chartTranslated`   | When a chart is moved/translated via a drag gesture. | ✅ | ✅ |
 | `chartPanEnd`       | When a chart pan gesture ends. | ✅ | ❌ |
@@ -244,7 +244,7 @@ check Example->MultipleChart for details.
 ```jsx
 const handleChange = e => {
   if (e.nativeEvent.action === 'chartLoadComplete') {
-    // chart has applied zoom/visible range; scaleX/scaleY reflect the current state
+    // chart has finished rendering and data is ready
   }
 };
 <LineChart onChange={handleChange} ... />

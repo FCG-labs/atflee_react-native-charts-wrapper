@@ -32,6 +32,7 @@ class ChartExtraProperties {
     public String identifier = null;
     public boolean syncX = true;
     public boolean syncY = false;
+    public Float zoomScaleX = null;
 }
 
 class ExtraPropertiesHolder {
@@ -148,7 +149,36 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
             }
         }
 
-        sendLoadCompleteEvent(chart);
+        ChartExtraProperties extra = extraPropertiesHolder.getExtraProperties(chart);
+
+        if (extra.zoomScaleX != null) {
+            float targetScale = extra.zoomScaleX;
+            if (targetScale > 0 && chart.getScaleX() != targetScale) {
+                float relativeScale = targetScale / chart.getScaleX();
+                float centerX = chart.getData() != null ? (float) chart.getData().getXMax() : 0f;
+                YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled() ?
+                        YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
+                chart.zoom(relativeScale, 1f, centerX, 0f, axis);
+            }
+        } else {
+            ReadableMap saved = extra.savedVisibleRange;
+            if (saved != null && BridgeUtils.validate(saved, ReadableType.Map, "x")) {
+                ReadableMap xRange = saved.getMap("x");
+                if (BridgeUtils.validate(xRange, ReadableType.Number, "min")) {
+                    float minRange = (float) xRange.getDouble("min");
+                    if (minRange > 0) {
+                        float currentRange = chart.getVisibleXRange();
+                        if (currentRange > minRange) {
+                            float relativeScale = currentRange / minRange;
+                            float centerX = chart.getData() != null ? (float) chart.getData().getXMax() : 0f;
+                            YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled() ?
+                                    YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
+                            chart.zoom(relativeScale, 1f, centerX, 0f, axis);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @ReactProp(name = "autoScaleMinMaxEnabled")
@@ -216,7 +246,8 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                     (float) propMap.getDouble("yValue"),
                     axisDependency
             );
-            sendLoadCompleteEvent(chart);
+
+            extraPropertiesHolder.getExtraProperties(chart).zoomScaleX = (float) propMap.getDouble("scaleX");
         }
     }
 
@@ -382,6 +413,8 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        sendLoadCompleteEvent(root);
 
     }
 
