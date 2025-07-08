@@ -522,7 +522,7 @@ type combinedData {
 ```jsx
 const handleChange = e => {
   if (e.nativeEvent.action === 'chartLoadComplete') {
-    // chart has finished rendering and data is ready
+    // chart has finished rendering or props were updated
   }
 };
 <LineChart onChange={handleChange} ... />
