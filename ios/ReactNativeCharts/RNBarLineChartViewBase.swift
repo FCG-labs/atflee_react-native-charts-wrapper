@@ -370,8 +370,8 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         return barLineChart.valueForTouchPoint(point: CGPoint(x: contentRect.maxX, y:contentRect.minY), axis: axis).y - barLineChart.valueForTouchPoint(point: CGPoint(x: contentRect.minX, y:contentRect.maxY), axis: axis).y
     }
 
-    func setLandscapeOrientation(_ enabled: Bool) {
+    // func setLandscapeOrientation(_ enabled: Bool) {
         // Currently unused — layout for landscape mode is handled in JS.
         // Adding this setter prevents unknown-prop warnings on iOS.
-    }
+    // }
 }
