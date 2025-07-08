@@ -128,6 +128,14 @@ open class NoClipLineChartRenderer: LineChartRenderer {
         context.restoreGState()
     }
 
+    /// Returns true if the given entry lies within the dataset's current
+    /// animated x-bounds.
+    private func entryInBoundsX(_ entry: ChartDataEntry, dataSet: LineChartDataSetProtocol) -> Bool {
+        let index = dataSet.entryIndex(entry: entry)
+        if index < 0 { return false }
+        return Double(index) < Double(dataSet.entryCount) * Double(animator.phaseX)
+    }
+
     // MARK: - Highlight & Marker
     open override func drawHighlighted(context: CGContext, indices: [Highlight]) {
         // Disable clipping so highlight lines & markers can draw into extra offset area
@@ -135,6 +143,117 @@ open class NoClipLineChartRenderer: LineChartRenderer {
         context.resetClip()
         // Use default DGCharts highlight rendering (circles, vertical line etc.)
         super.drawHighlighted(context: context, indices: indices)
+
+        guard
+            let dataProvider = dataProvider,
+            let lineData     = dataProvider.lineData
+        else { return }
+
+        let phaseY = animator.phaseY
+
+        for high in indices {
+            guard
+                let set = lineData.dataSets[high.dataSetIndex] as? LineChartDataSetProtocol,
+                set.isHighlightEnabled,
+                let e   = set.entryForXValue(high.x, closestToY: high.y)
+            else { continue }
+
+            if !entryInBoundsX(e, dataSet: set) { continue }
+
+            let trans = dataProvider.getTransformer(forAxis: set.axisDependency)
+            var pt    = trans.pixelForValues(x: e.x, y: e.y * phaseY)
+
+            // Clamp to content rect so markers can still draw when a value
+            // sits above or below the visible axis range.
+            if pt.y < viewPortHandler.contentTop {
+                pt.y = viewPortHandler.contentTop
+            } else if pt.y > viewPortHandler.contentBottom {
+                pt.y = viewPortHandler.contentBottom
+            }
+
+            high.setDraw(x: pt.x, y: pt.y)
+
+            context.saveGState()
+            context.setStrokeColor(set.highlightColor.cgColor)
+            context.setLineWidth(max(set.highlightLineWidth, 1))
+            if let dash = set.highlightLineDashLengths {
+                context.setLineDash(phase: 0, lengths: dash)
+            }
+
+            drawHighlightLines(context: context, point: pt, set: set)
+            context.restoreGState()
+        }
+
+        context.restoreGState()
+    }
+
+    // MARK: - Circles
+    /// Draw circles without clipping so points remain visible in the extra
+    /// offset region above the chart. This mirrors the default implementation
+    /// but omits the vertical in-bounds check.
+    open override func drawExtras(context: CGContext) {
+        guard
+            let dataProvider = dataProvider,
+            let lineData     = dataProvider.lineData
+        else { return }
+
+        let phaseX = animator.phaseX
+        let phaseY = animator.phaseY
+
+        context.saveGState()
+        context.resetClip()
+
+        for dataSetIndex in lineData.indices {
+            guard
+                let dataSet = lineData[dataSetIndex] as? LineChartDataSetProtocol,
+                dataSet.isVisible,
+                dataSet.isDrawCirclesEnabled
+            else { continue }
+
+            let entryCount = Int(min(
+                ceil(Double(dataSet.entryCount) * Double(phaseX)),
+                Double(dataSet.entryCount)
+            ))
+            let trans   = dataProvider.getTransformer(forAxis: dataSet.axisDependency)
+            let matrix  = trans.valueToPixelMatrix
+            var pt      = CGPoint()
+
+            for j in 0..<entryCount {
+                guard let e = dataSet.entryForIndex(j) else { continue }
+
+                pt.x = CGFloat(e.x)
+                pt.y = CGFloat(e.y * phaseY)
+                pt    = pt.applying(matrix)
+
+                if !viewPortHandler.isInBoundsRight(pt.x) { break }
+                if !viewPortHandler.isInBoundsLeft(pt.x) { continue }
+
+                let radius = CGFloat(dataSet.circleRadius)
+                var circleRect = CGRect(
+                    x: pt.x - radius,
+                    y: pt.y - radius,
+                    width: radius * 2.0,
+                    height: radius * 2.0
+                )
+
+                context.setFillColor(dataSet.getCircleColor(atIndex: j)!.cgColor)
+                context.fillEllipse(in: circleRect)
+
+                if dataSet.isDrawCircleHoleEnabled,
+                   let holeColor = dataSet.circleHoleColor {
+                    let holeRadius = CGFloat(dataSet.circleHoleRadius)
+                    circleRect = CGRect(
+                        x: pt.x - holeRadius,
+                        y: pt.y - holeRadius,
+                        width: holeRadius * 2.0,
+                        height: holeRadius * 2.0
+                    )
+                    context.setFillColor(holeColor.cgColor)
+                    context.fillEllipse(in: circleRect)
+                }
+            }
+        }
+
         context.restoreGState()
     }
 }
