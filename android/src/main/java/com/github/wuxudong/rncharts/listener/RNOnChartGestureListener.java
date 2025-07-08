@@ -103,8 +103,20 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
         BarLineChartBase chart = (BarLineChartBase) base;
 
         // approximate number of x-entries currently visible (inclusive)
-        int leftIdx = (int) Math.ceil(chart.getLowestVisibleX());
-        int rightIdx = (int) Math.floor(chart.getHighestVisibleX());
+        float leftX = chart.getLowestVisibleX();
+        float rightX = chart.getHighestVisibleX();
+
+        // If user pans past the data range, clamp so that we don't count the 'blank' region
+        ChartData dataForClamp = chart.getData();
+        if (dataForClamp != null) {
+            float minX = dataForClamp.getXMin();
+            float maxX = dataForClamp.getXMax();
+            if (leftX < minX) leftX = minX;
+            if (rightX > maxX) rightX = maxX;
+        }
+
+        int leftIdx = (int) Math.ceil(leftX);
+        int rightIdx = (int) Math.floor(rightX);
         int visibleCount = rightIdx - leftIdx + 1;
         if (visibleCount < 0) visibleCount = 0;
         Boolean landscapeOverride = EdgeLabelHelper.getLandscapeOverride(chart);
