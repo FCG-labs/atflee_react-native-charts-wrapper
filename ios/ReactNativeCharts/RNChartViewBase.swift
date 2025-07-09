@@ -52,15 +52,11 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     private var userXAxisDrawLabels: Bool? = nil
     let edgeLabelTopPadding: CGFloat = 0
     // optional override from JS. nil means auto.
-    @objc var landscapeOrientation: NSNumber? {
+    @objc var landscapeOrientation: Bool = false {
         didSet {
-            if let v = landscapeOrientation {
-                print("[RNChartViewBase] landscapeOrientation set: \(v.boolValue)")
-                landscapeOrientationOverride = v.boolValue
-            } else {
-                print("[RNChartViewBase] landscapeOrientation set to nil")
-                landscapeOrientationOverride = nil
-            }
+            let v = landscapeOrientation
+            print("[RNChartViewBase] landscapeOrientation set: \(v)")
+            landscapeOrientationOverride = v
             updateValueVisibility(chart)
         }
     }
