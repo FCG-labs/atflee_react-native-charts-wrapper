@@ -168,23 +168,35 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
             }
         } else {
              if (extra.autoZoomPending) {
+                // Remove any existing edge labels before recalculating based on new data.
+                com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.setEnabled(chart, false);
                 ReadableMap saved = extra.savedVisibleRange;
                 if (saved != null && BridgeUtils.validate(saved, ReadableType.Map, "x")) {
                     ReadableMap xRange = saved.getMap("x");
                     if (BridgeUtils.validate(xRange, ReadableType.Number, "min")) {
-                        float minRange = (float) xRange.getDouble("min");
-                        if (minRange > 0) {
-                            float currentRange = chart.getVisibleXRange();
-                            if (currentRange != minRange) {
-                                float relativeScale = currentRange / minRange;
-                                float centerX = chart.getData() != null ? (float) chart.getData().getXMax() : 0f;
-                                YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled() ?
-                                        YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
+                        float visibleMin = (float) xRange.getDouble("min");
+                        if (visibleMin > 0) {
+                            float rawDataXMin = chart.getData() != null ? (float) chart.getData().getXMin() : chart.getXChartMin();
+                            float rawDataXMax = chart.getData() != null ? (float) chart.getData().getXMax() : chart.getXChartMax();
+                            float effectiveXMin = Math.min(rawDataXMin, chart.getXChartMin());
+                            float effectiveXMax = Math.max(rawDataXMax, chart.getXChartMax());
+                            float totalRange = effectiveXMax - effectiveXMin;
+                            if (totalRange > 0) {
+                                float relativeScale;
+                                if (totalRange > visibleMin) {
+                                    // zoom out so only visibleMin is shown
+                                    relativeScale = totalRange / visibleMin;
+                                } else {
+                                    // zoom in so entries spread to visibleMin width
+                                    relativeScale = visibleMin / totalRange;
+                                }
+                                float centerX = effectiveXMax;
+                                YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled()
+                                        ? YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
                                 chart.zoom(relativeScale, 1f, centerX, 0f, axis);
-                                // auto zoom done for this update
-                                extra.autoZoomPending = false;
-                                // keep savedVisibleRange for future dataset changes
                             }
+                            // auto zoom handled
+                            extra.autoZoomPending = false;
                         }
                     }
                 }

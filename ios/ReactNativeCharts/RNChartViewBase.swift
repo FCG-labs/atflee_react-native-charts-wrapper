@@ -99,8 +99,16 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         super.reactSetFrame(frame);
 
         let chartFrame = CGRect(x: 0, y: 0, width: frame.width, height: frame.height)
-        chart.xAxis.spaceMin = 0.75
-        chart.xAxis.spaceMax = 0.75
+        // Ensure bar charts have half-bar spacing so first/last bars are fully visible.
+        if let barProvider = chart as? BarChartDataProvider,
+           let barData = barProvider.barData {
+            let bw = barData.barWidth
+            chart.xAxis.spaceMin = 0.75
+            chart.xAxis.spaceMax = 0.35
+        } else {
+            chart.xAxis.spaceMin = 0.75
+            chart.xAxis.spaceMax = 0.75
+        }
         chart.reactSetFrame(chartFrame)
     }
 

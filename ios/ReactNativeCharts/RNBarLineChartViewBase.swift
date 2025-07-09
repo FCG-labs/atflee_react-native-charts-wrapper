@@ -163,14 +163,16 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             let effectiveXMax = max(rawDataXMax, barLineChart.chartXMax)
             // print("[RNBarLineChartViewBase:updateVisibleRange] rawDataXMin: \(rawDataXMin), rawDataXMax: \(rawDataXMax), chartXMin: \(barLineChart.chartXMin), chartXMax: \(barLineChart.chartXMax), effectiveXMin: \(effectiveXMin), effectiveXMax: \(effectiveXMax)")
             let totalRange = Double(effectiveXMax - effectiveXMin)
+            let isBarChart = (barLineChart is BarChartView) || (barLineChart is HorizontalBarChartView)
+
             if totalRange > Double(visibleMin) {
                 let relative = totalRange / Double(visibleMin)
-                let centerX = effectiveXMax
+                let centerX: Double = effectiveXMax
                 let axis = barLineChart.getAxis(.left).isEnabled ? YAxis.AxisDependency.left : YAxis.AxisDependency.right
                 barLineChart.zoom(scaleX: relative, scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
             } else if totalRange > 0 {
                 let relative = Double(visibleMin) / totalRange
-                let centerX = effectiveXMax
+                let centerX: Double = effectiveXMax
                 let axis = barLineChart.getAxis(.left).isEnabled ? YAxis.AxisDependency.left : YAxis.AxisDependency.right
                 barLineChart.zoom(scaleX: CGFloat(relative), scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
             }
@@ -302,7 +304,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             }
             bottom += axisHeight + edgeLabelHeight() / 2
         }
-
+        
         barLineChart.setExtraOffsets(left: left, top: top, right: right, bottom: bottom)
         barLineChart.notifyDataSetChanged()
     }
