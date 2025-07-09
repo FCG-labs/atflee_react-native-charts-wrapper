@@ -9,6 +9,10 @@
 import UIKit
 import DGCharts
 import SwiftyJSON
+import ObjectiveC
+
+// Associated-object key for caching initial drawValues flag
+private var baseDrawValuesKey: UInt8 = 0
 
 // In react native, because object-c is unaware of swift protocol extension. use baseClass as workaround
 
@@ -338,7 +342,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         } else {
             // 자동 결정: 라벨에 개행이 없으면 edgeLabel 사용, 있으면 기본 라벨 사용
             // enable = !axisLabelsContainNewline(axis: xAxis)
-            
+
             // 기본값: 초기에는 edge label 끔. 이후 zoom 변화에 따라 updateValueVisibility()에서 자동 토글
             enable = false
         }
@@ -655,9 +659,31 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         let showValues = visibleCount <= threshold
 
         if let data = barLine.data {
-            // update value text visibility only if it changes
-            if data.dataSets.first?.drawValuesEnabled != showValues {
-                data.dataSets.forEach { $0.drawValuesEnabled = showValues }
+            // Remember each dataset's initial drawValuesEnabled setting and respect it.
+            data.dataSets.forEach { set in
+                // 1. Fetch or store the base flag once using associated objects.
+                let baseDraw: Bool = {
+                    if let num = objc_getAssociatedObject(set, &baseDrawValuesKey) as? NSNumber {
+                        return num.boolValue
+                    } else {
+                        let initial = set.drawValuesEnabled
+                        objc_setAssociatedObject(set, &baseDrawValuesKey, NSNumber(value: initial), .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+                        return initial
+                    }
+                }()
+
+                // 2. If the user originally disabled value labels, keep them off permanently.
+                if !baseDraw {
+                    if set.drawValuesEnabled {
+                        set.drawValuesEnabled = false
+                    }
+                    return
+                }
+
+                // 3. Otherwise, toggle according to zoom threshold.
+                if set.drawValuesEnabled != showValues {
+                    set.drawValuesEnabled = showValues
+                }
             }
         }
 

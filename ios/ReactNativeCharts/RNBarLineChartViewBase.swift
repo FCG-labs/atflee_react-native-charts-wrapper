@@ -112,8 +112,12 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
     func setVisibleRange(_ config: NSDictionary) {
         // delay visibleRange handling until chart data is set
         savedVisibleRange = config
-        if barLineChart.data != nil {
-            updateVisibleRange(config)
+        // execute on next run-loop to ensure layout is finished
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            if self.barLineChart.data != nil {
+                self.updateVisibleRange(config)
+            }
         }
     }
 
@@ -151,12 +155,17 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             barLineChart.zoom(scaleX: relative, scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
         } else if let saved = savedVisibleRange,
                   let xMap = saved["x"] as? NSDictionary,
-                  let min = xMap["min"] as? CGFloat,
-                  min > 0 {
-            let totalRange = Double(barLineChart.chartXMax - barLineChart.chartXMin)
-            if totalRange > Double(min) {
-                let relative = totalRange / Double(min)
-                let centerX = barLineChart.data?.xMax ?? 0
+                  let visibleMin = xMap["min"] as? CGFloat,
+                  visibleMin > 0 {
+            let rawDataXMin = barLineChart.data?.xMin ?? barLineChart.chartXMin
+            let rawDataXMax = barLineChart.data?.xMax ?? barLineChart.chartXMax
+            let effectiveXMin = min(rawDataXMin, barLineChart.chartXMin)
+            let effectiveXMax = max(rawDataXMax, barLineChart.chartXMax)
+            // print("[RNBarLineChartViewBase:updateVisibleRange] rawDataXMin: \(rawDataXMin), rawDataXMax: \(rawDataXMax), chartXMin: \(barLineChart.chartXMin), chartXMax: \(barLineChart.chartXMax), effectiveXMin: \(effectiveXMin), effectiveXMax: \(effectiveXMax)")
+            let totalRange = Double(effectiveXMax - effectiveXMin)
+            if totalRange > Double(visibleMin) {
+                let relative = totalRange / Double(visibleMin)
+                let centerX = effectiveXMax
                 let axis = barLineChart.getAxis(.left).isEnabled ? YAxis.AxisDependency.left : YAxis.AxisDependency.right
                 barLineChart.zoom(scaleX: relative, scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
             }
@@ -315,23 +324,23 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             updateVisibleRange(visibleRange)
 
             // Auto zoom to the minimum visibleRange (parity with Android implementation)
-            if savedZoom == nil {
-                if let x = visibleRange["x"] as? NSDictionary,
-                   let min = x["min"] as? CGFloat,
-                   min > 0 {
-                    let currentRange = barLineChart.visibleXRange
-                    if currentRange > Double(min) {
-                        let relativeScale = currentRange / Double(min)
-                        let centerX = barLineChart.chartXMax
-                        let axis: YAxis.AxisDependency = barLineChart.leftAxis.enabled ? .left : .right
-                        barLineChart.zoom(scaleX: CGFloat(relativeScale),
-                                          scaleY: 1.0,
-                                          xValue: centerX,
-                                          yValue: 0.0,
-                                          axis: axis)
-                    }
-                }
-            }
+            // if savedZoom == nil {
+            //     if let x = visibleRange["x"] as? NSDictionary,
+            //        let min = x["min"] as? CGFloat,
+            //        min > 0 {
+            //         let currentRange = barLineChart.visibleXRange
+            //         if currentRange > Double(min) {
+            //             let relativeScale = currentRange / Double(min)
+            //             let centerX = barLineChart.chartXMax
+            //             let axis: YAxis.AxisDependency = barLineChart.leftAxis.enabled ? .left : .right
+            //             barLineChart.zoom(scaleX: CGFloat(relativeScale),
+            //                               scaleY: 1.0,
+            //                               xValue: centerX,
+            //                               yValue: 0.0,
+            //                               axis: axis)
+            //         }
+            //     }
+            // }
         }
 
         if let zoom = savedZoom {

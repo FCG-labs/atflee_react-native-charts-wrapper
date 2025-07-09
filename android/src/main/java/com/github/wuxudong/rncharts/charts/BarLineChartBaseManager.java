@@ -175,7 +175,7 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                         float minRange = (float) xRange.getDouble("min");
                         if (minRange > 0) {
                             float currentRange = chart.getVisibleXRange();
-                            if (currentRange > minRange) {
+                            if (currentRange != minRange) {
                                 float relativeScale = currentRange / minRange;
                                 float centerX = chart.getData() != null ? (float) chart.getData().getXMax() : 0f;
                                 YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled() ?
