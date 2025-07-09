@@ -168,6 +168,11 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
                 let centerX = effectiveXMax
                 let axis = barLineChart.getAxis(.left).isEnabled ? YAxis.AxisDependency.left : YAxis.AxisDependency.right
                 barLineChart.zoom(scaleX: relative, scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
+            } else if totalRange > 0 {
+                let relative = Double(visibleMin) / totalRange
+                let centerX = effectiveXMax
+                let axis = barLineChart.getAxis(.left).isEnabled ? YAxis.AxisDependency.left : YAxis.AxisDependency.right
+                barLineChart.zoom(scaleX: CGFloat(relative), scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
             }
         }
 
