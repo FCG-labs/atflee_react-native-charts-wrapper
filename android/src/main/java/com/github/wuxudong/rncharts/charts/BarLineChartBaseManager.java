@@ -32,6 +32,8 @@ class ChartExtraProperties {
     public String identifier = null;
     public boolean syncX = true;
     public boolean syncY = false;
+    // when true, apply one-time auto zoom based on savedVisibleRange after data update
+    public boolean autoZoomPending = false;
     public Float zoomScaleX = null;
 }
 
@@ -106,8 +108,10 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
 
     @ReactProp(name = "visibleRange")
     public void setVisibleXRangeMinimum(BarLineChartBase chart, ReadableMap propMap) {
-        // delay visibleRange handling until chart data is set
-        extraPropertiesHolder.getExtraProperties(chart).savedVisibleRange = propMap;
+         // delay visibleRange handling until chart data is set
+         ChartExtraProperties props = extraPropertiesHolder.getExtraProperties(chart);
+         props.savedVisibleRange = propMap;
+         props.autoZoomPending = true;
 
     }
 
@@ -163,21 +167,36 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                 extra.zoomScaleX = null;
             }
         } else {
-            ReadableMap saved = extra.savedVisibleRange;
-            if (saved != null && BridgeUtils.validate(saved, ReadableType.Map, "x")) {
-                ReadableMap xRange = saved.getMap("x");
-                if (BridgeUtils.validate(xRange, ReadableType.Number, "min")) {
-                    float minRange = (float) xRange.getDouble("min");
-                    if (minRange > 0) {
-                        float currentRange = chart.getVisibleXRange();
-                        if (currentRange > minRange) {
-                            float relativeScale = currentRange / minRange;
-                            float centerX = chart.getData() != null ? (float) chart.getData().getXMax() : 0f;
-                            YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled() ?
-                                    YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
-                            chart.zoom(relativeScale, 1f, centerX, 0f, axis);
-                            // prevent repeated auto-zoom; run this logic only once
-                            extra.savedVisibleRange = null;
+             if (extra.autoZoomPending) {
+                // Remove any existing edge labels before recalculating based on new data.
+                com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.setEnabled(chart, false);
+                ReadableMap saved = extra.savedVisibleRange;
+                if (saved != null && BridgeUtils.validate(saved, ReadableType.Map, "x")) {
+                    ReadableMap xRange = saved.getMap("x");
+                    if (BridgeUtils.validate(xRange, ReadableType.Number, "min")) {
+                        float visibleMin = (float) xRange.getDouble("min");
+                        if (visibleMin > 0) {
+                            float rawDataXMin = chart.getData() != null ? (float) chart.getData().getXMin() : chart.getXChartMin();
+                            float rawDataXMax = chart.getData() != null ? (float) chart.getData().getXMax() : chart.getXChartMax();
+                            float effectiveXMin = Math.min(rawDataXMin, chart.getXChartMin());
+                            float effectiveXMax = Math.max(rawDataXMax, chart.getXChartMax());
+                            float totalRange = effectiveXMax - effectiveXMin;
+                            if (totalRange > 0) {
+                                float relativeScale;
+                                if (totalRange > visibleMin) {
+                                    // zoom out so only visibleMin is shown
+                                    relativeScale = totalRange / visibleMin;
+                                } else {
+                                    // zoom in so entries spread to visibleMin width
+                                    relativeScale = visibleMin / totalRange;
+                                }
+                                float centerX = effectiveXMax;
+                                YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled()
+                                        ? YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
+                                chart.zoom(relativeScale, 1f, centerX, 0f, axis);
+                            }
+                            // auto zoom handled
+                            extra.autoZoomPending = false;
                         }
                     }
                 }
@@ -254,6 +273,15 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
             // sendLoadCompleteEvent(chart);
             extraPropertiesHolder.getExtraProperties(chart).zoomScaleX = (float) propMap.getDouble("scaleX");
         }
+    }
+
+    @ReactProp(name = "landscapeOrientation")
+    public void setLandscapeOrientation(BarLineChartBase chart, boolean enabled) {
+        // Forward the override flag to EdgeLabelHelper so that value-label/edge-label logic
+        // respects the orientation provided by JS.
+        com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.setLandscapeOverride(chart, enabled);
+        com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.applyPadding(chart);
+        com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.update(chart, chart.getLowestVisibleX(), chart.getHighestVisibleX());
     }
 
     // Note: Offset aren't updated until first touch event: https://github.com/PhilJay/MPAndroidChart/issues/892
@@ -438,6 +466,7 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         ChartExtraProperties extraProperties = extraPropertiesHolder.getExtraProperties(chart);
 
         if (extraProperties.savedVisibleRange != null) {
+            extraProperties.autoZoomPending = true;
             updateVisibleRange(chart, extraProperties.savedVisibleRange);
         }
 

@@ -33,8 +33,6 @@ open class NoClipLineChartRenderer: LineChartRenderer {
         let phaseY = animator.phaseY
         var pt     = CGPoint()
 
-        // DEBUG: begin drawing datasets
-        print("[NoClipLineChartRenderer] drawValues – lineDataSets: \(lineData.dataSetCount)")
         for i in lineData.indices {
             guard
                 let dataSet = lineData[i] as? LineChartDataSetProtocol,
@@ -100,8 +98,6 @@ open class NoClipLineChartRenderer: LineChartRenderer {
                 if drawPoint.x + halfW > viewPortHandler.contentRight {
                     drawPoint.x = viewPortHandler.contentRight - halfW
                 }
-
-                print("[NoClipLineChartRenderer] dsIdx:\(i) entryIdx:\(j) y:\(e.y) aboveY:\(aboveY) finalY:\(drawPoint.y) contentTop:\(chartTop)")
 
                 // Finally draw the text
                 if dataSet.isDrawValuesEnabled {

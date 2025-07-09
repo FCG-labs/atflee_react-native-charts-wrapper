@@ -9,27 +9,20 @@ class RoundedCombinedChartRenderer: CombinedChartRenderer {
     init(chart: CombinedChartView, animator: Animator, viewPortHandler: ViewPortHandler, barRadius: CGFloat) {
         self.barRadius = barRadius
         super.init(chart: chart, animator: animator, viewPortHandler: viewPortHandler)
-        print("[RoundedCombinedChartRenderer] init – barRadius:", barRadius)
         createRenderers()
     }
 
     func createRenderers() {
-        print("[RoundedCombinedChartRenderer] createRenderers() start")
         customRenderers.removeAll()
         roundedBarRenderer = nil
 
         guard let chart = chart as? CombinedChartView else {
-            print("[RoundedCombinedChartRenderer] chart cast failed")
             return
         }
-        print("[RoundedCombinedChartRenderer] chart.drawOrder:", chart.drawOrder)
         for order in chart.drawOrder {
             guard let drawOrder = CombinedChartView.DrawOrder(rawValue: order) else {
-                print("[RoundedCombinedChartRenderer] unknown drawOrder raw:", order)
                 continue
             }
-
-            print("[RoundedCombinedChartRenderer] processing order:", drawOrder)
             
             switch drawOrder {
             case .bar:
@@ -61,9 +54,6 @@ class RoundedCombinedChartRenderer: CombinedChartRenderer {
                         viewPortHandler: viewPortHandler
                     )
                 )
-                if chart.lineData != nil {
-                    print("[RoundedCombinedChartRenderer] adding NoClipLineChartRenderer")
-                }
             case .candle:
                 if chart.candleData != nil {
                     customRenderers.append(
@@ -86,8 +76,6 @@ class RoundedCombinedChartRenderer: CombinedChartRenderer {
                 }
             }
         }
-
-        print("[RoundedCombinedChartRenderer] createRenderers() END – total:", customRenderers.count)
     }
 
     override func drawData(context: CGContext) {

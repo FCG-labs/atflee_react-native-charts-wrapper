@@ -17,6 +17,12 @@ import com.github.mikephil.charting.utils.MPPointD;
 import com.github.mikephil.charting.utils.ViewPortHandler;
 import com.github.wuxudong.rncharts.charts.ChartGroupHolder;
 import com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper;
+import com.github.mikephil.charting.data.ChartData;
+import com.github.mikephil.charting.interfaces.datasets.IDataSet;
+import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.highlight.Highlight;
+import com.github.wuxudong.rncharts.markers.RNAtfleeMarkerView;
+import java.util.WeakHashMap;
 
 import java.lang.ref.WeakReference;
 
@@ -24,6 +30,13 @@ import java.lang.ref.WeakReference;
  * Created by xudong on 07/03/2017.
  */
 public class RNOnChartGestureListener implements OnChartGestureListener {
+
+    /**
+     * Keeps track of each IDataSet's initial drawValues flag supplied by JS.
+     * If the base flag is false, values will never be shown regardless of zoom/scroll.
+     * WeakHashMap avoids memory leaks when datasets are released.
+     */
+    private static final WeakHashMap<IDataSet, Boolean> BASE_DRAW_VALUES = new WeakHashMap<>();
 
     private WeakReference<Chart> mWeakChart;
 
@@ -50,6 +63,7 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
 
     @Override
     public void onChartGestureEnd(MotionEvent me, ChartTouchListener.ChartGesture lastPerformedGesture) {
+        adjustValueAndEdgeLabels();
         sendEvent("chartGestureEnd", me);
     }
 
@@ -65,6 +79,19 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
 
     @Override
     public void onChartSingleTapped(MotionEvent me) {
+        Chart chart = mWeakChart.get();
+        if (chart instanceof BarLineChartBase) {
+            BarLineChartBase barChart = (BarLineChartBase) chart;
+            if (barChart.getMarker() instanceof RNAtfleeMarkerView) {
+                RNAtfleeMarkerView marker = (RNAtfleeMarkerView) barChart.getMarker();
+                Highlight h = barChart.getHighlightByTouchPoint(me.getX(), me.getY());
+                if (h != null) {
+                    // forward to marker click handler
+                    marker.dispatchClick();
+                    return; // do not emit generic single tap
+                }
+            }
+        }
         sendEvent("chartSingleTap", me);
     }
 
@@ -75,12 +102,101 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
 
     @Override
     public void onChartScale(MotionEvent me, float scaleX, float scaleY) {
+        adjustValueAndEdgeLabels();
         sendEvent("chartScaled", me);
     }
 
     @Override
     public void onChartTranslate(MotionEvent me, float dX, float dY) {
+        adjustValueAndEdgeLabels();
         sendEvent("chartTranslated", me);
+    }
+
+    private void adjustValueAndEdgeLabels() {
+        Chart base = mWeakChart.get();
+        if (!(base instanceof BarLineChartBase)) return;
+        BarLineChartBase chart = (BarLineChartBase) base;
+
+        // approximate number of x-entries currently visible (inclusive)
+        float leftX = chart.getLowestVisibleX();
+        float rightX = chart.getHighestVisibleX();
+
+        // If user pans past the data range, clamp so that we don't count the 'blank' region
+        ChartData dataForClamp = chart.getData();
+        if (dataForClamp != null) {
+            float minX = dataForClamp.getXMin();
+            float maxX = dataForClamp.getXMax();
+            if (leftX < minX) leftX = minX;
+            if (rightX > maxX) rightX = maxX;
+        }
+
+        int visibleCount;
+        ChartData _d = chart.getData();
+        if (_d != null) {
+            int totalEntries = (int) (_d.getXMax() - _d.getXMin() + 1);
+            float scale = chart.getScaleX();
+            if (scale < 1f) scale = 1f; // safety guard
+            visibleCount = (int) Math.ceil(totalEntries / scale);
+            if (visibleCount < 1) visibleCount = 1;
+            if (visibleCount > totalEntries) visibleCount = totalEntries;
+        } else {
+            visibleCount = 0;
+        }
+        Boolean landscapeOverride = EdgeLabelHelper.getLandscapeOverride(chart);
+        boolean isLandscape = (landscapeOverride != null) ? landscapeOverride.booleanValue() : (chart.getWidth() > chart.getHeight());
+        Log.d("RNChartDebug", "[adjust] landscapeOverride=" + landscapeOverride + ", isLandscape=" + isLandscape);
+        int threshold = isLandscape ? 15 : 8;
+        boolean showValues = visibleCount <= threshold;
+        Log.d("RNChartDebug", "[adjust] visibleCount=" + visibleCount + ", threshold=" + threshold + ", showValues=" + showValues);
+
+        ChartData data = chart.getData();
+        if (data != null) {
+            for (Object obj : data.getDataSets()) {
+                if (obj instanceof IDataSet) {
+                    IDataSet set = (IDataSet) obj;
+                    Boolean baseDraw = BASE_DRAW_VALUES.get(set);
+                    if (baseDraw == null) {
+                        baseDraw = set.isDrawValuesEnabled();
+                        BASE_DRAW_VALUES.put(set, baseDraw);
+                    }
+
+                    // If user disabled values initially, keep them off.
+                    if (!baseDraw) {
+                        if (set.isDrawValuesEnabled()) {
+                            set.setDrawValues(false);
+                        }
+                        continue;
+                    }
+
+                    boolean desired = showValues;
+                    Log.d("RNChartDebug", "[adjust] DataSet=" + set.getLabel() + ", baseDraw=" + baseDraw + ", desired=" + desired + ", current=" + set.isDrawValuesEnabled());
+                    if (set.isDrawValuesEnabled() != desired) {
+                        set.setDrawValues(desired);
+                    }
+                }
+            }
+        }
+
+        XAxis axis = chart.getXAxis();
+        Boolean userDraw = EdgeLabelHelper.getUserDrawLabels(chart);
+        boolean userDisabledLabels = userDraw != null && !userDraw.booleanValue();
+
+        Boolean explicit = EdgeLabelHelper.getExplicitFlag(chart);
+        boolean desiredEdge;
+        if (explicit != null) {
+            desiredEdge = userDisabledLabels ? true : explicit.booleanValue();
+        } else {
+            desiredEdge = userDisabledLabels ? true : !showValues;
+        }
+
+        boolean showAxis = desiredEdge ? false : showValues;
+        axis.setDrawLabels(showAxis);
+
+        EdgeLabelHelper.setEnabled(chart, desiredEdge);
+        EdgeLabelHelper.applyPadding(chart);
+        EdgeLabelHelper.update(chart, chart.getLowestVisibleX(), chart.getHighestVisibleX());
+
+        chart.invalidate();
     }
 
     private void sendEvent(String action, MotionEvent me) {
