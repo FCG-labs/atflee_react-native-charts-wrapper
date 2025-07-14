@@ -13,8 +13,29 @@ import CoreGraphics
 import DGCharts
 
 class InsideStrokeRadarChartRenderer: RadarChartRenderer {
+    /// Calculate point from center with given distance and degree angle (clock-wise, 0° = right)
+    private func point(from center: CGPoint, distance: CGFloat, angleDegrees: CGFloat) -> CGPoint {
+        let rad = angleDegrees * .pi / 180.0
+        return CGPoint(x: center.x + distance * cos(rad), y: center.y + distance * sin(rad))
+    }
 
-    override func drawDataSet(context: CGContext, dataSet: RadarChartDataSetProtocol, mostEntries: Int) {
+    /// We cannot override `drawDataSet` because it is `internal` in Charts framework.
+    /// Instead, override the `open` `drawData` and reproduce the essential logic with our own
+    /// radius adjustment (lineWidth/2).
+    open override func drawData(context: CGContext) {
+        guard let chart = chart,
+              let radarData = chart.data as? RadarChartData else {
+            return
+        }
+
+        let mostEntries = radarData.maxEntryCountSet?.entryCount ?? 0
+
+        for case let set as RadarChartDataSetProtocol in (radarData as ChartData) where set.isVisible {
+            drawDataSetInside(context: context, dataSet: set, mostEntries: mostEntries)
+        }
+    }
+
+    private func drawDataSetInside(context: CGContext, dataSet: RadarChartDataSetProtocol, mostEntries: Int) {
         guard let chart = chart else { return }
 
         context.saveGState()
@@ -37,8 +58,8 @@ class InsideStrokeRadarChartRenderer: RadarChartRenderer {
             // Pull back by half of stroke width so the outer edge of the stroke sits exactly on the web
             let distance = max(0, base - dataSet.lineWidth / 2.0)
 
-            let p = center.moving(distance: distance,
-                                  atAngle: sliceangle * CGFloat(j) * CGFloat(phaseX) + chart.rotationAngle)
+            let angle = sliceangle * CGFloat(j) * CGFloat(phaseX) + chart.rotationAngle
+            let p = point(from: center, distance: distance, angleDegrees: angle)
 
             if p.x.isNaN { continue }
 
