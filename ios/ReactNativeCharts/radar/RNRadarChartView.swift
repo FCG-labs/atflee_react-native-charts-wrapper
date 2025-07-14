@@ -33,6 +33,9 @@ class RNRadarChartView: RNYAxisChartViewBase {
 
         super.init(frame: frame)
 
+        // Use custom renderer that keeps stroke inside web grid
+        self._chart.renderer = InsideStrokeRadarChartRenderer(chart: _chart, animator: _chart.chartAnimator, viewPortHandler: _chart.viewPortHandler)
+
         self._chart.delegate = self
         self.addSubview(_chart)
     }
