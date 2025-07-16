@@ -87,6 +87,7 @@ class InsideStrokeRadarChartRenderer: RadarChartRenderer {
         if !dataSet.isDrawFilledEnabled || dataSet.fillAlpha < 1.0 {
             context.setStrokeColor(dataSet.color(atIndex: 0).cgColor)
             context.setLineWidth(dataSet.lineWidth)
+            context.setLineJoin(.round)
             context.setAlpha(1.0)
 
             context.beginPath()
