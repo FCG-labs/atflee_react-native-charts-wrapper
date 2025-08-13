@@ -91,10 +91,11 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
                     float markerWidth = marker.getWidth() > 0 ? marker.getWidth() : marker.getMeasuredWidth();
                     float markerHeight = marker.getHeight() > 0 ? marker.getHeight() : marker.getMeasuredHeight();
                     if (markerWidth > 0 && markerHeight > 0) {
-                        MPPointF pos = barChart.getMarkerPosition(h);
-                        MPPointF offset = marker.getOffsetForDrawingAtPoint(pos.x, pos.y);
-                        float left = pos.x + offset.x;
-                        float top = pos.y + offset.y;
+                        float posX = h.getXPx();
+                        float posY = h.getYPx();
+                        MPPointF offset = marker.getOffsetForDrawingAtPoint(posX, posY);
+                        float left = posX + offset.x;
+                        float top = posY + offset.y;
                         float right = left + markerWidth;
                         float bottom = top + markerHeight;
                         if (me.getX() >= left && me.getX() <= right && me.getY() >= top && me.getY() <= bottom) {
