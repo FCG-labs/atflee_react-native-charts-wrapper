@@ -79,19 +79,13 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
 
     @Override
     public void onChartSingleTapped(MotionEvent me) {
-        Chart chart = mWeakChart.get();
-        if (chart instanceof BarLineChartBase) {
-            BarLineChartBase barChart = (BarLineChartBase) chart;
-            if (barChart.getMarker() instanceof RNAtfleeMarkerView) {
-                RNAtfleeMarkerView marker = (RNAtfleeMarkerView) barChart.getMarker();
-                Highlight h = barChart.getHighlightByTouchPoint(me.getX(), me.getY());
-                if (h != null) {
-                    // forward to marker click handler
-                    marker.dispatchClick();
-                    return; // do not emit generic single tap
-                }
-            }
-        }
+        // Previously this method attempted to detect taps on entries and
+        // forward them to the marker's click handler. This caused
+        // onMarkerClick to fire even when the user tapped outside of the
+        // marker, as long as an entry was highlighted. The marker view now
+        // manages its own click handling via an overlay view, so we simply
+        // emit the generic single tap event here and let the overlay handle
+        // actual marker clicks.
         sendEvent("chartSingleTap", me);
     }
 
