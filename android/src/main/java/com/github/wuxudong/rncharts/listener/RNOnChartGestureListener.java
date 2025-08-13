@@ -85,14 +85,16 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
             BarLineChartBase barChart = (BarLineChartBase) chart;
             if (barChart.getMarker() instanceof RNAtfleeMarkerView) {
                 RNAtfleeMarkerView marker = (RNAtfleeMarkerView) barChart.getMarker();
-                Highlight h = barChart.getHighlightByTouchPoint(me.getX(), me.getY());
-                if (h != null) {
+                Highlight[] highlights = barChart.getHighlighted();
+                if (highlights != null && highlights.length > 0) {
+                    Highlight h = highlights[0];
                     float markerWidth = marker.getWidth() > 0 ? marker.getWidth() : marker.getMeasuredWidth();
                     float markerHeight = marker.getHeight() > 0 ? marker.getHeight() : marker.getMeasuredHeight();
                     if (markerWidth > 0 && markerHeight > 0) {
-                        MPPointF offset = marker.getOffsetForDrawingAtPoint(h.getDrawX(), h.getDrawY());
-                        float left = h.getDrawX() + offset.x;
-                        float top = h.getDrawY() + offset.y;
+                        MPPointF pos = barChart.getMarkerPosition(h);
+                        MPPointF offset = marker.getOffsetForDrawingAtPoint(pos.x, pos.y);
+                        float left = pos.x + offset.x;
+                        float top = pos.y + offset.y;
                         float right = left + markerWidth;
                         float bottom = top + markerHeight;
                         if (me.getX() >= left && me.getX() <= right && me.getY() >= top && me.getY() <= bottom) {
