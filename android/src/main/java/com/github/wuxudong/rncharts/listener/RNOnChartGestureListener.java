@@ -100,6 +100,7 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
                         float bottom = top + markerHeight;
                         if (me.getX() >= left && me.getX() <= right && me.getY() >= top && me.getY() <= bottom) {
                             marker.dispatchClick();
+                            barChart.highlightValue(null);
                             return;
                         }
                     }
