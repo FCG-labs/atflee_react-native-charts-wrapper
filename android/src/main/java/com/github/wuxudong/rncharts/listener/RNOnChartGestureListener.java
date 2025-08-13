@@ -21,6 +21,7 @@ import com.github.mikephil.charting.data.ChartData;
 import com.github.mikephil.charting.interfaces.datasets.IDataSet;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.highlight.Highlight;
+import com.github.mikephil.charting.utils.MPPointF;
 import com.github.wuxudong.rncharts.markers.RNAtfleeMarkerView;
 import java.util.WeakHashMap;
 
@@ -84,11 +85,24 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
             BarLineChartBase barChart = (BarLineChartBase) chart;
             if (barChart.getMarker() instanceof RNAtfleeMarkerView) {
                 RNAtfleeMarkerView marker = (RNAtfleeMarkerView) barChart.getMarker();
-                Highlight h = barChart.getHighlightByTouchPoint(me.getX(), me.getY());
-                if (h != null) {
-                    // forward to marker click handler
-                    marker.dispatchClick();
-                    return; // do not emit generic single tap
+                Highlight[] highlights = barChart.getHighlighted();
+                if (highlights != null && highlights.length > 0) {
+                    Highlight h = highlights[0];
+                    float markerWidth = marker.getWidth() > 0 ? marker.getWidth() : marker.getMeasuredWidth();
+                    float markerHeight = marker.getHeight() > 0 ? marker.getHeight() : marker.getMeasuredHeight();
+                    if (markerWidth > 0 && markerHeight > 0) {
+                        float posX = h.getXPx();
+                        float posY = h.getYPx();
+                        MPPointF offset = marker.getOffsetForDrawingAtPoint(posX, posY);
+                        float left = posX + offset.x;
+                        float top = posY + offset.y;
+                        float right = left + markerWidth;
+                        float bottom = top + markerHeight;
+                        if (me.getX() >= left && me.getX() <= right && me.getY() >= top && me.getY() <= bottom) {
+                            marker.dispatchClick();
+                            return;
+                        }
+                    }
                 }
             }
         }
