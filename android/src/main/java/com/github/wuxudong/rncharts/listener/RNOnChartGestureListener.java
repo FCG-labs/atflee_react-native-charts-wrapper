@@ -80,13 +80,31 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
 
     @Override
     public void onChartSingleTapped(MotionEvent me) {
-        // Previously this method attempted to detect taps on entries and
-        // forward them to the marker's click handler. This caused
-        // onMarkerClick to fire even when the user tapped outside of the
-        // marker, as long as an entry was highlighted. The marker view now
-        // manages its own click handling via an overlay view, so we simply
-        // emit the generic single tap event here and let the overlay handle
-        // actual marker clicks.
+        Chart chart = mWeakChart.get();
+        if (chart instanceof BarLineChartBase) {
+            BarLineChartBase barChart = (BarLineChartBase) chart;
+            if (barChart.getMarker() instanceof RNAtfleeMarkerView) {
+                RNAtfleeMarkerView marker = (RNAtfleeMarkerView) barChart.getMarker();
+                Highlight[] highlights = barChart.getHighlighted();
+                if (highlights != null && highlights.length > 0) {
+                    Highlight h = highlights[0];
+                    float markerWidth = marker.getWidth() > 0 ? marker.getWidth() : marker.getMeasuredWidth();
+                    float markerHeight = marker.getHeight() > 0 ? marker.getHeight() : marker.getMeasuredHeight();
+                    if (markerWidth > 0 && markerHeight > 0) {
+                        MPPointF pos = barChart.getMarkerPosition(h);
+                        MPPointF offset = marker.getOffsetForDrawingAtPoint(pos.x, pos.y);
+                        float left = pos.x + offset.x;
+                        float top = pos.y + offset.y;
+                        float right = left + markerWidth;
+                        float bottom = top + markerHeight;
+                        if (me.getX() >= left && me.getX() <= right && me.getY() >= top && me.getY() <= bottom) {
+                            marker.dispatchClick();
+                            return;
+                        }
+                    }
+                }
+            }
+        }
         sendEvent("chartSingleTap", me);
     }
 
