@@ -168,6 +168,12 @@ public class RNAtfleeMarkerView extends MarkerView {
         if (chart != null) {
             ViewGroup parent = (ViewGroup) chart.getParent();
             if (parent != null) {
+                // Remove any existing marker overlays before adding a new one.
+                View existingOverlay = parent.findViewWithTag(OVERLAY_TAG);
+                if (existingOverlay != null) {
+                    parent.removeView(existingOverlay);
+                }
+
                 removeOverlayButton();
 
                 MPPointF drawingOffset = getOffsetForDrawingAtPoint(highlight.getDrawX(), highlight.getDrawY());
