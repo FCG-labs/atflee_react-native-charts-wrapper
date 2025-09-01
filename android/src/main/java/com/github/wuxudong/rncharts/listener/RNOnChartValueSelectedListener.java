@@ -40,7 +40,12 @@ public class RNOnChartValueSelectedListener implements OnChartValueSelectedListe
 
         if (mWeakChart != null) {
             Chart chart = mWeakChart.get();
-
+            try {
+                android.util.Log.d("AtfleeMarkerDebug", "topSelect: entry(x,y)=(" + entry.getX() + "," + entry.getY() + ")"
+                        + ", datasetIndex=" + (h != null ? h.getDataSetIndex() : -1)
+                        + ", xPx=" + (h != null ? h.getXPx() : Float.NaN)
+                        + ", yPx=" + (h != null ? h.getYPx() : Float.NaN));
+            } catch (Throwable ignore) {}
             ReactContext reactContext = (ReactContext) chart.getContext();
             reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
                     chart.getId(),
@@ -65,10 +70,12 @@ public class RNOnChartValueSelectedListener implements OnChartValueSelectedListe
 
             // Suppress emission if this clear originates from a marker click
             if (SUPPRESS_NEXT_CLEAR.remove(chart) != null) {
+                try { android.util.Log.d("AtfleeMarkerDebug", "onNothingSelected: suppressed by marker click"); } catch (Throwable ignore) {}
                 return;
             }
 
             ReactContext reactContext = (ReactContext) chart.getContext();
+            try { android.util.Log.d("AtfleeMarkerDebug", "onNothingSelected: emitted topSelect(null)"); } catch (Throwable ignore) {}
             reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
                     chart.getId(),
                     "topSelect",

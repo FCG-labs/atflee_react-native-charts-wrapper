@@ -33,6 +33,8 @@ import java.util.Map;
 
 public class RNAtfleeMarkerView extends MarkerView {
 
+    private static final String TAG = "AtfleeMarkerDebug";
+
     private final TextView tvTitle;
     private final TextView tvContent;
     private final ImageView imageEmotion;
@@ -81,6 +83,8 @@ public class RNAtfleeMarkerView extends MarkerView {
     @SuppressLint("ClickableViewAccessibility")
     @Override
     public void refreshContent(Entry e, Highlight highlight) {
+        Log.d(TAG, "refreshContent: entry x=" + e.getX() + ", y=" + e.getY()
+                + ", drawX=" + highlight.getDrawX() + ", drawY=" + highlight.getDrawY());
         lastEntry = e;
         if (fadeStart == 0L) {
             fadeStart = System.currentTimeMillis();
@@ -184,6 +188,8 @@ public class RNAtfleeMarkerView extends MarkerView {
         lastTopInChart = highlight.getDrawY() + drawingOffset.y;
         lastMeasuredWidth = getMeasuredWidth();
         lastMeasuredHeight = getMeasuredHeight();
+        Log.d(TAG, "computed markerRect: leftInChart=" + lastLeftInChart + ", topInChart=" + lastTopInChart
+                + ", size=" + lastMeasuredWidth + "x" + lastMeasuredHeight);
 
         // Update or attach a small transparent overlay directly above the marker area
         // so that taps on the marker are consumed before reaching the chart.
@@ -259,17 +265,32 @@ public class RNAtfleeMarkerView extends MarkerView {
             return;
         }
 
+        // Log current highlight state prior to click handling
+        try {
+            Highlight[] highlights = chart.getHighlighted();
+            if (highlights != null) {
+                for (int i = 0; i < highlights.length; i++) {
+                    Highlight h = highlights[i];
+                    Log.d(TAG, "handleClick: currentHighlight[" + i + "] xIndex=" + h.getX() +
+                            ", dataSetIndex=" + h.getDataSetIndex() + ", xPx=" + h.getXPx() + ", yPx=" + h.getYPx());
+                }
+            } else {
+                Log.d(TAG, "handleClick: no current highlights");
+            }
+        } catch (Throwable ignore) {}
+
         ReactContext reactContext = (ReactContext) getContext();
         WritableMap event = Arguments.createMap();
         event.putDouble("x", lastEntry.getX());
         event.putDouble("y", lastEntry.getY());
         event.putMap("data", EntryToWritableMapUtils.convertEntryToWritableMap(lastEntry));
 
-        Log.d("RNAtfleeMarkerView", "Sending event topMarkerClick");
+        Log.d(TAG, "Sending event topMarkerClick for entry x=" + lastEntry.getX() + ", y=" + lastEntry.getY());
         reactContext.getJSModule(RCTEventEmitter.class)
                 .receiveEvent(chart.getId(), "topMarkerClick", event);
         // Suppress next clear-select emission from chart and then clear state
         RNOnChartValueSelectedListener.suppressNextClear(chart);
+        Log.d(TAG, "suppressNextClear set; resetting state and clearing highlight");
         // Inform JS about the marker click, then clear state to hide the marker
         resetState();
     }
@@ -323,7 +344,8 @@ public class RNAtfleeMarkerView extends MarkerView {
 
         if (overlayButton == null) {
             overlayButton = new View(getContext());
-            overlayButton.setBackgroundColor(Color.TRANSPARENT);
+            // Debug: visualize hit area with semi-transparent red
+            overlayButton.setBackgroundColor(Color.argb(128, 255, 0, 0));
             overlayButton.setClickable(true);
             overlayButton.setFocusable(true);
             // Keep overlay out of accessibility focus
@@ -343,11 +365,19 @@ public class RNAtfleeMarkerView extends MarkerView {
                         vg.requestDisallowInterceptTouchEvent(true);
                     } catch (Throwable ignore) {}
                 }
+                try {
+                    float absX = v.getX() + event.getX();
+                    float absY = v.getY() + event.getY();
+                    Log.d(TAG, "overlayTouch action=" + event.getAction() +
+                            " rel=(" + event.getX() + "," + event.getY() + ")" +
+                            " abs=(" + absX + "," + absY + ") size=" + v.getWidth() + "x" + v.getHeight());
+                } catch (Throwable ignore) {}
                 // Return false so onClick can be triggered on ACTION_UP
                 // Event won't reach the chart because overlay sits above it.
                 return false;
             });
             vg.addView(overlayButton);
+            Log.d(TAG, "overlay created");
         }
 
         // Update size and absolute position (relative to chart's parent)
@@ -363,10 +393,12 @@ public class RNAtfleeMarkerView extends MarkerView {
             lp.height = h;
         }
         overlayButton.setLayoutParams(lp);
+        overlayButton.requestLayout();
+        overlayButton.invalidate();
 
         // Position overlay based on chart's current position plus marker bounds
-        float absX = chart.getX() + lastLeftInChart;
-        float absY = chart.getY() + lastTopInChart;
+        float absX = chart.getLeft() + lastLeftInChart;
+        float absY = chart.getTop() + lastTopInChart;
         overlayButton.setX(absX - pad);
         overlayButton.setY(absY - pad);
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
@@ -375,6 +407,14 @@ public class RNAtfleeMarkerView extends MarkerView {
         }
         overlayButton.bringToFront();
         overlayButton.setVisibility(VISIBLE);
+
+        // Debug logs for positioning
+        try {
+            Log.d(TAG, "overlay position set: pos=(" + (absX - pad) + "," + (absY - pad) + ") size=" + w + "x" + h
+                    + " chart L/T=(" + chart.getLeft() + "," + chart.getTop() + ")"
+                    + " markerInChart L/T=(" + lastLeftInChart + "," + lastTopInChart + ")"
+                    + " entry(x,y)=(" + (lastEntry != null ? lastEntry.getX() : -1) + "," + (lastEntry != null ? lastEntry.getY() : -1) + ")");
+        } catch (Throwable ignore) {}
     }
 
     /**

@@ -95,6 +95,9 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
                         barChart.getParent().requestDisallowInterceptTouchEvent(true);
                     }
                     com.github.wuxudong.rncharts.listener.RNOnChartValueSelectedListener.suppressNextClear(barChart);
+                    try {
+                        android.util.Log.d("AtfleeMarkerDebug", "gesture fallback hit inside marker: me=(" + tx + "," + ty + ") pad=" + pad);
+                    } catch (Throwable ignore) {}
                     marker.dispatchClick();
                     return;
                 }
