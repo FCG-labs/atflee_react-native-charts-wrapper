@@ -19,6 +19,7 @@ public class RNOnChartValueSelectedListener implements OnChartValueSelectedListe
 
     private WeakReference<Chart> mWeakChart;
     private static final WeakHashMap<Chart, Boolean> SUPPRESS_NEXT_CLEAR = new WeakHashMap<>();
+    private static final WeakHashMap<Chart, Boolean> SUPPRESS_SELECT_DURING_TOUCH = new WeakHashMap<>();
 
     /**
      * When called, the next onNothingSelected for the given chart will not emit
@@ -31,6 +32,16 @@ public class RNOnChartValueSelectedListener implements OnChartValueSelectedListe
         }
     }
 
+    /** Enables/disables suppression of onValueSelected emissions during a touch gesture. */
+    public static void setSuppressSelectDuringTouch(Chart chart, boolean suppress) {
+        if (chart == null) return;
+        if (suppress) {
+            SUPPRESS_SELECT_DURING_TOUCH.put(chart, Boolean.TRUE);
+        } else {
+            SUPPRESS_SELECT_DURING_TOUCH.remove(chart);
+        }
+    }
+
     public RNOnChartValueSelectedListener(Chart chart) {
         mWeakChart = new WeakReference<>(chart);
     }
@@ -40,6 +51,12 @@ public class RNOnChartValueSelectedListener implements OnChartValueSelectedListe
 
         if (mWeakChart != null) {
             Chart chart = mWeakChart.get();
+            if (SUPPRESS_SELECT_DURING_TOUCH.get(chart) != null) {
+                try {
+                    android.util.Log.d("AtfleeMarkerDebug", "topSelect suppressed during touch: entry(x,y)=(" + entry.getX() + "," + entry.getY() + ")");
+                } catch (Throwable ignore) {}
+                return;
+            }
             try {
                 android.util.Log.d("AtfleeMarkerDebug", "topSelect: entry(x,y)=(" + entry.getX() + "," + entry.getY() + ")"
                         + ", datasetIndex=" + (h != null ? h.getDataSetIndex() : -1)

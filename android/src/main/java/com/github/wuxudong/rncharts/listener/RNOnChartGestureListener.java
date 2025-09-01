@@ -67,6 +67,8 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
                 ((RNAtfleeMarkerView) bar.getMarker()).setSuppressOnTouch(true);
             }
         }
+        // Suppress selection events while user is touching the chart
+        com.github.wuxudong.rncharts.listener.RNOnChartValueSelectedListener.setSuppressSelectDuringTouch(chart, true);
         sendEvent("chartGestureStart", me);
     }
 
@@ -78,6 +80,11 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
             if (bar.getMarker() instanceof RNAtfleeMarkerView) {
                 ((RNAtfleeMarkerView) bar.getMarker()).setSuppressOnTouch(false);
             }
+        }
+        // Re-enable selection events, and clear any highlight that may have been applied
+        com.github.wuxudong.rncharts.listener.RNOnChartValueSelectedListener.setSuppressSelectDuringTouch(chart, false);
+        if (chart != null) {
+            try { chart.highlightValue(null); } catch (Throwable ignore) {}
         }
         adjustValueAndEdgeLabels();
         sendEvent("chartGestureEnd", me);
