@@ -27,6 +27,7 @@ import com.github.mikephil.charting.utils.MPPointF;
 import com.github.mikephil.charting.utils.Utils;
 import com.github.wuxudong.rncharts.R;
 import com.github.wuxudong.rncharts.utils.EntryToWritableMapUtils;
+import com.github.wuxudong.rncharts.listener.RNOnChartValueSelectedListener;
 
 import java.util.Map;
 
@@ -38,14 +39,20 @@ public class RNAtfleeMarkerView extends MarkerView {
     private final ImageView image_arrow;
     private Entry lastEntry;
     private final ShadowLayout mShadowLayout;
-    // Transparent overlay to intercept marker clicks
+    // Transparent overlay to intercept taps on the marker only
     private View overlayButton = null;
 
     private boolean arrowHidden = false;
     private boolean fixedOnTop = false;
 
     private static final int OVERLAY_TAG = 999;
-    private static final float HIT_SLOP_DP = 12f; // expand touch area around marker
+    private static final float HIT_SLOP_DP = 12f; // legacy: kept for compatibility
+
+    // Cache of last drawn position and size (in chart coordinates)
+    private float lastLeftInChart = Float.NaN;
+    private float lastTopInChart = Float.NaN;
+    private int lastMeasuredWidth = 0;
+    private int lastMeasuredHeight = 0;
 
     /**
      * Animation start timestamp and duration for fade in effect.
@@ -165,92 +172,22 @@ public class RNAtfleeMarkerView extends MarkerView {
 
 
 
-        // Ensure the marker has concrete measured dimensions before we place the overlay
+        // Ensure the marker has concrete measured dimensions
         int wSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
         int hSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
         measure(wSpec, hSpec);
         layout(0, 0, getMeasuredWidth(), getMeasuredHeight());
 
-        Chart chart = getChartView();
-        if (chart != null) {
-            ViewGroup parent = (ViewGroup) chart.getParent();
-            if (parent != null) {
-                removeOverlayButton();
+        // Store last drawn geometry in chart coordinates for hit-testing
+        MPPointF drawingOffset = getOffsetForDrawingAtPoint(highlight.getDrawX(), highlight.getDrawY());
+        lastLeftInChart = highlight.getDrawX() + drawingOffset.x;
+        lastTopInChart = highlight.getDrawY() + drawingOffset.y;
+        lastMeasuredWidth = getMeasuredWidth();
+        lastMeasuredHeight = getMeasuredHeight();
 
-                MPPointF drawingOffset = getOffsetForDrawingAtPoint(highlight.getDrawX(), highlight.getDrawY());
-
-                float left = chart.getLeft() + highlight.getDrawX() + drawingOffset.x;
-                float top = chart.getTop() + highlight.getDrawY() + drawingOffset.y;
-
-                // Expand touch area by hit slop (in pixels)
-                float density = getResources().getDisplayMetrics().density;
-                int slop = Math.round(HIT_SLOP_DP * density);
-                left -= slop;
-                top -= slop;
-
-                View view = new View(getContext());
-                view.setTag(OVERLAY_TAG);
-                view.setBackgroundColor(Color.TRANSPARENT);
-                view.setClickable(true);
-                view.setFocusable(true);
-                view.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        handleClick();
-                    }
-                });
-                // Forward drag events to the chart so the marker can move while
-                // swiping. Without this, the overlay view blocks touch events
-                // from reaching the chart, preventing highlight updates.
-                view.setOnTouchListener((v, event) -> {
-                    // Consume touches on the overlay to prevent the chart
-                    // from re-highlighting a different entry when the user
-                    // taps the marker to close it.
-                    switch (event.getAction()) {
-                        case MotionEvent.ACTION_UP:
-                            // Synthesize a click for accessibility and consistency
-                            v.performClick();
-                            return true; // consume
-                        case MotionEvent.ACTION_DOWN:
-                        case MotionEvent.ACTION_MOVE:
-                        case MotionEvent.ACTION_CANCEL:
-                            return true; // consume to avoid passing to chart
-                        default:
-                            return true;
-                    }
-                });
-
-                int overlayW = getMeasuredWidth() + (slop * 2);
-                int overlayH = getMeasuredHeight() + (slop * 2);
-                if (overlayW <= 0) overlayW = ViewGroup.LayoutParams.WRAP_CONTENT;
-                if (overlayH <= 0) overlayH = ViewGroup.LayoutParams.WRAP_CONTENT;
-                ViewGroup.LayoutParams base = new ViewGroup.LayoutParams(overlayW, overlayH);
-                if (parent instanceof android.widget.FrameLayout) {
-                    android.widget.FrameLayout.LayoutParams lp = new android.widget.FrameLayout.LayoutParams(base);
-                    lp.leftMargin = (int) left;
-                    lp.topMargin = (int) top;
-                    view.setLayoutParams(lp);
-                } else if (parent instanceof android.widget.RelativeLayout) {
-                    android.widget.RelativeLayout.LayoutParams lp = new android.widget.RelativeLayout.LayoutParams(base);
-                    lp.leftMargin = (int) left;
-                    lp.topMargin = (int) top;
-                    view.setLayoutParams(lp);
-                } else {
-                    view.setLayoutParams(base);
-                    view.setX(left);
-                    view.setY(top);
-                }
-                // Ensure overlay is above the chart for both drawing and touch
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-                    float elev = chart.getElevation();
-                    view.setElevation(elev + 1f);
-                }
-                parent.addView(view);
-                view.bringToFront();
-                overlayButton = view;
-                Log.d("RNAtfleeMarkerView", "Overlay added at left=" + left + ", top=" + top + ", w=" + overlayW + ", h=" + overlayH);
-            }
-        }
+        // Update or attach a small transparent overlay directly above the marker area
+        // so that taps on the marker are consumed before reaching the chart.
+        attachOrUpdateOverlay();
 
         super.refreshContent(e, highlight);
     }
@@ -331,6 +268,8 @@ public class RNAtfleeMarkerView extends MarkerView {
         Log.d("RNAtfleeMarkerView", "Sending event topMarkerClick");
         reactContext.getJSModule(RCTEventEmitter.class)
                 .receiveEvent(chart.getId(), "topMarkerClick", event);
+        // Suppress next clear-select emission from chart and then clear state
+        RNOnChartValueSelectedListener.suppressNextClear(chart);
         // Inform JS about the marker click, then clear state to hide the marker
         resetState();
     }
@@ -341,6 +280,11 @@ public class RNAtfleeMarkerView extends MarkerView {
      */
     public void detachOverlayIfPresent() {
         lastEntry = null;
+        // Clear cached geometry
+        lastLeftInChart = Float.NaN;
+        lastTopInChart = Float.NaN;
+        lastMeasuredWidth = 0;
+        lastMeasuredHeight = 0;
         removeOverlayButton();
     }
 
@@ -359,6 +303,94 @@ public class RNAtfleeMarkerView extends MarkerView {
             }
             overlayButton = null;
         }
+    }
+
+    /**
+     * Adds or updates a transparent overlay view positioned exactly over the
+     * last drawn marker bounds. This ensures a tap on the marker triggers only
+     * the marker event, without also triggering chart tap/highlight events.
+     */
+    private void attachOrUpdateOverlay() {
+        Chart chart = getChartView();
+        if (chart == null) return;
+
+        if (Float.isNaN(lastLeftInChart) || Float.isNaN(lastTopInChart)) return;
+        if (lastMeasuredWidth <= 0 || lastMeasuredHeight <= 0) return;
+
+        ViewParent parent = chart.getParent();
+        if (!(parent instanceof ViewGroup)) return;
+        ViewGroup vg = (ViewGroup) parent;
+
+        if (overlayButton == null) {
+            overlayButton = new View(getContext());
+            overlayButton.setBackgroundColor(Color.TRANSPARENT);
+            overlayButton.setClickable(true);
+            overlayButton.setFocusable(true);
+            // Keep overlay out of accessibility focus
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
+                overlayButton.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+            }
+            overlayButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    handleClick();
+                }
+            });
+            overlayButton.setOnTouchListener((v, event) -> {
+                // Ensure parent containers don't intercept while pressing marker
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    try {
+                        vg.requestDisallowInterceptTouchEvent(true);
+                    } catch (Throwable ignore) {}
+                }
+                // Return false so onClick can be triggered on ACTION_UP
+                // Event won't reach the chart because overlay sits above it.
+                return false;
+            });
+            vg.addView(overlayButton);
+        }
+
+        // Update size and absolute position (relative to chart's parent)
+        ViewGroup.LayoutParams lp = overlayButton.getLayoutParams();
+        // Add a small padding around marker bounds for friendlier taps
+        int pad = Math.round(8f * getResources().getDisplayMetrics().density);
+        int w = lastMeasuredWidth + pad * 2;
+        int h = lastMeasuredHeight + pad * 2;
+        if (lp == null) {
+            lp = new ViewGroup.LayoutParams(w, h);
+        } else {
+            lp.width = w;
+            lp.height = h;
+        }
+        overlayButton.setLayoutParams(lp);
+
+        // Position overlay based on chart's current position plus marker bounds
+        float absX = chart.getX() + lastLeftInChart;
+        float absY = chart.getY() + lastTopInChart;
+        overlayButton.setX(absX - pad);
+        overlayButton.setY(absY - pad);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+            overlayButton.setElevation(10000f);
+            overlayButton.setTranslationZ(10000f);
+        }
+        overlayButton.bringToFront();
+        overlayButton.setVisibility(VISIBLE);
+    }
+
+    /**
+     * Returns true if the supplied (x, y) in chart coordinates lies within
+     * the marker's last drawn bounds, expanded by padPx on all sides.
+     */
+    public boolean isPointInside(float x, float y, float padPx) {
+        if (Float.isNaN(lastLeftInChart) || Float.isNaN(lastTopInChart)) return false;
+        int w = lastMeasuredWidth > 0 ? lastMeasuredWidth : getWidth();
+        int h = lastMeasuredHeight > 0 ? lastMeasuredHeight : getHeight();
+        if (w <= 0 || h <= 0) return false;
+        float left = lastLeftInChart - padPx;
+        float top = lastTopInChart - padPx;
+        float right = lastLeftInChart + w + padPx;
+        float bottom = lastTopInChart + h + padPx;
+        return x >= left && x <= right && y >= top && y <= bottom;
     }
 
     @Override

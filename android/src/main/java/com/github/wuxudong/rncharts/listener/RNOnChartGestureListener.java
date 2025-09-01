@@ -86,45 +86,17 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
             BarLineChartBase barChart = (BarLineChartBase) chart;
             if (barChart.getMarker() instanceof RNAtfleeMarkerView) {
                 RNAtfleeMarkerView marker = (RNAtfleeMarkerView) barChart.getMarker();
-                Highlight[] highlights = barChart.getHighlighted();
-                if (highlights != null && highlights.length > 0) {
-                    Highlight h = highlights[0];
-                    // Ensure marker has a measured size before computing hit rect
-                    if (marker.getMeasuredWidth() <= 0 || marker.getMeasuredHeight() <= 0) {
-                        int wSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
-                        int hSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
-                        marker.measure(wSpec, hSpec);
-                        marker.layout(0, 0, marker.getMeasuredWidth(), marker.getMeasuredHeight());
+                float density = barChart.getResources().getDisplayMetrics().density;
+                float pad = 20f * density; // friendlier hit slop
+                float tx = me.getX();
+                float ty = me.getY();
+                if (marker.isPointInside(tx, ty, pad)) {
+                    if (barChart.getParent() != null) {
+                        barChart.getParent().requestDisallowInterceptTouchEvent(true);
                     }
-                    float markerWidth = marker.getWidth() > 0 ? marker.getWidth() : marker.getMeasuredWidth();
-                    float markerHeight = marker.getHeight() > 0 ? marker.getHeight() : marker.getMeasuredHeight();
-                    if (markerWidth > 0 && markerHeight > 0) {
-                        // Use draw coordinates to match marker placement logic
-                        float posX = h.getDrawX();
-                        float posY = h.getDrawY();
-                        MPPointF offset = marker.getOffsetForDrawingAtPoint(posX, posY);
-
-                        float left = posX + offset.x;
-                        float top = posY + offset.y;
-                        float right = left + markerWidth;
-                        float bottom = top + markerHeight;
-
-                        // Add small hit slop to make touch area friendlier
-                        float density = barChart.getResources().getDisplayMetrics().density;
-                        float pad = 12f * density; // expand hit area slightly
-                        left -= pad;
-                        top -= pad;
-                        right += pad;
-                        bottom += pad;
-
-                        float tx = me.getX();
-                        float ty = me.getY();
-                        if (tx >= left && tx <= right && ty >= top && ty <= bottom) {
-                            marker.dispatchClick();
-                            barChart.highlightValue(null);
-                            return;
-                        }
-                    }
+                    com.github.wuxudong.rncharts.listener.RNOnChartValueSelectedListener.suppressNextClear(barChart);
+                    marker.dispatchClick();
+                    return;
                 }
             }
         }

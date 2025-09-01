@@ -10,6 +10,7 @@ import com.github.wuxudong.rncharts.utils.EntryToWritableMapUtils;
 import com.github.wuxudong.rncharts.markers.RNAtfleeMarkerView;
 
 import java.lang.ref.WeakReference;
+import java.util.WeakHashMap;
 
 /**
  * Created by xudong on 07/03/2017.
@@ -17,6 +18,18 @@ import java.lang.ref.WeakReference;
 public class RNOnChartValueSelectedListener implements OnChartValueSelectedListener {
 
     private WeakReference<Chart> mWeakChart;
+    private static final WeakHashMap<Chart, Boolean> SUPPRESS_NEXT_CLEAR = new WeakHashMap<>();
+
+    /**
+     * When called, the next onNothingSelected for the given chart will not emit
+     * a topSelect(null) event. Useful to avoid duplicate chart events after
+     * marker-driven clears.
+     */
+    public static void suppressNextClear(Chart chart) {
+        if (chart != null) {
+            SUPPRESS_NEXT_CLEAR.put(chart, Boolean.TRUE);
+        }
+    }
 
     public RNOnChartValueSelectedListener(Chart chart) {
         mWeakChart = new WeakReference<>(chart);
@@ -48,6 +61,11 @@ public class RNOnChartValueSelectedListener implements OnChartValueSelectedListe
                 } catch (Throwable t) {
                     // ignore
                 }
+            }
+
+            // Suppress emission if this clear originates from a marker click
+            if (SUPPRESS_NEXT_CLEAR.remove(chart) != null) {
+                return;
             }
 
             ReactContext reactContext = (ReactContext) chart.getContext();
