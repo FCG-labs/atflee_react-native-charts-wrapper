@@ -23,6 +23,7 @@ import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.utils.MPPointF;
 import com.github.wuxudong.rncharts.markers.RNAtfleeMarkerView;
+import android.view.View.MeasureSpec;
 import java.util.WeakHashMap;
 
 import java.lang.ref.WeakReference;
@@ -88,6 +89,13 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
                 Highlight[] highlights = barChart.getHighlighted();
                 if (highlights != null && highlights.length > 0) {
                     Highlight h = highlights[0];
+                    // Ensure marker has a measured size before computing hit rect
+                    if (marker.getMeasuredWidth() <= 0 || marker.getMeasuredHeight() <= 0) {
+                        int wSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+                        int hSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+                        marker.measure(wSpec, hSpec);
+                        marker.layout(0, 0, marker.getMeasuredWidth(), marker.getMeasuredHeight());
+                    }
                     float markerWidth = marker.getWidth() > 0 ? marker.getWidth() : marker.getMeasuredWidth();
                     float markerHeight = marker.getHeight() > 0 ? marker.getHeight() : marker.getMeasuredHeight();
                     if (markerWidth > 0 && markerHeight > 0) {
@@ -103,7 +111,7 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
 
                         // Add small hit slop to make touch area friendlier
                         float density = barChart.getResources().getDisplayMetrics().density;
-                        float pad = 6f * density; // ~6dp padding
+                        float pad = 12f * density; // expand hit area slightly
                         left -= pad;
                         top -= pad;
                         right += pad;

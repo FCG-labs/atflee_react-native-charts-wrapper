@@ -7,6 +7,7 @@ import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.listener.OnChartValueSelectedListener;
 import com.github.wuxudong.rncharts.utils.EntryToWritableMapUtils;
+import com.github.wuxudong.rncharts.markers.RNAtfleeMarkerView;
 
 import java.lang.ref.WeakReference;
 
@@ -39,6 +40,15 @@ public class RNOnChartValueSelectedListener implements OnChartValueSelectedListe
     public void onNothingSelected() {
         if (mWeakChart != null) {
             Chart chart = mWeakChart.get();
+
+            // Clean up any stale overlay from custom marker
+            if (chart != null && chart.getMarker() instanceof RNAtfleeMarkerView) {
+                try {
+                    ((RNAtfleeMarkerView) chart.getMarker()).detachOverlayIfPresent();
+                } catch (Throwable t) {
+                    // ignore
+                }
+            }
 
             ReactContext reactContext = (ReactContext) chart.getContext();
             reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(

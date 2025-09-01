@@ -45,6 +45,7 @@ public class RNAtfleeMarkerView extends MarkerView {
     private boolean fixedOnTop = false;
 
     private static final int OVERLAY_TAG = 999;
+    private static final float HIT_SLOP_DP = 12f; // expand touch area around marker
 
     /**
      * Animation start timestamp and duration for fade in effect.
@@ -164,6 +165,12 @@ public class RNAtfleeMarkerView extends MarkerView {
 
 
 
+        // Ensure the marker has concrete measured dimensions before we place the overlay
+        int wSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+        int hSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+        measure(wSpec, hSpec);
+        layout(0, 0, getMeasuredWidth(), getMeasuredHeight());
+
         Chart chart = getChartView();
         if (chart != null) {
             ViewGroup parent = (ViewGroup) chart.getParent();
@@ -171,13 +178,15 @@ public class RNAtfleeMarkerView extends MarkerView {
                 removeOverlayButton();
 
                 MPPointF drawingOffset = getOffsetForDrawingAtPoint(highlight.getDrawX(), highlight.getDrawY());
-                // Base offset calculated for completeness
-                MPPointF baseOffset = getOffset();
 
-                float left = chart.getX() + highlight.getDrawX() + drawingOffset.x;
-                float top = chart.getY() + highlight.getDrawY() + drawingOffset.y;
-                android.graphics.RectF markerRect = new android.graphics.RectF(left, top,
-                        left + getWidth(), top + getHeight());
+                float left = chart.getLeft() + highlight.getDrawX() + drawingOffset.x;
+                float top = chart.getTop() + highlight.getDrawY() + drawingOffset.y;
+
+                // Expand touch area by hit slop (in pixels)
+                float density = getResources().getDisplayMetrics().density;
+                int slop = Math.round(HIT_SLOP_DP * density);
+                left -= slop;
+                top -= slop;
 
                 View view = new View(getContext());
                 view.setTag(OVERLAY_TAG);
@@ -194,16 +203,25 @@ public class RNAtfleeMarkerView extends MarkerView {
                 // swiping. Without this, the overlay view blocks touch events
                 // from reaching the chart, preventing highlight updates.
                 view.setOnTouchListener((v, event) -> {
-                    Log.d("RNAtfleeMarkerView", "Overlay touch action=" + event.getAction());
-                    Chart chartView = getChartView();
-                    if (chartView != null) {
-                        chartView.onTouchEvent(event);
+                    // Consume touches on the overlay to prevent the chart
+                    // from re-highlighting a different entry when the user
+                    // taps the marker to close it.
+                    switch (event.getAction()) {
+                        case MotionEvent.ACTION_UP:
+                            // Synthesize a click for accessibility and consistency
+                            v.performClick();
+                            return true; // consume
+                        case MotionEvent.ACTION_DOWN:
+                        case MotionEvent.ACTION_MOVE:
+                        case MotionEvent.ACTION_CANCEL:
+                            return true; // consume to avoid passing to chart
+                        default:
+                            return true;
                     }
-                    return false; // do not consume so click can fire
                 });
 
-                int overlayW = getWidth() > 0 ? getWidth() : getMeasuredWidth();
-                int overlayH = getHeight() > 0 ? getHeight() : getMeasuredHeight();
+                int overlayW = getMeasuredWidth() + (slop * 2);
+                int overlayH = getMeasuredHeight() + (slop * 2);
                 if (overlayW <= 0) overlayW = ViewGroup.LayoutParams.WRAP_CONTENT;
                 if (overlayH <= 0) overlayH = ViewGroup.LayoutParams.WRAP_CONTENT;
                 ViewGroup.LayoutParams base = new ViewGroup.LayoutParams(overlayW, overlayH);
@@ -222,11 +240,15 @@ public class RNAtfleeMarkerView extends MarkerView {
                     view.setX(left);
                     view.setY(top);
                 }
-
+                // Ensure overlay is above the chart for both drawing and touch
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
+                    float elev = chart.getElevation();
+                    view.setElevation(elev + 1f);
+                }
                 parent.addView(view);
                 view.bringToFront();
                 overlayButton = view;
-                Log.d("RNAtfleeMarkerView", "Overlay added left=" + left + " top=" + top);
+                Log.d("RNAtfleeMarkerView", "Overlay added at left=" + left + ", top=" + top + ", w=" + overlayW + ", h=" + overlayH);
             }
         }
 
@@ -285,12 +307,18 @@ public class RNAtfleeMarkerView extends MarkerView {
     }
 
     private void handleClick() {
-        if (lastEntry == null) {
+        Chart chart = getChartView();
+        if (chart == null) {
             return;
         }
 
-        Chart chart = getChartView();
-        if (chart == null) {
+        // If there's no active highlight, do not emit a click event.
+        // Just remove any stale overlay and clear state.
+        com.github.mikephil.charting.highlight.Highlight[] hs = chart.getHighlighted();
+        if (hs == null || hs.length == 0 || lastEntry == null) {
+            removeOverlayButton();
+            lastEntry = null;
+            chart.invalidate();
             return;
         }
 
@@ -305,6 +333,15 @@ public class RNAtfleeMarkerView extends MarkerView {
                 .receiveEvent(chart.getId(), "topMarkerClick", event);
         // Inform JS about the marker click, then clear state to hide the marker
         resetState();
+    }
+
+    /**
+     * Remove overlay and local entry without altering chart highlight state.
+     * Useful for cleanup when highlight is cleared externally.
+     */
+    public void detachOverlayIfPresent() {
+        lastEntry = null;
+        removeOverlayButton();
     }
 
     /**
