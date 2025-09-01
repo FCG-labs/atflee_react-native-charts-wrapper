@@ -43,6 +43,8 @@ public class RNAtfleeMarkerView extends MarkerView {
     private final ShadowLayout mShadowLayout;
     // Transparent overlay to intercept taps on the marker only
     private View overlayButton = null;
+    // When true, marker won't draw (used to suppress drawing during chart touches)
+    private volatile boolean suppressOnTouch = false;
 
     private boolean arrowHidden = false;
     private boolean fixedOnTop = false;
@@ -191,9 +193,15 @@ public class RNAtfleeMarkerView extends MarkerView {
         Log.d(TAG, "computed markerRect: leftInChart=" + lastLeftInChart + ", topInChart=" + lastTopInChart
                 + ", size=" + lastMeasuredWidth + "x" + lastMeasuredHeight);
 
-        // Update or attach a small transparent overlay directly above the marker area
-        // so that taps on the marker are consumed before reaching the chart.
-        attachOrUpdateOverlay();
+        // If chart touch suppression is active, do not attach/update overlay
+        // and avoid any interactive hit area.
+        if (!suppressOnTouch) {
+            // Update or attach a small transparent overlay directly above the marker area
+            // so that taps on the marker are consumed before reaching the chart.
+            attachOrUpdateOverlay();
+        } else {
+            removeOverlayButton();
+        }
 
         super.refreshContent(e, highlight);
     }
@@ -247,6 +255,10 @@ public class RNAtfleeMarkerView extends MarkerView {
 
     public TextView getTvContent() {
         return tvContent;
+    }
+
+    public void setSuppressOnTouch(boolean suppress) {
+        this.suppressOnTouch = suppress;
     }
 
     private void handleClick() {
@@ -344,37 +356,43 @@ public class RNAtfleeMarkerView extends MarkerView {
 
         if (overlayButton == null) {
             overlayButton = new View(getContext());
-            // Debug: visualize hit area with semi-transparent red
-            overlayButton.setBackgroundColor(Color.argb(128, 255, 0, 0));
+            // Restore transparent hit area
+            overlayButton.setBackgroundColor(Color.TRANSPARENT);
             overlayButton.setClickable(true);
             overlayButton.setFocusable(true);
             // Keep overlay out of accessibility focus
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
                 overlayButton.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             }
-            overlayButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    handleClick();
-                }
-            });
             overlayButton.setOnTouchListener((v, event) -> {
-                // Ensure parent containers don't intercept while pressing marker
-                if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    try {
-                        vg.requestDisallowInterceptTouchEvent(true);
-                    } catch (Throwable ignore) {}
-                }
+                int action = event.getAction();
                 try {
                     float absX = v.getX() + event.getX();
                     float absY = v.getY() + event.getY();
-                    Log.d(TAG, "overlayTouch action=" + event.getAction() +
+                    Log.d(TAG, "overlayTouch action=" + action +
                             " rel=(" + event.getX() + "," + event.getY() + ")" +
                             " abs=(" + absX + "," + absY + ") size=" + v.getWidth() + "x" + v.getHeight());
                 } catch (Throwable ignore) {}
-                // Return false so onClick can be triggered on ACTION_UP
-                // Event won't reach the chart because overlay sits above it.
-                return false;
+
+                switch (action) {
+                    case MotionEvent.ACTION_DOWN:
+                        try { vg.requestDisallowInterceptTouchEvent(true); } catch (Throwable ignore) {}
+                        v.setPressed(true);
+                        return true; // consume DOWN to prevent Chart from receiving it
+                    case MotionEvent.ACTION_UP:
+                        v.setPressed(false);
+                        // Safety: ensure UP is inside overlay bounds
+                        if (event.getX() >= 0 && event.getY() >= 0 && event.getX() <= v.getWidth() && event.getY() <= v.getHeight()) {
+                            try { v.performClick(); } catch (Throwable ignore) {}
+                            handleClick();
+                        }
+                        return true;
+                    case MotionEvent.ACTION_CANCEL:
+                        v.setPressed(false);
+                        return true;
+                    default:
+                        return true; // consume all to block underlying chart
+                }
             });
             vg.addView(overlayButton);
             Log.d(TAG, "overlay created");
@@ -435,6 +453,10 @@ public class RNAtfleeMarkerView extends MarkerView {
 
     @Override
     public void draw(android.graphics.Canvas canvas) {
+        if (suppressOnTouch) {
+            // Skip drawing entirely during chart touch suppression
+            return;
+        }
         if (fadeStart > 0) {
             if (fadeDuration > 0) {
                 long elapsed = System.currentTimeMillis() - fadeStart;

@@ -60,11 +60,25 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
 
     @Override
     public void onChartGestureStart(MotionEvent me, ChartTouchListener.ChartGesture lastPerformedGesture) {
+        Chart chart = mWeakChart.get();
+        if (chart instanceof BarLineChartBase) {
+            BarLineChartBase bar = (BarLineChartBase) chart;
+            if (bar.getMarker() instanceof RNAtfleeMarkerView) {
+                ((RNAtfleeMarkerView) bar.getMarker()).setSuppressOnTouch(true);
+            }
+        }
         sendEvent("chartGestureStart", me);
     }
 
     @Override
     public void onChartGestureEnd(MotionEvent me, ChartTouchListener.ChartGesture lastPerformedGesture) {
+        Chart chart = mWeakChart.get();
+        if (chart instanceof BarLineChartBase) {
+            BarLineChartBase bar = (BarLineChartBase) chart;
+            if (bar.getMarker() instanceof RNAtfleeMarkerView) {
+                ((RNAtfleeMarkerView) bar.getMarker()).setSuppressOnTouch(false);
+            }
+        }
         adjustValueAndEdgeLabels();
         sendEvent("chartGestureEnd", me);
     }
