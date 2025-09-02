@@ -193,15 +193,9 @@ public class RNAtfleeMarkerView extends MarkerView {
         Log.d(TAG, "computed markerRect: leftInChart=" + lastLeftInChart + ", topInChart=" + lastTopInChart
                 + ", size=" + lastMeasuredWidth + "x" + lastMeasuredHeight);
 
-        // If chart touch suppression is active, do not attach/update overlay
-        // and avoid any interactive hit area.
-        if (!suppressOnTouch) {
-            // Update or attach a small transparent overlay directly above the marker area
-            // so that taps on the marker are consumed before reaching the chart.
-            attachOrUpdateOverlay();
-        } else {
-            removeOverlayButton();
-        }
+        // Update or attach a small transparent overlay directly above the marker area
+        // so that taps on the marker are consumed before reaching the chart.
+        attachOrUpdateOverlay();
 
         super.refreshContent(e, highlight);
     }
@@ -453,10 +447,7 @@ public class RNAtfleeMarkerView extends MarkerView {
 
     @Override
     public void draw(android.graphics.Canvas canvas) {
-        if (suppressOnTouch) {
-            // Skip drawing entirely during chart touch suppression
-            return;
-        }
+        // Always draw marker when requested
         if (fadeStart > 0) {
             if (fadeDuration > 0) {
                 long elapsed = System.currentTimeMillis() - fadeStart;
