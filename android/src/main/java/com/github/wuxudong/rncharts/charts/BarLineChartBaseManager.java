@@ -333,6 +333,14 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         float rightDp = rightPx / density;
         float bottomDp = bottomPx / density;
 
+        if (isDebug(chart)) {
+            android.util.Log.d(ChartBaseManager.DEBUG_TAG,
+                    "extraOffsets input(dp)=" + left + "," + top + "," + right + "," + bottom +
+                            " | snapped(dp)=" + leftDp + "," + topDp + "," + rightDp + "," + bottomDp +
+                            " | density=" + density +
+                            " | contentTop(px)=" + chart.getViewPortHandler().contentTop());
+        }
+
         com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.saveBaseOffsets(chart, leftDp, topDp, rightDp, bottomDp);
         com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.applyPadding(chart);
     }
@@ -519,6 +527,14 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         // maximum by ~1px worth of value to bring it inside the content.
         ensureAxisMaxInsideContent(chart, left, YAxis.AxisDependency.LEFT);
         ensureAxisMaxInsideContent(chart, right, YAxis.AxisDependency.RIGHT);
+
+        if (isDebug(chart)) {
+            android.util.Log.d(ChartBaseManager.DEBUG_TAG,
+                    "afterPadding contentTop=" + chart.getViewPortHandler().contentTop() +
+                            ", axisLeftMax=" + chart.getAxisLeft().getAxisMaximum() +
+                            ", axisRightMax=" + chart.getAxisRight().getAxisMaximum() +
+                            ", dataYMax=" + globalYMax);
+        }
     }
 
     private void adjustAxisMaximumIfTight(YAxis axis, float yMax) {
@@ -558,6 +574,12 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                 // Fallback: 0.01% of range
                 float range = Math.abs(axis.getAxisMaximum() - axis.getAxisMinimum());
                 perPxVal = Math.max(range * 0.0001f, 1e-4f);
+            }
+            if (isDebug(chart)) {
+                android.util.Log.d(ChartBaseManager.DEBUG_TAG,
+                        (dep == YAxis.AxisDependency.LEFT ? "LEFT" : "RIGHT") +
+                                " axisMax(px)=" + (float) p.y + " < contentTop(px)=" + topPx +
+                                " ⇒ bump=" + perPxVal);
             }
             axis.setAxisMaximum(axisMax + perPxVal * 1.1f);
         }
