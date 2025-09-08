@@ -60,6 +60,11 @@ public class AtfleeCombinedChart extends CombinedChart {
         float clampedY = y;
         if (y < top) clampedY = top + 1f;
         else if (y > bottom) clampedY = bottom - 1f;
+        if (clampedY != y) {
+            android.util.Log.d(ChartBaseManager.DEBUG_TAG,
+                    "getHighlightByTouchPoint clamp: x=" + x + " y=" + y + " → y'=" + clampedY +
+                            " top=" + top + " bottom=" + bottom);
+        }
         return super.getHighlightByTouchPoint(x, clampedY);
     }
 
@@ -125,6 +130,10 @@ public class AtfleeCombinedChart extends CombinedChart {
             else if (y > bottom) clampedY = bottom - 1f;
 
             if (clampedY != y) {
+                android.util.Log.d(ChartBaseManager.DEBUG_TAG,
+                        "dispatchTouch clamp: action=" + ev.getAction() +
+                                " x=" + x + " y=" + y + " → y'=" + clampedY +
+                                " top=" + top + " bottom=" + bottom);
                 MotionEvent adjusted = MotionEvent.obtain(ev);
                 adjusted.setLocation(x, clampedY);
                 boolean handled = super.dispatchTouchEvent(adjusted);
