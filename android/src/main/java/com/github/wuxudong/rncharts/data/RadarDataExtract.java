@@ -12,11 +12,16 @@ import com.github.wuxudong.rncharts.utils.ChartDataSetConfigUtils;
 import com.github.wuxudong.rncharts.utils.ConversionUtil;
 
 import java.util.ArrayList;
+import android.util.Log;
 
 /**
  * Created by xudong on 02/03/2017.
  */
 public class RadarDataExtract extends DataExtract<RadarData, RadarEntry> {
+
+    private static final String LOG_TAG = "RadarDataDebug";
+    // Used only for logging convenience
+    private String currentLabel = "";
 
     @Override
     RadarData createData() {
@@ -25,6 +30,12 @@ public class RadarDataExtract extends DataExtract<RadarData, RadarEntry> {
 
     @Override
     IDataSet<RadarEntry> createDataSet(ArrayList<RadarEntry> entries, String label) {
+        currentLabel = label != null ? label : "";
+        if (entries != null) {
+            try {
+                Log.d(LOG_TAG, "createDataSet label='" + currentLabel + "' entries=" + entries.size());
+            } catch (Throwable ignore) {}
+        }
         return new RadarDataSet(entries, label);
     }
 
@@ -46,9 +57,12 @@ public class RadarDataExtract extends DataExtract<RadarData, RadarEntry> {
         if (ReadableType.Map.equals(values.getType(index))) {
             ReadableMap map = values.getMap(index);
             float value = (float) map.getDouble("value");
+            try { Log.d(LOG_TAG, "entry[" + index + "] label='" + currentLabel + "' value=" + value); } catch (Throwable ignore) {}
             entry = new RadarEntry(value, ConversionUtil.toMap(map));
         } else if (ReadableType.Number.equals(values.getType(index))) {
-            entry = new RadarEntry((float) values.getDouble(index));
+            float value = (float) values.getDouble(index);
+            try { Log.d(LOG_TAG, "entry[" + index + "] label='" + currentLabel + "' value=" + value); } catch (Throwable ignore) {}
+            entry = new RadarEntry(value);
         } else {
             throw new IllegalArgumentException("Unexpected entry type: " + values.getType(index));
         }
