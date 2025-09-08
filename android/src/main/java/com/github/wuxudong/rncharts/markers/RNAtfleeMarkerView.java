@@ -508,6 +508,11 @@ public class RNAtfleeMarkerView extends MarkerView {
     public void resetState() {
         fadeStart = 0L;
         lastEntry = null;
+        // Clear cached geometry so hit-testing returns false immediately after hide
+        lastLeftInChart = Float.NaN;
+        lastTopInChart = Float.NaN;
+        lastMeasuredWidth = 0;
+        lastMeasuredHeight = 0;
 
         Chart chart = getChartView();
         if (chart != null) {
