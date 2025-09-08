@@ -482,5 +482,39 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
 
             ChartGroupHolder.addChart(extraProperties.group, extraProperties.identifier, chart, extraProperties.syncX, extraProperties.syncY);
         }
+
+        // Ensure a tiny headroom at the top so max points do not land exactly on
+        // the contentTop boundary due to floating-point rounding. This avoids
+        // circles/values/markers being skipped as out-of-bounds.
+        addTopEpsilonPadding(chart);
+    }
+
+    private void addTopEpsilonPadding(BarLineChartBase chart) {
+        if (chart.getData() == null) return;
+
+        float globalYMax = chart.getData().getYMax();
+
+        YAxis left = chart.getAxisLeft();
+        YAxis right = chart.getAxisRight();
+
+        // Apply to both axes with a very small epsilon relative to axis range
+        adjustAxisMaximumIfTight(left, globalYMax);
+        adjustAxisMaximumIfTight(right, globalYMax);
+    }
+
+    private void adjustAxisMaximumIfTight(YAxis axis, float yMax) {
+        if (axis == null) return;
+        float max = axis.getAxisMaximum();
+        float min = axis.getAxisMinimum();
+        float range = Math.abs(max - min);
+        if (range <= 0f) return;
+
+        // epsilon at 0.01% of the visible range, practically invisible
+        float eps = range * 0.0001f;
+        if (eps == 0f) eps = 1e-4f;
+
+        if (max - yMax < eps) {
+            axis.setAxisMaximum(max + eps * 2f);
+        }
     }
 }
