@@ -1,5 +1,6 @@
 package com.github.wuxudong.rncharts.charts;
 
+import android.graphics.Canvas;
 import com.github.mikephil.charting.animation.ChartAnimator;
 import com.github.mikephil.charting.charts.CombinedChart;
 import com.github.mikephil.charting.renderer.CandleStickChartRenderer;
@@ -63,6 +64,17 @@ public class AtfleeCombinedChartRenderer extends CombinedChartRenderer {
         for (com.github.mikephil.charting.renderer.DataRenderer renderer : mRenderers) {
             if (renderer instanceof AtfleeBarChartRenderer) {
                 ((AtfleeBarChartRenderer) renderer).setRadius(radius);
+            }
+        }
+    }
+
+    @Override
+    public void drawExtras(Canvas c) {
+        super.drawExtras(c);
+        // After all extras, paint top-edge line value labels on top to avoid being covered
+        for (DataRenderer r : mRenderers) {
+            if (r instanceof NoClipLineChartRenderer) {
+                ((NoClipLineChartRenderer) r).drawTopLabelsOverlay(c);
             }
         }
     }

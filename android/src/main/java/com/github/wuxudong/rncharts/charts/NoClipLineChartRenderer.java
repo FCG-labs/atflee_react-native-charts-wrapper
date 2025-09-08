@@ -15,6 +15,8 @@ import com.github.mikephil.charting.renderer.LineChartRenderer;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.charts.BarLineChartBase;
+import com.github.mikephil.charting.highlight.Highlight;
+import com.github.mikephil.charting.interfaces.datasets.ILineScatterCandleRadarDataSet;
 import com.github.mikephil.charting.utils.MPPointD;
 import com.github.mikephil.charting.utils.Utils;
 import com.github.mikephil.charting.utils.ViewPortHandler;
@@ -158,21 +160,92 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
         }
     }
 
-    @Override
-    public void drawExtras(Canvas c) {
-        super.drawExtras(c);
+    /** Draw pending top-edge labels after all renderers have drawn, with no outline. */
+    public void drawTopLabelsOverlay(Canvas c) {
         if (pendingTopLabels.isEmpty()) return;
-        // Re-draw near-top labels on top of extras for guaranteed visibility
         for (PendingLabel pl : pendingTopLabels) {
-            // Optional outline for readability
-            Paint p = mValuePaint;
-            p.setStyle(Paint.Style.FILL_AND_STROKE);
-            p.setStrokeWidth(3f);
-            p.setColor(0xFF000000);
-            drawValue(c, pl.text, pl.x, pl.y, 0xFF000000);
-            p.setStrokeWidth(0f);
             drawValue(c, pl.text, pl.x, pl.y, pl.color);
         }
         pendingTopLabels.clear();
+    }
+
+    // Clamp highlight Y to content so markers are eligible to render
+    @Override
+    public void drawHighlighted(Canvas c, Highlight[] indices) {
+        LineDataProvider provider = mChart;
+        if (provider == null) return;
+        LineData lineData = provider.getLineData();
+        if (lineData == null) return;
+
+        final float phaseY = mAnimator.getPhaseY();
+        final float cTop = mViewPortHandler.contentTop();
+        final float cBot = mViewPortHandler.contentBottom();
+
+        for (Highlight high : indices) {
+            ILineDataSet set = lineData.getDataSetByIndex(high.getDataSetIndex());
+            if (set == null || !set.isHighlightEnabled()) continue;
+
+            Entry e = set.getEntryForXValue(high.getX(), high.getY());
+            if (e == null) continue;
+            if (!isInBoundsX(e, set)) continue;
+
+            MPPointD pix = provider.getTransformer(set.getAxisDependency())
+                    .getPixelForValues(e.getX(), e.getY() * phaseY);
+            float px = (float) pix.x;
+            float py = (float) pix.y;
+            if (py < cTop) py = cTop; else if (py > cBot) py = cBot;
+            high.setDraw(px, py);
+
+            // draw the highlight lines ourselves so they align with clamped point
+            drawHighlightLines(c, px, py, (ILineScatterCandleRadarDataSet) set);
+            MPPointD.recycleInstance(pix);
+        }
+    }
+
+    // Draw circles without Y in-bounds rejection so edge points remain visible
+    @Override
+    public void drawExtras(Canvas c) {
+        super.drawExtras(c);
+        LineDataProvider provider = mChart;
+        if (provider == null) return;
+        LineData lineData = provider.getLineData();
+        if (lineData == null) return;
+
+        final float phaseX = mAnimator.getPhaseX();
+        final float phaseY = mAnimator.getPhaseY();
+
+        for (int i = 0; i < lineData.getDataSetCount(); i++) {
+            ILineDataSet dataSet = lineData.getDataSetByIndex(i);
+            if (dataSet == null || !dataSet.isVisible() || !dataSet.isDrawCirclesEnabled()) continue;
+
+            final int entryCount = Math.min((int) Math.ceil(dataSet.getEntryCount() * phaseX), dataSet.getEntryCount());
+            for (int j = 0; j < entryCount; j++) {
+                Entry e = dataSet.getEntryForIndex(j);
+                if (e == null) continue;
+                MPPointD pt = provider.getTransformer(dataSet.getAxisDependency())
+                        .getPixelForValues(e.getX(), e.getY() * phaseY);
+
+                if (!mViewPortHandler.isInBoundsRight((float) pt.x)) { MPPointD.recycleInstance(pt); break; }
+                if (!mViewPortHandler.isInBoundsLeft((float) pt.x))  { MPPointD.recycleInstance(pt); continue; }
+
+                float x = (float) pt.x;
+                float y = (float) pt.y;
+                if (y < mViewPortHandler.contentTop()) y = mViewPortHandler.contentTop();
+                else if (y > mViewPortHandler.contentBottom()) y = mViewPortHandler.contentBottom();
+
+                float r = dataSet.getCircleRadius();
+                mRenderPaint.setStyle(Paint.Style.FILL);
+                mRenderPaint.setColor(dataSet.getCircleColor(j));
+                c.drawCircle(x, y, r, mRenderPaint);
+
+                if (dataSet.isDrawCircleHoleEnabled() && dataSet.getCircleHoleRadius() > 0f) {
+                    float hr = dataSet.getCircleHoleRadius();
+                    mRenderPaint.setColor(dataSet.getCircleHoleColor());
+                    c.drawCircle(x, y, hr, mRenderPaint);
+                }
+
+                MPPointD.recycleInstance(pt);
+            }
+        }
     }
 }
