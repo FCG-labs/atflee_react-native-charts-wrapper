@@ -67,18 +67,6 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
     protected static final int SET_DATA_AND_LOCK_INDEX = 9;
 
     private static java.util.WeakHashMap<Chart, Boolean> loadCompleteMap = new java.util.WeakHashMap<>();
-    private static java.util.WeakHashMap<Chart, Boolean> debugLogMap = new java.util.WeakHashMap<>();
-    protected static final String DEBUG_TAG = "RNChartsDebug";
-
-    protected boolean isDebug(Chart chart) {
-        Boolean b = debugLogMap.get(chart);
-        return b != null && b;
-    }
-
-    @ReactProp(name = "debugLog")
-    public void setDebugLog(Chart chart, boolean enabled) {
-        debugLogMap.put(chart, enabled);
-    }
 
     protected void sendLoadCompleteEvent(Chart chart) {
         WritableMap event = Arguments.createMap();
@@ -796,24 +784,6 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
                 public boolean onPreDraw() {
                     chart.getViewTreeObserver().removeOnPreDrawListener(this);
                     chart.post(() -> {
-                        try {
-                            // Final guard just before first render: ensure axis max maps inside content
-                            if (chart instanceof com.github.mikephil.charting.charts.BarLineChartBase) {
-                                com.github.mikephil.charting.charts.BarLineChartBase bl = (com.github.mikephil.charting.charts.BarLineChartBase) chart;
-                                if (this instanceof Object) { /* no-op for clarity */ }
-                                // Delegate to manager if available
-                                try {
-                                    if (ChartBaseManager.this instanceof BarLineChartBaseManager) {
-                                        ((BarLineChartBaseManager) ChartBaseManager.this).addTopEpsilonPadding(bl);
-                                        if (isDebug(chart)) {
-                                            android.util.Log.d(DEBUG_TAG, "onPreDraw guard executed: contentTop=" + bl.getViewPortHandler().contentTop() +
-                                                    ", contentBottom=" + bl.getViewPortHandler().contentBottom() + ", axisLeftMax=" + bl.getAxisLeft().getAxisMaximum() +
-                                                    ", axisRightMax=" + bl.getAxisRight().getAxisMaximum());
-                                        }
-                                    }
-                                } catch (Throwable ignore) {}
-                            }
-                        } catch (Throwable ignore) {}
                         sendLoadCompleteEvent(chart);
                         loadCompleteMap.put(chart, true);
                     });

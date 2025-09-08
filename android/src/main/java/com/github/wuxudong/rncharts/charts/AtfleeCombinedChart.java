@@ -7,7 +7,7 @@ import android.view.MotionEvent;
 
 import com.github.mikephil.charting.charts.CombinedChart;
 import com.github.mikephil.charting.highlight.CombinedHighlighter;
-import com.github.mikephil.charting.highlight.Highlight;
+// import com.github.mikephil.charting.highlight.Highlight;
 import com.github.wuxudong.rncharts.markers.RNAtfleeMarkerView;
 
 public class AtfleeCombinedChart extends CombinedChart {
@@ -51,22 +51,7 @@ public class AtfleeCombinedChart extends CombinedChart {
         mRenderer = new AtfleeCombinedChartRenderer(this, mAnimator, mViewPortHandler);
     }
 
-    @Override
-    protected Highlight getHighlightByTouchPoint(float x, float y) {
-        // Allow highlights even when the user taps slightly outside content
-        // due to large extraOffsets. Clamp into content rect before delegation.
-        float top = getViewPortHandler().contentTop();
-        float bottom = getViewPortHandler().contentBottom();
-        float clampedY = y;
-        if (y < top) clampedY = top + 1f;
-        else if (y > bottom) clampedY = bottom - 1f;
-        if (clampedY != y) {
-            android.util.Log.d(ChartBaseManager.DEBUG_TAG,
-                    "getHighlightByTouchPoint clamp: x=" + x + " y=" + y + " → y'=" + clampedY +
-                            " top=" + top + " bottom=" + bottom);
-        }
-        return super.getHighlightByTouchPoint(x, clampedY);
-    }
+    // Note: keep default highlight behavior (no Y clamping/logging)
 
     public void setRadius(float radius) {
         if (mRenderer instanceof AtfleeCombinedChartRenderer) {
@@ -117,30 +102,7 @@ public class AtfleeCombinedChart extends CombinedChart {
                     break;
             }
         }
-        // Clamp touch Y into content rect so taps in extra top/bottom offsets still
-        // participate in highlight detection. This avoids failing to highlight
-        // points near the top when extraOffsets.top is large.
-        try {
-            float x = ev.getX();
-            float y = ev.getY();
-            float top = getViewPortHandler().contentTop();
-            float bottom = getViewPortHandler().contentBottom();
-            float clampedY = y;
-            if (y < top) clampedY = top + 1f;
-            else if (y > bottom) clampedY = bottom - 1f;
-
-            if (clampedY != y) {
-                android.util.Log.d(ChartBaseManager.DEBUG_TAG,
-                        "dispatchTouch clamp: action=" + ev.getAction() +
-                                " x=" + x + " y=" + y + " → y'=" + clampedY +
-                                " top=" + top + " bottom=" + bottom);
-                MotionEvent adjusted = MotionEvent.obtain(ev);
-                adjusted.setLocation(x, clampedY);
-                boolean handled = super.dispatchTouchEvent(adjusted);
-                adjusted.recycle();
-                return handled;
-            }
-        } catch (Throwable ignore) {}
+        // Use default event dispatch (no Y clamping/logging)
 
         return super.dispatchTouchEvent(ev);
     }

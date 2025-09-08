@@ -6,7 +6,6 @@ import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.annotations.ReactProp;
 import com.github.mikephil.charting.charts.CombinedChart;
 import com.github.mikephil.charting.components.YAxis;
-import com.github.mikephil.charting.utils.Utils;
 import com.github.mikephil.charting.data.Entry;
 import com.github.wuxudong.rncharts.data.CombinedDataExtract;
 import com.github.wuxudong.rncharts.data.DataExtract;
@@ -48,8 +47,6 @@ public class CombinedChartManager extends BarLineChartBaseManager<CombinedChart,
 //         }
         // Enable marker dragging by default for consistency with iOS
         combinedChart.setHighlightPerDragEnabled(true);
-        // Make highlight picking more forgiving near edges
-        combinedChart.setMaxHighlightDistance(Utils.convertDpToPixel(64f));
         return combinedChart;
     }
 
