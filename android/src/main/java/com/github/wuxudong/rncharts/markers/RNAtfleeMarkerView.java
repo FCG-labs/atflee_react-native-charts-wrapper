@@ -351,7 +351,11 @@ public class RNAtfleeMarkerView extends MarkerView {
             }
             overlayButton.setX(x);
             overlayButton.setY(y);
-            overlayButton.setVisibility(View.VISIBLE);
+            // Make absolutely non-interactive
+            overlayButton.setOnTouchListener(null);
+            overlayButton.setClickable(false);
+            overlayButton.setFocusable(false);
+            overlayButton.setVisibility(View.GONE);
             overlayButton.invalidate();
         } catch (Throwable ignore) {}
     }
@@ -376,45 +380,47 @@ public class RNAtfleeMarkerView extends MarkerView {
             overlayButton = new View(getContext());
             // Restore transparent hit area
             overlayButton.setBackgroundColor(Color.TRANSPARENT);
-            overlayButton.setClickable(true);
-            overlayButton.setFocusable(true);
             // Keep overlay out of accessibility focus
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
                 overlayButton.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
             }
-            overlayButton.setOnTouchListener((v, event) -> {
-                int action = event.getAction();
-                try {
-                    float absX = v.getX() + event.getX();
-                    float absY = v.getY() + event.getY();
-                    Log.d(TAG, "overlayTouch action=" + action +
-                            " rel=(" + event.getX() + "," + event.getY() + ")" +
-                            " abs=(" + absX + "," + absY + ") size=" + v.getWidth() + "x" + v.getHeight());
-                } catch (Throwable ignore) {}
-
-                switch (action) {
-                    case MotionEvent.ACTION_DOWN:
-                        try { vg.requestDisallowInterceptTouchEvent(true); } catch (Throwable ignore) {}
-                        v.setPressed(true);
-                        return true; // consume DOWN to prevent Chart from receiving it
-                    case MotionEvent.ACTION_UP:
-                        v.setPressed(false);
-                        // Safety: ensure UP is inside overlay bounds
-                        if (event.getX() >= 0 && event.getY() >= 0 && event.getX() <= v.getWidth() && event.getY() <= v.getHeight()) {
-                            try { v.performClick(); } catch (Throwable ignore) {}
-                            handleClick();
-                        }
-                        return true;
-                    case MotionEvent.ACTION_CANCEL:
-                        v.setPressed(false);
-                        return true;
-                    default:
-                        return true; // consume all to block underlying chart
-                }
-            });
             vg.addView(overlayButton);
             Log.d(TAG, "overlay created");
         }
+
+        // Always (re)enable clickability and touch listener when showing
+        overlayButton.setClickable(true);
+        overlayButton.setFocusable(true);
+        overlayButton.setOnTouchListener((v, event) -> {
+            int action = event.getAction();
+            try {
+                float absX = v.getX() + event.getX();
+                float absY = v.getY() + event.getY();
+                Log.d(TAG, "overlayTouch action=" + action +
+                        " rel=(" + event.getX() + "," + event.getY() + ")" +
+                        " abs=(" + absX + "," + absY + ") size=" + v.getWidth() + "x" + v.getHeight());
+            } catch (Throwable ignore) {}
+
+            switch (action) {
+                case MotionEvent.ACTION_DOWN:
+                    try { vg.requestDisallowInterceptTouchEvent(true); } catch (Throwable ignore) {}
+                    v.setPressed(true);
+                    return true; // consume DOWN to prevent Chart from receiving it
+                case MotionEvent.ACTION_UP:
+                    v.setPressed(false);
+                    // Safety: ensure UP is inside overlay bounds
+                    if (event.getX() >= 0 && event.getY() >= 0 && event.getX() <= v.getWidth() && event.getY() <= v.getHeight()) {
+                        try { v.performClick(); } catch (Throwable ignore) {}
+                        handleClick();
+                    }
+                    return true;
+                case MotionEvent.ACTION_CANCEL:
+                    v.setPressed(false);
+                    return true;
+                default:
+                    return true; // consume all to block underlying chart
+            }
+        });
 
         // Update size and absolute position (relative to chart's parent)
         ViewGroup.LayoutParams lp = overlayButton.getLayoutParams();
