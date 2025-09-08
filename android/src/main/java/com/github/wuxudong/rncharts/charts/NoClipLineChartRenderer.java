@@ -142,6 +142,7 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
                 }
                 boolean nearAxisMax = Math.abs(axisMax - e.getY()) <= 1e-4;
                 boolean nearTopEdge = (yAbove < contentTop + topEpsPx) || (float) pt.y <= contentTop + topEpsPx;
+                boolean deferDraw = false;
                 if (nearAxisMax || nearTopEdge) {
                     int color = dataSet.getValueTextColor(j);
                     Log.d(TAG, String.format(
@@ -150,10 +151,13 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
                     ));
                     // save for redraw on top in drawExtras
                     pendingTopLabels.add(new PendingLabel(text, x, y, color));
+                    deferDraw = true; // avoid double drawing; draw later in overlay
                 }
 
-                int color = dataSet.getValueTextColor(j);
-                drawValue(c, text, x, y, color);
+                if (!deferDraw) {
+                    int color = dataSet.getValueTextColor(j);
+                    drawValue(c, text, x, y, color);
+                }
 
                 MPPointD.recycleInstance(pt);
             }
