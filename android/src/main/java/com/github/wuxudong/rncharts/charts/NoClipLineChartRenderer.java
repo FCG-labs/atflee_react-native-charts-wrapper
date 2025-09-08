@@ -2,6 +2,7 @@ package com.github.wuxudong.rncharts.charts;
 
 import android.graphics.Canvas;
 import android.graphics.Paint;
+import android.util.Log;
 
 import com.github.mikephil.charting.animation.ChartAnimator;
 import com.github.mikephil.charting.data.Entry;
@@ -20,6 +21,10 @@ import com.github.mikephil.charting.utils.ViewPortHandler;
  * render inside the chart's extra offset region.
  */
 public class NoClipLineChartRenderer extends LineChartRenderer {
+
+    private static final String TAG = "RNCharts-LineLabel";
+    // Verbose logging only around the top-edge scenario to keep noise low
+    private static final float TOP_EPS_DP = 2f;
 
     public NoClipLineChartRenderer(LineDataProvider chart, ChartAnimator animator, ViewPortHandler viewPortHandler) {
         super(chart, animator, viewPortHandler);
@@ -82,12 +87,16 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
                 float yAbove = (float) pt.y - valOffset - textHeight; // draw above the point normally
                 float y;
 
-                if (yAbove < mViewPortHandler.contentTop()) {
+                float contentTop = mViewPortHandler.contentTop();
+                float contentBottom = mViewPortHandler.contentBottom();
+                boolean drawBelow = yAbove < contentTop; // current policy
+
+                if (drawBelow) {
                     // not enough room above → draw below instead
                     y = (float) pt.y + valOffset + textHeight;
-                    if (y > mViewPortHandler.contentBottom()) {
+                    if (y > contentBottom) {
                         // clamp to bottom inside content if still overflowing
-                        y = mViewPortHandler.contentBottom() - 2f;
+                        y = contentBottom - 2f;
                     }
                 } else {
                     y = yAbove;
@@ -97,6 +106,19 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
                 float half = textWidth / 2f;
                 if (x - half < mViewPortHandler.contentLeft()) x = mViewPortHandler.contentLeft() + half;
                 if (x + half > mViewPortHandler.contentRight()) x = mViewPortHandler.contentRight() - half;
+
+                // Debug logging for top-edge cases to diagnose missing labels
+                float topEpsPx = Utils.convertDpToPixel(TOP_EPS_DP);
+                float axisMax = (dataSet.getAxisDependency().isLeft() ?
+                        provider.getAxisLeft().getAxisMaximum() : provider.getAxisRight().getAxisMaximum());
+                boolean nearAxisMax = Math.abs(axisMax - e.getY()) <= 1e-4;
+                boolean nearTopEdge = (yAbove < contentTop + topEpsPx) || (float) pt.y <= contentTop + topEpsPx;
+                if (nearAxisMax || nearTopEdge) {
+                    Log.d(TAG, String.format(
+                            "i=%d j=%d x=%.2f yVal=%.2f ptY=%.2f yAbove=%.2f chosenY=%.2f cTop=%.2f cBot=%.2f valOffset=%d txtH=%.2f drawBelow=%s axisMax=%.2f phaseY=%.2f",
+                            i, j, e.getX(), e.getY(), pt.y, yAbove, y, contentTop, contentBottom, valOffset, textHeight, String.valueOf(drawBelow), axisMax, phaseY
+                    ));
+                }
 
                 drawValue(c, text, x, y, dataSet.getValueTextColor(j));
 
