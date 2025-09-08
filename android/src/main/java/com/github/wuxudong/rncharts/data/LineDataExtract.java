@@ -117,24 +117,9 @@ public class LineDataExtract extends DataExtract<LineData, Entry> {
                 entry = new Entry(x, (float) map.getDouble("y"), DrawableUtils.drawableFromUrl(bundle.getString("uri"), width, height));
 
             } else {
-                // y 원본을 먼저 가져옴
+                // y는 원본 값을 그대로 사용하고, 표시 자리수는 마커/포매터에서 처리한다.
                 double yRaw = map.getDouble("y");
-                float  yVal;
-
-                // decimalPlaces 키가 있으면 반올림, 없으면 그대로
-                if (map.hasKey("decimalPlaces") && !map.isNull("decimalPlaces")) {
-                    int dp = map.getInt("decimalPlaces");
-
-                    // JS toFixed와 동일하게 HALF_UP 반올림
-                    BigDecimal bd = BigDecimal.valueOf(yRaw)
-                            .setScale(dp, RoundingMode.HALF_UP);
-
-                    yVal = bd.floatValue();          // ★ 반올림 값
-                } else {
-                    yVal = (float) yRaw;             // ★ 원본 유지
-                }
-
-                // Entry 생성 (data 파라미터 필요하면 인자 생성자 사용)
+                float yVal = (float) yRaw;
                 entry = new Entry(x, yVal, ConversionUtil.toMap(map));
             }
         } else if (ReadableType.Number.equals(values.getType(index))) {
