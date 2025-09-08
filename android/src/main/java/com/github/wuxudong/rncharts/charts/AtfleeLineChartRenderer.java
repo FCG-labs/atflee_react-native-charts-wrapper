@@ -20,18 +20,27 @@ public class AtfleeLineChartRenderer extends LineChartRenderer {
 
     @Override
     public void drawValue(Canvas c, String valueText, float x, float y, int color) {
-        // Clamp baseline so that the drawn text box (using ascent/descent) stays inside content rect
+        // Prefer drawing labels above the point for aesthetics, then clamp inside content rect.
         final float contentTop = mViewPortHandler.contentTop();
         final float contentBottom = mViewPortHandler.contentBottom();
 
         Paint.FontMetrics fm = mValuePaint.getFontMetrics();
+        float textHeight = fm.descent - fm.ascent;
+
+        // Upward bias: move baseline up by ~60% of text height so labels tend to appear above the point
+        y -= (textHeight * 0.6f);
+
         float textTop = y + fm.ascent;     // ascent is negative
         float textBottom = y + fm.descent; // descent is positive
 
+        // Top clamp
         if (textTop < contentTop) {
             float dy = contentTop - textTop;
             y += dy;
-        } else if (textBottom > contentBottom) {
+            textBottom += dy;
+        }
+        // Bottom clamp
+        if (textBottom > contentBottom) {
             float dy = textBottom - contentBottom;
             y -= dy;
         }
@@ -39,4 +48,3 @@ public class AtfleeLineChartRenderer extends LineChartRenderer {
         super.drawValue(c, valueText, x, y, color);
     }
 }
-
