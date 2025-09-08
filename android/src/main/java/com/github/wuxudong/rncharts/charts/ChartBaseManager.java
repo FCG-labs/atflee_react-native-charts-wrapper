@@ -784,6 +784,19 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
                 public boolean onPreDraw() {
                     chart.getViewTreeObserver().removeOnPreDrawListener(this);
                     chart.post(() -> {
+                        try {
+                            // Final guard just before first render: ensure axis max maps inside content
+                            if (chart instanceof com.github.mikephil.charting.charts.BarLineChartBase) {
+                                com.github.mikephil.charting.charts.BarLineChartBase bl = (com.github.mikephil.charting.charts.BarLineChartBase) chart;
+                                if (this instanceof Object) { /* no-op for clarity */ }
+                                // Delegate to manager if available
+                                try {
+                                    if (ChartBaseManager.this instanceof BarLineChartBaseManager) {
+                                        ((BarLineChartBaseManager) ChartBaseManager.this).addTopEpsilonPadding(bl);
+                                    }
+                                } catch (Throwable ignore) {}
+                            }
+                        } catch (Throwable ignore) {}
                         sendLoadCompleteEvent(chart);
                         loadCompleteMap.put(chart, true);
                     });

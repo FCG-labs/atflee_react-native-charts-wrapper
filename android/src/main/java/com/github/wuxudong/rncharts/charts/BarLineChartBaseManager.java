@@ -320,7 +320,20 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         if (BridgeUtils.validate(propMap, ReadableType.Number, "bottom")) {
             bottom = propMap.getDouble("bottom");
         }
-        com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.saveBaseOffsets(chart, (float) left, (float) top, (float) right, (float) bottom);
+
+        // Snap DP offsets to whole pixels to avoid half-pixel contentTop values
+        // that can trigger boundary clipping at specific dp values (e.g., 27/29).
+        final float density = chart.getResources().getDisplayMetrics().density;
+        float leftPx = Math.round((float) left * density);
+        float topPx = Math.round((float) top * density);
+        float rightPx = Math.round((float) right * density);
+        float bottomPx = Math.round((float) bottom * density);
+        float leftDp = leftPx / density;
+        float topDp = topPx / density;
+        float rightDp = rightPx / density;
+        float bottomDp = bottomPx / density;
+
+        com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.saveBaseOffsets(chart, leftDp, topDp, rightDp, bottomDp);
         com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.applyPadding(chart);
     }
 
@@ -500,10 +513,18 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         // Apply to both axes with a very small epsilon relative to axis range
         adjustAxisMaximumIfTight(left, globalYMax);
         adjustAxisMaximumIfTight(right, globalYMax);
+
+        // Pixel-anchored safeguard: if current axisMaximum maps to a pixel row
+        // above contentTop due to rounding (dp→px or matrix), extend the axis
+        // maximum by ~1px worth of value to bring it inside the content.
+        ensureAxisMaxInsideContent(chart, left, YAxis.AxisDependency.LEFT);
+        ensureAxisMaxInsideContent(chart, right, YAxis.AxisDependency.RIGHT);
     }
 
     private void adjustAxisMaximumIfTight(YAxis axis, float yMax) {
         if (axis == null) return;
+        // Respect explicit axisMaximum from JS. If user set a custom max, do not tweak it here.
+        if (axis.isAxisMaxCustom()) return;
         float max = axis.getAxisMaximum();
         float min = axis.getAxisMinimum();
         float range = Math.abs(max - min);
@@ -515,6 +536,30 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
 
         if (max - yMax < eps) {
             axis.setAxisMaximum(max + eps * 2f);
+        }
+    }
+
+    private void ensureAxisMaxInsideContent(BarLineChartBase chart, YAxis axis, YAxis.AxisDependency dep) {
+        if (axis == null || !axis.isEnabled()) return;
+
+        float axisMax = axis.getAxisMaximum();
+
+        // Transform axisMax to pixels and compare with contentTop
+        Transformer t = chart.getTransformer(dep);
+        com.github.mikephil.charting.utils.MPPointD p = t.getPixelForValues(0f, axisMax);
+        float topPx = chart.getViewPortHandler().contentTop();
+
+        if ((float) p.y < topPx) {
+            // Compute how much value corresponds to ~1px at the top edge
+            com.github.mikephil.charting.utils.MPPointD vTop = chart.getValuesByTouchPoint(chart.getViewPortHandler().contentLeft(), topPx, dep);
+            com.github.mikephil.charting.utils.MPPointD vTopMinus = chart.getValuesByTouchPoint(chart.getViewPortHandler().contentLeft(), topPx - 1f, dep);
+            float perPxVal = (float) Math.abs(vTopMinus.y - vTop.y);
+            if (perPxVal <= 0f) {
+                // Fallback: 0.01% of range
+                float range = Math.abs(axis.getAxisMaximum() - axis.getAxisMinimum());
+                perPxVal = Math.max(range * 0.0001f, 1e-4f);
+            }
+            axis.setAxisMaximum(axisMax + perPxVal * 1.1f);
         }
     }
 }
