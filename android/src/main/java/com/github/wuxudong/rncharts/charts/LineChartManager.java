@@ -31,6 +31,11 @@ public class LineChartManager extends BarLineChartBaseManager<LineChart, Entry> 
         );
         lineChart.setXAxisRenderer(renderer);
 
+        // 값(label) 클리핑 해제: 상단 경계에 닿는 값 라벨이 잘리지 않도록
+        // MPAndroidChart는 기본적으로 value 라벨을 contentRect 안으로 클립한다.
+        // iOS는 NoClipLineChartRenderer로 동일 효과를 주고 있어 Android도 맞춘다.
+        lineChart.setClipValuesToContent(false);
+
         // Enable marker dragging by default for consistency with iOS
         lineChart.setHighlightPerDragEnabled(true);
 
