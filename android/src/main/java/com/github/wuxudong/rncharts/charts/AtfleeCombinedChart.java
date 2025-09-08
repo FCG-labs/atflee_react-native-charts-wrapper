@@ -7,6 +7,7 @@ import android.view.MotionEvent;
 
 import com.github.mikephil.charting.charts.CombinedChart;
 import com.github.mikephil.charting.highlight.CombinedHighlighter;
+import com.github.mikephil.charting.highlight.Highlight;
 import com.github.wuxudong.rncharts.markers.RNAtfleeMarkerView;
 
 public class AtfleeCombinedChart extends CombinedChart {
@@ -48,6 +49,18 @@ public class AtfleeCombinedChart extends CombinedChart {
         getXAxis().setSpaceMax(0.75f);
 
         mRenderer = new AtfleeCombinedChartRenderer(this, mAnimator, mViewPortHandler);
+    }
+
+    @Override
+    protected Highlight getHighlightByTouchPoint(float x, float y) {
+        // Allow highlights even when the user taps slightly outside content
+        // due to large extraOffsets. Clamp into content rect before delegation.
+        float top = getViewPortHandler().contentTop();
+        float bottom = getViewPortHandler().contentBottom();
+        float clampedY = y;
+        if (y < top) clampedY = top + 1f;
+        else if (y > bottom) clampedY = bottom - 1f;
+        return super.getHighlightByTouchPoint(x, clampedY);
     }
 
     public void setRadius(float radius) {
