@@ -19,7 +19,7 @@ public class AtfleeLineChartRenderer extends LineChartRenderer {
     }
 
     @Override
-    protected void drawValue(Canvas c, String valueText, float x, float y, int color) {
+    public void drawValue(Canvas c, String valueText, float x, float y, int color) {
         // Clamp baseline so that the drawn text box (using ascent/descent) stays inside content rect
         final float contentTop = mViewPortHandler.contentTop();
         final float contentBottom = mViewPortHandler.contentBottom();
