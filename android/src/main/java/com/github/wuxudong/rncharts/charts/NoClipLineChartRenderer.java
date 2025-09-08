@@ -235,13 +235,19 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
 
                 float r = dataSet.getCircleRadius();
                 mRenderPaint.setStyle(Paint.Style.FILL);
-                mRenderPaint.setColor(dataSet.getCircleColor(j));
+                int circleColorCount = dataSet.getCircleColorCount();
+                int circleIdx = circleColorCount > 0 ? (j % circleColorCount) : 0;
+                int circleColor = circleColorCount > 0 ? dataSet.getCircleColor(circleIdx) : dataSet.getColor();
+                mRenderPaint.setColor(circleColor);
                 c.drawCircle(x, y, r, mRenderPaint);
 
                 if (dataSet.isDrawCircleHoleEnabled() && dataSet.getCircleHoleRadius() > 0f) {
                     float hr = dataSet.getCircleHoleRadius();
-                    mRenderPaint.setColor(dataSet.getCircleHoleColor());
-                    c.drawCircle(x, y, hr, mRenderPaint);
+                    Integer hole = dataSet.getCircleHoleColor();
+                    if (hole != null) {
+                        mRenderPaint.setColor(hole);
+                        c.drawCircle(x, y, hr, mRenderPaint);
+                    }
                 }
 
                 MPPointD.recycleInstance(pt);
