@@ -2,6 +2,7 @@ package com.github.wuxudong.rncharts.charts;
 
 
 import com.facebook.react.uimanager.ThemedReactContext;
+import android.util.Log;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
@@ -33,6 +34,7 @@ public class LineChartManager extends BarLineChartBaseManager<LineChart, Entry> 
 
         // 값 라벨 보존을 위한 커스텀 라인 렌더러 (상단 경계에서 사라지지 않게)
         lineChart.setRenderer(new NoClipLineChartRenderer(lineChart, lineChart.getAnimator(), lineChart.getViewPortHandler()));
+        Log.i("RNCharts-LineLabel", "NoClipLineChartRenderer installed");
 
         // 값(label) 클리핑 해제: 상단 경계에 닿는 값 라벨이 잘리지 않도록
         lineChart.setClipValuesToContent(false);

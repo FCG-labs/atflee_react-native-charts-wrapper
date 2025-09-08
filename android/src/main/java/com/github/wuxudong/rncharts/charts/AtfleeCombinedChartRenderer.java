@@ -43,7 +43,8 @@ public class AtfleeCombinedChartRenderer extends CombinedChartRenderer {
                     break;
                 case LINE:
                     if (chart.getLineData() != null)
-                        mRenderers.add(new LineChartRenderer(chart, mAnimator, mViewPortHandler));
+                        // Use no-clip renderer so value labels near top edge remain visible
+                        mRenderers.add(new NoClipLineChartRenderer(chart, mAnimator, mViewPortHandler));
                     break;
                 case CANDLE:
                     if (chart.getCandleData() != null)

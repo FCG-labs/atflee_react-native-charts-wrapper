@@ -12,6 +12,7 @@ import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.github.mikephil.charting.renderer.LineChartRenderer;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.charts.BarLineChartBase;
 import com.github.mikephil.charting.utils.MPPointD;
 import com.github.mikephil.charting.utils.Utils;
 import com.github.mikephil.charting.utils.ViewPortHandler;
@@ -39,13 +40,18 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
         LineData lineData = provider.getLineData();
         if (lineData == null) return;
 
-        if (!isDrawingValuesAllowed(provider)) return;
+        boolean allowed = isDrawingValuesAllowed(provider);
+        if (!allowed) {
+            Log.i(TAG, "drawValues skipped: not allowed for current zoom/entryCount");
+            return;
+        }
 
         final float phaseY = mAnimator.getPhaseY();
 
         final float lowestVisibleX = provider.getLowestVisibleX();
         final float highestVisibleX = provider.getHighestVisibleX();
 
+        Log.i(TAG, String.format("drawValues begin: sets=%d phaseY=%.2f visX=[%.2f..%.2f]", lineData.getDataSetCount(), phaseY, lowestVisibleX, highestVisibleX));
         for (int i = 0; i < lineData.getDataSetCount(); i++) {
             ILineDataSet dataSet = lineData.getDataSetByIndex(i);
             if (dataSet == null || !dataSet.isVisible() || !dataSet.isDrawValuesEnabled()) continue;
@@ -112,7 +118,12 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
                 // Debug logging for top-edge cases to diagnose missing labels
                 float topEpsPx = Utils.convertDpToPixel(TOP_EPS_DP);
                 float axisMax = Float.NaN;
-                if (provider instanceof LineChart) {
+                if (provider instanceof BarLineChartBase) {
+                    BarLineChartBase<?> bl = (BarLineChartBase<?>) provider;
+                    axisMax = (dataSet.getAxisDependency() == YAxis.AxisDependency.LEFT)
+                            ? bl.getAxisLeft().getAxisMaximum()
+                            : bl.getAxisRight().getAxisMaximum();
+                } else if (provider instanceof LineChart) {
                     LineChart lc = (LineChart) provider;
                     axisMax = (dataSet.getAxisDependency() == YAxis.AxisDependency.LEFT)
                             ? lc.getAxisLeft().getAxisMaximum()

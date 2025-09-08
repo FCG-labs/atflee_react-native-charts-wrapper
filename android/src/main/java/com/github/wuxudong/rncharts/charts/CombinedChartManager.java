@@ -47,6 +47,9 @@ public class CombinedChartManager extends BarLineChartBaseManager<CombinedChart,
 //         }
         // Enable marker dragging by default for consistency with iOS
         combinedChart.setHighlightPerDragEnabled(true);
+        // Ensure value labels can render into extra top offset area
+        combinedChart.setClipValuesToContent(false);
+        android.util.Log.i("RNCharts-LineLabel", "NoClipLineChartRenderer enabled for CombinedChart");
         return combinedChart;
     }
 
