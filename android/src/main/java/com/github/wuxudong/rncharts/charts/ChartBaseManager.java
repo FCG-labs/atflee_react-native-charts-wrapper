@@ -453,6 +453,7 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
         if (BridgeUtils.validate(propMap, ReadableType.Boolean, "fixedOnTop")) {
             marker.setFixedOnTop(propMap.getBoolean("fixedOnTop"));
         }
+        // keep marker visible after click by default; no auto-hide prop
 
         if (BridgeUtils.validate(propMap, ReadableType.String, "textAlign")) {
 

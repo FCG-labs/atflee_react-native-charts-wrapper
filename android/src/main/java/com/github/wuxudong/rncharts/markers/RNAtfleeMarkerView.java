@@ -294,10 +294,9 @@ public class RNAtfleeMarkerView extends MarkerView {
         Log.d(TAG, "Sending event topMarkerClick for entry x=" + lastEntry.getX() + ", y=" + lastEntry.getY());
         reactContext.getJSModule(RCTEventEmitter.class)
                 .receiveEvent(chart.getId(), "topMarkerClick", event);
-        // Suppress next clear-select emission from chart and then clear state
+        // Auto-hide after click and suppress the next clear-select emission
         RNOnChartValueSelectedListener.suppressNextClear(chart);
-        Log.d(TAG, "suppressNextClear set; resetting state and clearing highlight");
-        // Inform JS about the marker click, then clear state to hide the marker
+        try { Log.d(TAG, "marker click: auto-hide -> clearing highlight"); } catch (Throwable ignore) {}
         resetState();
     }
 
@@ -499,5 +498,6 @@ public class RNAtfleeMarkerView extends MarkerView {
     public void setFixedOnTop(boolean fixed) {
         this.fixedOnTop = fixed;
     }
+
 
 }
