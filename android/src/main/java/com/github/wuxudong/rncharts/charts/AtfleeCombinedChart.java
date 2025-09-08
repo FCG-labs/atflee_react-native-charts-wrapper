@@ -99,6 +99,26 @@ public class AtfleeCombinedChart extends CombinedChart {
                     break;
             }
         }
+        // Clamp touch Y into content rect so taps in extra top/bottom offsets still
+        // participate in highlight detection. This avoids failing to highlight
+        // points near the top when extraOffsets.top is large.
+        try {
+            float x = ev.getX();
+            float y = ev.getY();
+            float top = getViewPortHandler().contentTop();
+            float bottom = getViewPortHandler().contentBottom();
+            float clampedY = y;
+            if (y < top) clampedY = top + 1f;
+            else if (y > bottom) clampedY = bottom - 1f;
+
+            if (clampedY != y) {
+                MotionEvent adjusted = MotionEvent.obtain(ev);
+                adjusted.setLocation(x, clampedY);
+                boolean handled = super.dispatchTouchEvent(adjusted);
+                adjusted.recycle();
+                return handled;
+            }
+        } catch (Throwable ignore) {}
 
         return super.dispatchTouchEvent(ev);
     }
