@@ -132,13 +132,15 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
                 boolean nearAxisMax = Math.abs(axisMax - e.getY()) <= 1e-4;
                 boolean nearTopEdge = (yAbove < contentTop + topEpsPx) || (float) pt.y <= contentTop + topEpsPx;
                 if (nearAxisMax || nearTopEdge) {
+                    int color = dataSet.getValueTextColor(j);
                     Log.d(TAG, String.format(
-                            "i=%d j=%d x=%.2f yVal=%.2f ptY=%.2f yAbove=%.2f chosenY=%.2f cTop=%.2f cBot=%.2f valOffset=%d txtH=%.2f drawBelow=%s axisMax=%.2f phaseY=%.2f",
-                            i, j, e.getX(), e.getY(), pt.y, yAbove, y, contentTop, contentBottom, valOffset, textHeight, String.valueOf(drawBelow), axisMax, phaseY
+                            "i=%d j=%d x=%.2f yVal=%.2f ptY=%.2f yAbove=%.2f chosenY=%.2f cTop=%.2f cBot=%.2f valOffset=%d txtH=%.2f drawBelow=%s axisMax=%.2f phaseY=%.2f text='%s' color=#%08X",
+                            i, j, e.getX(), e.getY(), pt.y, yAbove, y, contentTop, contentBottom, valOffset, textHeight, String.valueOf(drawBelow), axisMax, phaseY, text, color
                     ));
                 }
 
-                drawValue(c, text, x, y, dataSet.getValueTextColor(j));
+                int color = dataSet.getValueTextColor(j);
+                drawValue(c, text, x, y, color);
 
                 MPPointD.recycleInstance(pt);
             }
