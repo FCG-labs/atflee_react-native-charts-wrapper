@@ -4,10 +4,9 @@ import android.graphics.Canvas;
 import android.graphics.Paint;
 
 import com.github.mikephil.charting.animation.ChartAnimator;
-import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
-import com.github.mikephil.charting.interfaces.dataprovider.LineChartDataProvider;
+import com.github.mikephil.charting.interfaces.dataprovider.LineDataProvider;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.github.mikephil.charting.renderer.LineChartRenderer;
 import com.github.mikephil.charting.utils.MPPointD;
@@ -22,13 +21,13 @@ import com.github.mikephil.charting.utils.ViewPortHandler;
  */
 public class NoClipLineChartRenderer extends LineChartRenderer {
 
-    public NoClipLineChartRenderer(LineChartDataProvider chart, ChartAnimator animator, ViewPortHandler viewPortHandler) {
+    public NoClipLineChartRenderer(LineDataProvider chart, ChartAnimator animator, ViewPortHandler viewPortHandler) {
         super(chart, animator, viewPortHandler);
     }
 
     @Override
     public void drawValues(Canvas c) {
-        LineChartDataProvider provider = mChart;
+        LineDataProvider provider = mChart;
         if (provider == null) return;
         LineData lineData = provider.getLineData();
         if (lineData == null) return;
@@ -106,4 +105,3 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
         }
     }
 }
-
