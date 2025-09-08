@@ -311,7 +311,7 @@ public class RNAtfleeMarkerView extends MarkerView {
         lastTopInChart = Float.NaN;
         lastMeasuredWidth = 0;
         lastMeasuredHeight = 0;
-        removeOverlayButton();
+        shrinkOverlay();
     }
 
     /**
@@ -329,6 +329,31 @@ public class RNAtfleeMarkerView extends MarkerView {
             }
             overlayButton = null;
         }
+    }
+
+    /**
+     * Shrink overlay to 1x1 px and park it at chart top-left so it
+     * no longer intercepts input, without removing the view.
+     */
+    private void shrinkOverlay() {
+        if (overlayButton == null) return;
+        try {
+            ViewGroup.LayoutParams lp = overlayButton.getLayoutParams();
+            if (lp == null) lp = new ViewGroup.LayoutParams(1, 1);
+            lp.width = 1;
+            lp.height = 1;
+            overlayButton.setLayoutParams(lp);
+            Chart chart = getChartView();
+            float x = 0f, y = 0f;
+            if (chart != null) {
+                x = chart.getLeft();
+                y = chart.getTop();
+            }
+            overlayButton.setX(x);
+            overlayButton.setY(y);
+            overlayButton.setVisibility(View.VISIBLE);
+            overlayButton.invalidate();
+        } catch (Throwable ignore) {}
     }
 
     /**
@@ -485,7 +510,8 @@ public class RNAtfleeMarkerView extends MarkerView {
             chart.invalidate();
         }
 
-        removeOverlayButton();
+        // Keep overlay but shrink it so it no longer intercepts input
+        shrinkOverlay();
     }
 
     public void setArrowHidden(boolean hidden) {
