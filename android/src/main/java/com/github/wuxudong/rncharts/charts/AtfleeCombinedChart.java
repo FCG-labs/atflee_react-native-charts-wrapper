@@ -88,6 +88,8 @@ public class AtfleeCombinedChart extends CombinedChart {
                         markerTouchActive = false;
                         boolean inside = marker.isPointInside(x, y, pad);
                         try { Log.d(TAG, "chart intercept UP insideMarker=" + inside + " at (" + x + "," + y + ")"); } catch (Throwable ignore) {}
+                        // Re-allow parent intercepts after finishing marker interaction
+                        try { if (getParent() != null) getParent().requestDisallowInterceptTouchEvent(false); } catch (Throwable ignore) {}
                         if (inside) {
                             marker.dispatchClick();
                         }
@@ -97,6 +99,7 @@ public class AtfleeCombinedChart extends CombinedChart {
                 case MotionEvent.ACTION_CANCEL:
                     if (markerTouchActive) {
                         markerTouchActive = false;
+                        try { if (getParent() != null) getParent().requestDisallowInterceptTouchEvent(false); } catch (Throwable ignore) {}
                         return true;
                     }
                     break;
