@@ -3,6 +3,8 @@ package com.github.wuxudong.rncharts.charts;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.util.Log;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.github.mikephil.charting.animation.ChartAnimator;
 import com.github.mikephil.charting.data.Entry;
@@ -29,6 +31,12 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
     // Verbose logging only around the top-edge scenario to keep noise low
     private static final float TOP_EPS_DP = 2f;
 
+    private static class PendingLabel {
+        final String text; final float x; final float y; final int color;
+        PendingLabel(String t, float x, float y, int c){ this.text=t; this.x=x; this.y=y; this.color=c; }
+    }
+    private final List<PendingLabel> pendingTopLabels = new ArrayList<>();
+
     public NoClipLineChartRenderer(LineDataProvider chart, ChartAnimator animator, ViewPortHandler viewPortHandler) {
         super(chart, animator, viewPortHandler);
     }
@@ -51,6 +59,7 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
         final float lowestVisibleX = provider.getLowestVisibleX();
         final float highestVisibleX = provider.getHighestVisibleX();
 
+        pendingTopLabels.clear();
         Log.i(TAG, String.format("drawValues begin: sets=%d phaseY=%.2f visX=[%.2f..%.2f]", lineData.getDataSetCount(), phaseY, lowestVisibleX, highestVisibleX));
         for (int i = 0; i < lineData.getDataSetCount(); i++) {
             ILineDataSet dataSet = lineData.getDataSetByIndex(i);
@@ -137,6 +146,8 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
                             "i=%d j=%d x=%.2f yVal=%.2f ptY=%.2f yAbove=%.2f chosenY=%.2f cTop=%.2f cBot=%.2f valOffset=%d txtH=%.2f drawBelow=%s axisMax=%.2f phaseY=%.2f text='%s' color=#%08X",
                             i, j, e.getX(), e.getY(), pt.y, yAbove, y, contentTop, contentBottom, valOffset, textHeight, String.valueOf(drawBelow), axisMax, phaseY, text, color
                     ));
+                    // save for redraw on top in drawExtras
+                    pendingTopLabels.add(new PendingLabel(text, x, y, color));
                 }
 
                 int color = dataSet.getValueTextColor(j);
@@ -145,5 +156,23 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
                 MPPointD.recycleInstance(pt);
             }
         }
+    }
+
+    @Override
+    public void drawExtras(Canvas c) {
+        super.drawExtras(c);
+        if (pendingTopLabels.isEmpty()) return;
+        // Re-draw near-top labels on top of extras for guaranteed visibility
+        for (PendingLabel pl : pendingTopLabels) {
+            // Optional outline for readability
+            Paint p = mValuePaint;
+            p.setStyle(Paint.Style.FILL_AND_STROKE);
+            p.setStrokeWidth(3f);
+            p.setColor(0xFF000000);
+            drawValue(c, pl.text, pl.x, pl.y, 0xFF000000);
+            p.setStrokeWidth(0f);
+            drawValue(c, pl.text, pl.x, pl.y, pl.color);
+        }
+        pendingTopLabels.clear();
     }
 }
