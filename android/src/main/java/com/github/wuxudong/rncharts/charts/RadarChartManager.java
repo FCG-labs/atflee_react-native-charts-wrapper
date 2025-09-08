@@ -27,6 +27,13 @@ public class RadarChartManager extends YAxisChartBase<RadarChart, RadarEntry> {
         RadarChart radarChart = new RadarChart(reactContext);
         radarChart.setOnChartValueSelectedListener(new RNOnChartValueSelectedListener(radarChart));
         radarChart.setOnChartGestureListener(new RNOnChartGestureListener(radarChart));
+        // Clip dataset drawing to the circular content area to prevent any
+        // overshoot outside the web caused by rounding or stroke width.
+        radarChart.setRenderer(new ClippedRadarChartRenderer(
+                radarChart,
+                radarChart.getAnimator(),
+                radarChart.getViewPortHandler()
+        ));
         return radarChart;
     }
 
