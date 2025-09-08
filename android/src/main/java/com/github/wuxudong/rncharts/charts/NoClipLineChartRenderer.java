@@ -32,6 +32,9 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
     private static final String TAG = "RNCharts-LineLabel";
     // Verbose logging only around the top-edge scenario to keep noise low
     private static final float TOP_EPS_DP = 2f;
+    // Slightly tighten vertical padding when drawing label ABOVE the circle
+    // (Android felt a bit too far compared to desired UI)
+    private static final float LABEL_OFFSET_SCALE_ABOVE = 0.85f; // 85% of previous spacing
 
     private static class PendingLabel {
         final String text; final float x; final float y; final int color;
@@ -103,7 +106,8 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
                 float textHeight = fm.descent - fm.ascent;
 
                 float x = (float) pt.x;
-                float yAbove = (float) pt.y - valOffset - textHeight; // draw above the point normally
+                // draw above the point with slightly reduced gap
+                float yAbove = (float) pt.y - (valOffset * LABEL_OFFSET_SCALE_ABOVE) - textHeight;
                 float y;
 
                 float contentTop = mViewPortHandler.contentTop();
