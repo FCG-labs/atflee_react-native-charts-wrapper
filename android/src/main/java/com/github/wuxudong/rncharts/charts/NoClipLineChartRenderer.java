@@ -33,9 +33,9 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
     private static final String TAG = "RNCharts-LineLabel";
     // Verbose logging only around the top-edge scenario to keep noise low
     private static final float TOP_EPS_DP = 2f;
-    // Slightly tighten vertical padding when drawing label ABOVE the circle
-    // (Android felt a bit too far compared to desired UI)
-    private static final float LABEL_OFFSET_SCALE_ABOVE = 0.25f; // 25% of previous spacing
+    // Extra vertical gap above the point when drawing label ABOVE.
+    // Default 0f: rely only on font metrics (descent) for snug placement.
+    private static final float LABEL_OFFSET_SCALE_ABOVE = 0f;
 
     private static class PendingLabel {
         final String text; final float x; final float y; final int color;
@@ -76,9 +76,9 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
             applyValueTextStyle(dataSet);
 
             final float circleRadius = dataSet.getCircleRadius();
-            int valOffset = (int) (circleRadius * 1.75f);
+            float valOffset = (circleRadius * 1.75f);
             if (!dataSet.isDrawCirclesEnabled()) {
-                valOffset = valOffset / 2;
+                valOffset = valOffset / 2f;
             }
 
             // Respect X animation phase so labels appear in sync with the line
@@ -110,8 +110,8 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
                 float textHeight = fm.descent - fm.ascent;
 
                 float x = (float) pt.x;
-                // Always draw label ABOVE the point with slightly reduced gap
-                float yAbove = (float) pt.y - (valOffset * LABEL_OFFSET_SCALE_ABOVE) - textHeight;
+                // Always draw label ABOVE the point. Use baseline so text hugs the point.
+                float yAbove = (float) pt.y - (valOffset * LABEL_OFFSET_SCALE_ABOVE) - fm.descent;
                 float y = yAbove;
 
                 float contentTop = mViewPortHandler.contentTop();
@@ -142,7 +142,7 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
                 if (nearAxisMax || nearTopEdge) {
                     int color = dataSet.getValueTextColor(j);
                     Log.d(TAG, String.format(
-                            "i=%d j=%d x=%.2f yVal=%.2f ptY=%.2f yAbove=%.2f chosenY=%.2f cTop=%.2f cBot=%.2f valOffset=%d txtH=%.2f axisMax=%.2f phaseY=%.2f text='%s' color=#%08X",
+                            "i=%d j=%d x=%.2f yVal=%.2f ptY=%.2f yAbove=%.2f chosenY=%.2f cTop=%.2f cBot=%.2f valOffset=%.2f txtH=%.2f axisMax=%.2f phaseY=%.2f text='%s' color=#%08X",
                             i, j, e.getX(), e.getY(), pt.y, yAbove, y, contentTop, contentBottom, valOffset, textHeight, axisMax, phaseY, text, color
                     ));
                     // save for redraw on top in drawExtras
