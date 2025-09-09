@@ -14,6 +14,7 @@ import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import com.github.mikephil.charting.renderer.LineChartRenderer;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.charts.CombinedChart;
 import com.github.mikephil.charting.charts.BarLineChartBase;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.interfaces.datasets.ILineScatterCandleRadarDataSet;
@@ -60,6 +61,7 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
         }
 
         final float phaseY = mAnimator.getPhaseY();
+        final float phaseX = mAnimator.getPhaseX();
 
         final float lowestVisibleX = provider.getLowestVisibleX();
         final float highestVisibleX = provider.getHighestVisibleX();
@@ -79,7 +81,9 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
                 valOffset = valOffset / 2;
             }
 
-            for (int j = 0; j < dataSet.getEntryCount(); j++) {
+            // Respect X animation phase so labels appear in sync with the line
+            final int entryCount = Math.min((int) Math.ceil(dataSet.getEntryCount() * phaseX), dataSet.getEntryCount());
+            for (int j = 0; j < entryCount; j++) {
                 Entry e = dataSet.getEntryForIndex(j);
                 if (e == null) continue;
 
@@ -260,6 +264,13 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
 
                 MPPointD.recycleInstance(pt);
             }
+        }
+
+        // Draw any deferred top-edge labels now when used as a standalone LineChart.
+        // In CombinedChart, AtfleeCombinedChartRenderer calls this after all renderers
+        // to ensure correct z-order, so we skip here to avoid drawing too early.
+        if (!(provider instanceof CombinedChart)) {
+            drawTopLabelsOverlay(c);
         }
     }
 }
