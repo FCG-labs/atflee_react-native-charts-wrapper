@@ -35,7 +35,7 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
     private static final float TOP_EPS_DP = 2f;
     // Slightly tighten vertical padding when drawing label ABOVE the circle
     // (Android felt a bit too far compared to desired UI)
-    private static final float LABEL_OFFSET_SCALE_ABOVE = 0.85f; // 85% of previous spacing
+    private static final float LABEL_OFFSET_SCALE_ABOVE = 0.25f; // 25% of previous spacing
 
     private static class PendingLabel {
         final String text; final float x; final float y; final int color;
@@ -110,24 +110,12 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
                 float textHeight = fm.descent - fm.ascent;
 
                 float x = (float) pt.x;
-                // draw above the point with slightly reduced gap
+                // Always draw label ABOVE the point with slightly reduced gap
                 float yAbove = (float) pt.y - (valOffset * LABEL_OFFSET_SCALE_ABOVE) - textHeight;
-                float y;
+                float y = yAbove;
 
                 float contentTop = mViewPortHandler.contentTop();
                 float contentBottom = mViewPortHandler.contentBottom();
-                boolean drawBelow = yAbove < contentTop; // current policy
-
-                if (drawBelow) {
-                    // not enough room above → draw below instead
-                    y = (float) pt.y + valOffset + textHeight;
-                    if (y > contentBottom) {
-                        // clamp to bottom inside content if still overflowing
-                        y = contentBottom - 2f;
-                    }
-                } else {
-                    y = yAbove;
-                }
 
                 // keep text horizontally within content rect to avoid clipping by view bounds
                 float half = textWidth / 2f;
@@ -154,8 +142,8 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
                 if (nearAxisMax || nearTopEdge) {
                     int color = dataSet.getValueTextColor(j);
                     Log.d(TAG, String.format(
-                            "i=%d j=%d x=%.2f yVal=%.2f ptY=%.2f yAbove=%.2f chosenY=%.2f cTop=%.2f cBot=%.2f valOffset=%d txtH=%.2f drawBelow=%s axisMax=%.2f phaseY=%.2f text='%s' color=#%08X",
-                            i, j, e.getX(), e.getY(), pt.y, yAbove, y, contentTop, contentBottom, valOffset, textHeight, String.valueOf(drawBelow), axisMax, phaseY, text, color
+                            "i=%d j=%d x=%.2f yVal=%.2f ptY=%.2f yAbove=%.2f chosenY=%.2f cTop=%.2f cBot=%.2f valOffset=%d txtH=%.2f axisMax=%.2f phaseY=%.2f text='%s' color=#%08X",
+                            i, j, e.getX(), e.getY(), pt.y, yAbove, y, contentTop, contentBottom, valOffset, textHeight, axisMax, phaseY, text, color
                     ));
                     // save for redraw on top in drawExtras
                     pendingTopLabels.add(new PendingLabel(text, x, y, color));
