@@ -820,7 +820,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         guard edgeLabelEnabled, let barLine = chart as? BarLineChartViewBase else { return }
         
         // 1. 상한 계산
-        let axisMaxIdx = Int(barLine.xAxis.axisMaximum) - 1          // ← 핵심
+        let axisMaxIdx = Int(floor(barLine.chartXMax))
         let formatter  = barLine.xAxis.valueFormatter
         let labelMax   = (formatter as? IndexAxisValueFormatter)
                          .map { $0.values.count - 1 } ?? axisMaxIdx
@@ -903,7 +903,9 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 
                 dict["left"] = leftValue
                 dict["bottom"] = leftBottom.y
-                dict["right"] = rightValue
+                let rightRounded = rightValue.rounded()
+                dict["right"] = rightRounded // 정확히.
+                // dict["right"] = rightValue
                 dict["top"] = rightTop.y
 
                 updateEdgeLabels(left: leftValue, right: rightValue)
@@ -962,7 +964,5 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         if self.group != nil && self.identifier != nil && chart is BarLineChartViewBase {
             ChartGroupHolder.addChart(group: self.group!, identifier: self.identifier!, chart: chart as! BarLineChartViewBase, syncX: syncX, syncY: syncY);
         }
-
     }
-
 }
