@@ -35,7 +35,7 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
     private static final float TOP_EPS_DP = 2f;
     // Extra vertical gap above the point when drawing label ABOVE.
     // Default 0f: rely only on font metrics (descent) for snug placement.
-    private static final float LABEL_OFFSET_SCALE_ABOVE = 0.2f;
+    private static final float LABEL_OFFSET_SCALE_ABOVE = 0.5f;
 
     private static class PendingLabel {
         final String text; final float x; final float y; final int color;
