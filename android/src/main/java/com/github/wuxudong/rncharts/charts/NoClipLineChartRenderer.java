@@ -5,6 +5,12 @@ import android.graphics.Paint;
 import android.util.Log;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import android.os.SystemClock;
+import android.view.View;
 
 import com.github.mikephil.charting.animation.ChartAnimator;
 import com.github.mikephil.charting.data.Entry;
@@ -38,10 +44,63 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
     private static final float LABEL_OFFSET_SCALE_ABOVE = 0.5f;
 
     private static class PendingLabel {
-        final String text; final float x; final float y; final int color;
-        PendingLabel(String t, float x, float y, int c){ this.text=t; this.x=x; this.y=y; this.color=c; }
+        final String text; final float x; final float y; final int color; final long key;
+        PendingLabel(String t, float x, float y, int c, long k){ this.text=t; this.x=x; this.y=y; this.color=c; this.key=k; }
     }
     private final List<PendingLabel> pendingTopLabels = new ArrayList<>();
+
+    // Fade-in for labels when they first become visible
+    private static final long LABEL_FADE_MS = 180L; // duration for ease-in
+    private final Map<Long, Long> appearTimeMs = new HashMap<>();
+    private final Set<Long> visibleKeysThisFrame = new HashSet<>();
+    private boolean fadeNeedsInvalidate = false;
+
+    private static long makeKey(int dataSetIndex, int entryIndex) {
+        return (((long) dataSetIndex) << 32) ^ (long) entryIndex;
+    }
+
+    private static float easeIn(float t) {
+        if (t <= 0f) return 0f; if (t >= 1f) return 1f;
+        return t * t; // quadratic ease-in
+    }
+
+    private int applyFadeToColor(int color, long key, long nowMs) {
+        visibleKeysThisFrame.add(key);
+        Long start = appearTimeMs.get(key);
+        if (start == null) {
+            start = nowMs;
+            appearTimeMs.put(key, start);
+        }
+        float t = Math.min(1f, (nowMs - start) / (float) LABEL_FADE_MS);
+        float k = easeIn(t);
+        if (k < 1f) fadeNeedsInvalidate = true;
+        int baseA = (color >>> 24) & 0xFF;
+        int r = (color >>> 16) & 0xFF;
+        int g = (color >>> 8) & 0xFF;
+        int b = (color) & 0xFF;
+        int a = Math.max(0, Math.min(255, Math.round(baseA * k)));
+        return (a << 24) | (r << 16) | (g << 8) | b;
+    }
+
+    private void cleanupFadeState() {
+        if (appearTimeMs.isEmpty()) return;
+        // Remove entries not seen this frame to prevent leaks while panning
+        if (!visibleKeysThisFrame.isEmpty()) {
+            appearTimeMs.keySet().retainAll(visibleKeysThisFrame);
+        } else {
+            appearTimeMs.clear();
+        }
+        visibleKeysThisFrame.clear();
+    }
+
+    private void requestAnotherFrameIfFading() {
+        if (!fadeNeedsInvalidate) return;
+        fadeNeedsInvalidate = false;
+        LineDataProvider provider = mChart;
+        if (provider instanceof View) {
+            ((View) provider).postInvalidateOnAnimation();
+        }
+    }
 
     public NoClipLineChartRenderer(LineDataProvider chart, ChartAnimator animator, ViewPortHandler viewPortHandler) {
         super(chart, animator, viewPortHandler);
@@ -53,6 +112,20 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
         if (provider == null) return;
         LineData lineData = provider.getLineData();
         if (lineData == null) return;
+
+        // Guard against first-frame draws before layout sets a valid content rect.
+        // When width/height are zero, transformers collapse many points to the same
+        // pixel, causing labels to pile up in one spot. Skip this frame instead.
+        float contentLeft = mViewPortHandler.contentLeft();
+        float contentRight = mViewPortHandler.contentRight();
+        float contentTop0 = mViewPortHandler.contentTop();
+        float contentBottom0 = mViewPortHandler.contentBottom();
+        float minDim = Utils.convertDpToPixel(2f);
+        if ((contentRight - contentLeft) < minDim || (contentBottom0 - contentTop0) < minDim) {
+            Log.d(TAG, "drawValues skipped: content rect not ready");
+            pendingTopLabels.clear();
+            return;
+        }
 
         boolean allowed = isDrawingValuesAllowed(provider);
         if (!allowed) {
@@ -68,6 +141,7 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
 
         pendingTopLabels.clear();
         Log.i(TAG, String.format("drawValues begin: sets=%d phaseY=%.2f visX=[%.2f..%.2f]", lineData.getDataSetCount(), phaseY, lowestVisibleX, highestVisibleX));
+        visibleKeysThisFrame.clear();
         for (int i = 0; i < lineData.getDataSetCount(); i++) {
             ILineDataSet dataSet = lineData.getDataSetByIndex(i);
             if (dataSet == null || !dataSet.isVisible() || !dataSet.isDrawValuesEnabled()) continue;
@@ -139,6 +213,7 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
                 boolean nearAxisMax = Math.abs(axisMax - e.getY()) <= 1e-4;
                 boolean nearTopEdge = (yAbove < contentTop + topEpsPx) || (float) pt.y <= contentTop + topEpsPx;
                 boolean deferDraw = false;
+                long key = makeKey(i, j);
                 if (nearAxisMax || nearTopEdge) {
                     int color = dataSet.getValueTextColor(j);
                     Log.d(TAG, String.format(
@@ -146,27 +221,33 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
                             i, j, e.getX(), e.getY(), pt.y, yAbove, y, contentTop, contentBottom, valOffset, textHeight, axisMax, phaseY, text, color
                     ));
                     // save for redraw on top in drawExtras
-                    pendingTopLabels.add(new PendingLabel(text, x, y, color));
+                    pendingTopLabels.add(new PendingLabel(text, x, y, color, key));
                     deferDraw = true; // avoid double drawing; draw later in overlay
                 }
 
                 if (!deferDraw) {
                     int color = dataSet.getValueTextColor(j);
-                    drawValue(c, text, x, y, color);
+                    int faded = applyFadeToColor(color, key, SystemClock.uptimeMillis());
+                    drawValue(c, text, x, y, faded);
                 }
 
                 MPPointD.recycleInstance(pt);
             }
         }
+        requestAnotherFrameIfFading();
     }
 
     /** Draw pending top-edge labels after all renderers have drawn, with no outline. */
     public void drawTopLabelsOverlay(Canvas c) {
         if (pendingTopLabels.isEmpty()) return;
+        long now = SystemClock.uptimeMillis();
         for (PendingLabel pl : pendingTopLabels) {
-            drawValue(c, pl.text, pl.x, pl.y, pl.color);
+            int faded = applyFadeToColor(pl.color, pl.key, now);
+            drawValue(c, pl.text, pl.x, pl.y, faded);
         }
         pendingTopLabels.clear();
+        cleanupFadeState();
+        requestAnotherFrameIfFading();
     }
 
     // Clamp highlight Y to content so markers are eligible to render
@@ -210,6 +291,17 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
         if (provider == null) return;
         LineData lineData = provider.getLineData();
         if (lineData == null) return;
+        
+        // Skip first-frame extras if content rect is not yet valid to avoid
+        // drawing circles at collapsed coordinates.
+        float contentLeft = mViewPortHandler.contentLeft();
+        float contentRight = mViewPortHandler.contentRight();
+        float contentTop = mViewPortHandler.contentTop();
+        float contentBottom = mViewPortHandler.contentBottom();
+        float minDim2 = Utils.convertDpToPixel(2f);
+        if ((contentRight - contentLeft) < minDim2 || (contentBottom - contentTop) < minDim2) {
+            return;
+        }
 
         final float phaseX = mAnimator.getPhaseX();
         final float phaseY = mAnimator.getPhaseY();
