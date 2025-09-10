@@ -828,7 +828,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
         // 2. 인덱스 보정
         let leftIdx  = max(Int(ceil(left)), 0)
-        let rightIdx = min(Int(floor(right)), safeMaxIdx)
+        // Use rounding for right edge to match viewport-emitted value
+        let rightIdx = min(Int(right.rounded()), safeMaxIdx)
 
         // 3. 라벨 표시
         leftEdgeLabel?.isHidden  = false
