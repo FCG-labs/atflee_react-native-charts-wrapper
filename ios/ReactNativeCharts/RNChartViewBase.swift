@@ -821,30 +821,53 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
         let axis = barLine.xAxis
         let formatter = axis.valueFormatter
-        let entries = axis.entries
 
-        // 1) 축의 실제 눈금(entries) 기준으로 좌/우 값을 선택
-        var leftVal = left
-        var rightVal = right
-        if !entries.isEmpty {
-            if let e = entries.first(where: { $0 >= left }) { leftVal = e } else { leftVal = entries.first! }
-            if let e = entries.last(where: { $0 <= right }) { rightVal = e } else { rightVal = entries.last! }
-        }
+        // If the axis uses index-based labels, compute integer indices; otherwise use continuous values
+        if let indexFormatter = formatter as? IndexAxisValueFormatter {
+            let axisMaxIdx = Int(floor(barLine.chartXMax))
+            let labelMax   = indexFormatter.values.count > 0 ? (indexFormatter.values.count - 1) : 0
+            let safeMaxIdx = min(axisMaxIdx, labelMax)
 
-        // 2) 라벨 표시 여부 결정
-        leftEdgeLabel?.isHidden = false
-        rightEdgeLabel?.isHidden = rightVal <= leftVal
+            let leftIdx  = max(Int(ceil(left)), 0)
+            let rightIdx = min(Int(right.rounded()), safeMaxIdx)
 
-        // 3) 텍스트 생성(포맷터 일관 적용)
-        if let v = formatter?.stringForValue(leftVal, axis: axis) {
-            leftEdgeLabel?.text = v
-            leftEdgeLabelHasNewline = v.contains("\n")
-        }
+            leftEdgeLabel?.isHidden  = false
+            rightEdgeLabel?.isHidden = rightIdx <= leftIdx
 
-        if !rightEdgeLabel!.isHidden,
-           let v = formatter?.stringForValue(rightVal, axis: axis) {
-            rightEdgeLabel?.text = v
-            rightEdgeLabelHasNewline = v.contains("\n")
+            if let v = formatter?.stringForValue(Double(leftIdx), axis: axis) {
+                leftEdgeLabel?.text = v
+                leftEdgeLabelHasNewline = v.contains("\n")
+            }
+
+            if !rightEdgeLabel!.isHidden,
+               let v = formatter?.stringForValue(Double(rightIdx), axis: axis) {
+                rightEdgeLabel?.text = v
+                rightEdgeLabelHasNewline = v.contains("\n")
+            }
+        } else {
+            // Continuous axis (e.g., date/time). Use rounded/ceil values and clamp to chart bounds
+            var minX = barLine.chartXMin
+            var maxX = barLine.chartXMax
+            // Defensive: axisMinimum/Maximum could be tighter than data bounds
+            minX = max(minX, axis.axisMinimum)
+            maxX = min(maxX, axis.axisMaximum)
+
+            var leftVal  = max(ceil(left), minX)
+            var rightVal = min(right.rounded(), maxX)
+
+            leftEdgeLabel?.isHidden  = false
+            rightEdgeLabel?.isHidden = rightVal <= leftVal
+
+            if let v = formatter?.stringForValue(leftVal, axis: axis) {
+                leftEdgeLabel?.text = v
+                leftEdgeLabelHasNewline = v.contains("\n")
+            }
+
+            if !rightEdgeLabel!.isHidden,
+               let v = formatter?.stringForValue(rightVal, axis: axis) {
+                rightEdgeLabel?.text = v
+                rightEdgeLabelHasNewline = v.contains("\n")
+            }
         }
 
         applyEdgeLabelStyle()
