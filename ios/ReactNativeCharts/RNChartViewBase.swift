@@ -75,6 +75,11 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
     private var hasSentLoadComplete = false
 
+    // Throttle 관련 프로퍼티
+    @objc var eventThrottle: Int = 100 // 기본값 100ms
+    private var lastTranslateEventTime: TimeInterval = 0
+    private var lastScaleEventTime: TimeInterval = 0
+
     override open func layoutSubviews() {
         super.layoutSubviews()
 
@@ -631,16 +636,32 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     }
     
     @objc public func chartScaled(_ chartView: ChartViewBase, scaleX: CoreGraphics.CGFloat, scaleY: CoreGraphics.CGFloat) {
-        sendEvent("chartScaled")
         updateValueVisibility(chartView)
+        
+        let now = Date().timeIntervalSince1970
+        let throttleSeconds = Double(eventThrottle) / 1000.0
+        
+        if eventThrottle == 0 || (now - lastScaleEventTime) >= throttleSeconds {
+            sendEvent("chartScaled")
+            lastScaleEventTime = now
+        }
+        
         chartView.subviews
             .filter { $0.tag == 999 }
             .forEach { $0.removeFromSuperview() }
     }
 
     @objc public func chartTranslated(_ chartView: ChartViewBase, dX: CoreGraphics.CGFloat, dY: CoreGraphics.CGFloat) {
-        sendEvent("chartTranslated")
         updateValueVisibility(chartView)
+        
+        let now = Date().timeIntervalSince1970
+        let throttleSeconds = Double(eventThrottle) / 1000.0
+        
+        if eventThrottle == 0 || (now - lastTranslateEventTime) >= throttleSeconds {
+            sendEvent("chartTranslated")
+            lastTranslateEventTime = now
+        }
+        
         chartView.subviews
             .filter { $0.tag == 999 }
             .forEach { $0.removeFromSuperview() }

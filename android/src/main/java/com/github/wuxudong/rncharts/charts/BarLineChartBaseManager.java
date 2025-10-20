@@ -284,6 +284,14 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.update(chart, chart.getLowestVisibleX(), chart.getHighestVisibleX());
     }
 
+    @ReactProp(name = "eventThrottle", defaultInt = 100)
+    public void setEventThrottle(BarLineChartBase chart, int throttleMs) {
+        OnChartGestureListener listener = chart.getOnChartGestureListener();
+        if (listener instanceof RNOnChartGestureListener) {
+            ((RNOnChartGestureListener) listener).setEventThrottle(throttleMs);
+        }
+    }
+
     // Note: Offset aren't updated until first touch event: https://github.com/PhilJay/MPAndroidChart/issues/892
     @ReactProp(name = "viewPortOffsets")
     public void setViewPortOffsets(BarLineChartBase chart, ReadableMap propMap) {

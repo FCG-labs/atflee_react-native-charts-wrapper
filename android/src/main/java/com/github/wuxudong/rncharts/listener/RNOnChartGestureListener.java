@@ -46,8 +46,17 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
 
     private String identifier = null;
 
+    // Throttle 관련 필드
+    private long eventThrottleMs = 100; // 기본값 100ms
+    private long lastTranslateEventTime = 0;
+    private long lastScaleEventTime = 0;
+
     public RNOnChartGestureListener(Chart chart) {
         this.mWeakChart = new WeakReference<>(chart);
+    }
+
+    public void setEventThrottle(int throttleMs) {
+        this.eventThrottleMs = Math.max(0, throttleMs);
     }
 
     public void setGroup(String group) {
@@ -114,13 +123,23 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
     @Override
     public void onChartScale(MotionEvent me, float scaleX, float scaleY) {
         adjustValueAndEdgeLabels();
-        sendEvent("chartScaled", me);
+        
+        long now = System.currentTimeMillis();
+        if (eventThrottleMs == 0 || (now - lastScaleEventTime) >= eventThrottleMs) {
+            sendEvent("chartScaled", me);
+            lastScaleEventTime = now;
+        }
     }
 
     @Override
     public void onChartTranslate(MotionEvent me, float dX, float dY) {
         adjustValueAndEdgeLabels();
-        sendEvent("chartTranslated", me);
+        
+        long now = System.currentTimeMillis();
+        if (eventThrottleMs == 0 || (now - lastTranslateEventTime) >= eventThrottleMs) {
+            sendEvent("chartTranslated", me);
+            lastTranslateEventTime = now;
+        }
     }
 
     private void adjustValueAndEdgeLabels() {
