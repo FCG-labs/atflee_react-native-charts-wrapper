@@ -839,31 +839,56 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
     private func updateEdgeLabels(left: Double, right: Double) {
         guard edgeLabelEnabled, let barLine = chart as? BarLineChartViewBase else { return }
-        
-        // 1. 상한 계산
-        let axisMaxIdx = Int(floor(barLine.chartXMax))
-        let formatter  = barLine.xAxis.valueFormatter
-        let labelMax   = (formatter as? IndexAxisValueFormatter)
-                         .map { $0.values.count - 1 } ?? axisMaxIdx
-        let safeMaxIdx = min(axisMaxIdx, labelMax)
 
-        // 2. 인덱스 보정
-        let leftIdx  = max(Int(ceil(left)), 0)
-        let rightIdx = min(Int(floor(right)), safeMaxIdx)
+        let axis = barLine.xAxis
+        let formatter = axis.valueFormatter
 
-        // 3. 라벨 표시
-        leftEdgeLabel?.isHidden  = false
-        rightEdgeLabel?.isHidden = rightIdx <= leftIdx
+        // If the axis uses index-based labels, compute integer indices; otherwise use continuous values
+        if let indexFormatter = formatter as? IndexAxisValueFormatter {
+            let axisMaxIdx = Int(floor(barLine.chartXMax))
+            let labelMax   = indexFormatter.values.count > 0 ? (indexFormatter.values.count - 1) : 0
+            let safeMaxIdx = min(axisMaxIdx, labelMax)
 
-        if let v = formatter?.stringForValue(Double(leftIdx), axis: barLine.xAxis) {
-            leftEdgeLabel?.text = v
-            leftEdgeLabelHasNewline = v.contains("\n")
-        }
+            let leftIdx  = max(Int(ceil(left)), 0)
+            let rightIdx = min(Int(right.rounded()), safeMaxIdx)
 
-        if !rightEdgeLabel!.isHidden,
-           let v = formatter?.stringForValue(Double(rightIdx), axis: barLine.xAxis) {
-            rightEdgeLabel?.text = v
-            rightEdgeLabelHasNewline = v.contains("\n")
+            leftEdgeLabel?.isHidden  = false
+            rightEdgeLabel?.isHidden = rightIdx <= leftIdx
+
+            if let v = formatter?.stringForValue(Double(leftIdx), axis: axis) {
+                leftEdgeLabel?.text = v
+                leftEdgeLabelHasNewline = v.contains("\n")
+            }
+
+            if !rightEdgeLabel!.isHidden,
+               let v = formatter?.stringForValue(Double(rightIdx), axis: axis) {
+                rightEdgeLabel?.text = v
+                rightEdgeLabelHasNewline = v.contains("\n")
+            }
+        } else {
+            // Continuous axis (e.g., date/time). Use rounded/ceil values and clamp to chart bounds
+            var minX = barLine.chartXMin
+            var maxX = barLine.chartXMax
+            // Defensive: axisMinimum/Maximum could be tighter than data bounds
+            minX = max(minX, axis.axisMinimum)
+            maxX = min(maxX, axis.axisMaximum)
+
+            var leftVal  = max(ceil(left), minX)
+            var rightVal = min(right.rounded(), maxX)
+
+            leftEdgeLabel?.isHidden  = false
+            rightEdgeLabel?.isHidden = rightVal <= leftVal
+
+            if let v = formatter?.stringForValue(leftVal, axis: axis) {
+                leftEdgeLabel?.text = v
+                leftEdgeLabelHasNewline = v.contains("\n")
+            }
+
+            if !rightEdgeLabel!.isHidden,
+               let v = formatter?.stringForValue(rightVal, axis: axis) {
+                rightEdgeLabel?.text = v
+                rightEdgeLabelHasNewline = v.contains("\n")
+            }
         }
 
         applyEdgeLabelStyle()
@@ -929,7 +954,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 // dict["right"] = rightValue
                 dict["top"] = rightTop.y
 
-                updateEdgeLabels(left: leftValue, right: rightValue)
+                // 🔧 버그 수정: 일관성을 위해 반올림된 값을 Edge Label에도 전달
+                updateEdgeLabels(left: leftValue, right: rightRounded)
 
                 if self.group != nil && self.identifier != nil {
                     ChartGroupHolder.sync(group: self.group!, identifier: self.identifier!, scaleX: barLineChart.scaleX, scaleY: barLineChart.scaleY, centerX: center.x, centerY: center.y, performImmediately: true)
