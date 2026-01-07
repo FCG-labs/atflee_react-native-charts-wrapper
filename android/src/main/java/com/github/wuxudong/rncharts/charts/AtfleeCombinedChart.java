@@ -13,6 +13,8 @@ import com.github.wuxudong.rncharts.markers.RNAtfleeMarkerView;
 public class AtfleeCombinedChart extends CombinedChart {
     private static final String TAG = "AtfleeMarkerDebug";
     private boolean markerTouchActive = false;
+    private com.github.wuxudong.rncharts.utils.NestedScrollingHelper mNestedScrollingHelper = new com.github.wuxudong.rncharts.utils.NestedScrollingHelper();
+
     public AtfleeCombinedChart(Context context) {
         super(context);
     }
@@ -63,6 +65,10 @@ public class AtfleeCombinedChart extends CombinedChart {
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
+        // Handle nested scrolling via helper
+        mNestedScrollingHelper.saveDownCoordinates(ev);
+        mNestedScrollingHelper.handleNestedScroll(ev, getParent(), markerTouchActive);
+
         if (getMarker() instanceof RNAtfleeMarkerView) {
             RNAtfleeMarkerView marker = (RNAtfleeMarkerView) getMarker();
             float x = ev.getX();

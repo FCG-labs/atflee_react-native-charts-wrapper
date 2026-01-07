@@ -12,6 +12,7 @@ import com.github.wuxudong.rncharts.markers.RNAtfleeMarkerView;
 public class AtfleeBarChart extends BarChart {
     private static final String TAG = "AtfleeMarkerDebug";
     private boolean markerTouchActive = false;
+    private com.github.wuxudong.rncharts.utils.NestedScrollingHelper mNestedScrollingHelper = new com.github.wuxudong.rncharts.utils.NestedScrollingHelper();
 
     public AtfleeBarChart(Context context) {
         super(context);
@@ -52,6 +53,10 @@ public class AtfleeBarChart extends BarChart {
 
     @Override
     public boolean dispatchTouchEvent(MotionEvent ev) {
+        // Handle nested scrolling via helper
+        mNestedScrollingHelper.saveDownCoordinates(ev);
+        mNestedScrollingHelper.handleNestedScroll(ev, getParent(), markerTouchActive);
+
         // Intercept touches inside marker bounds before MPChart processes them
         if (getMarker() instanceof RNAtfleeMarkerView) {
             RNAtfleeMarkerView marker = (RNAtfleeMarkerView) getMarker();
