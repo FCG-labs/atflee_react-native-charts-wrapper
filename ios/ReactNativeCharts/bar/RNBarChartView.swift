@@ -20,7 +20,7 @@ class RNBarChartView: RNBarChartViewBase {
     
     override init(frame: CoreGraphics.CGRect) {
 
-        self._chart = BarChartView(frame: frame)
+        self._chart = AtfleeBarChart(frame: frame)
         self._dataExtract = BarDataExtract()
 
         super.init(frame: frame)
