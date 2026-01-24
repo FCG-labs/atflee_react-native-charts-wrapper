@@ -18,6 +18,9 @@
 		9DAEF887284355CB0018D713 /* ChartGroupHolder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DAEF87A284355CB0018D713 /* ChartGroupHolder.swift */; };
     9DAEF888284355CB0018D713 /* DataExtract.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DAEF87C284355CB0018D713 /* DataExtract.swift */; };
     5e3eb9e16e574ba36238f309 /* RoundedBarChartRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = a01dbec23f35a99d2a6238f4 /* RoundedBarChartRenderer.swift */; };
+    A1B2C3D4E5F6789012345678 /* NestedScrollingHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6789012345679 /* NestedScrollingHelper.swift */; };
+    A2B3C4D5E6F789A012345678 /* AtfleeBarChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F6A789B012345679 /* AtfleeBarChart.swift */; };
+    A3B4C5D6E7F89AB012345678 /* AtfleeCombinedChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3C4D5E6F7A89BC012345679 /* AtfleeCombinedChart.swift */; };
     45c567f12aec0e4a89ea6d4f /* RoundedHorizontalBarChartRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27f14df8c8c128dcabd51239 /* RoundedHorizontalBarChartRenderer.swift */; };
     6c30d5b0a1bda1546382c138 /* RoundedCombinedChartRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607d0cd9a1bda1546382c12e /* RoundedCombinedChartRenderer.swift */; };
     9DAEF889284355CB0018D713 /* RNBarLineChartViewBase.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DAEF87E284355CB0018D713 /* RNBarLineChartViewBase.swift */; };
@@ -205,6 +208,9 @@
 		9DAEF87E284355CB0018D713 /* RNBarLineChartViewBase.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RNBarLineChartViewBase.swift; sourceTree = SOURCE_ROOT; };
     F309C1592B21AE3000BDF66B /* AtfleeMarker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AtfleeMarker.swift; sourceTree = SOURCE_ROOT; };
     a01dbec23f35a99d2a6238f4 /* RoundedBarChartRenderer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = bar/RoundedBarChartRenderer.swift; sourceTree = SOURCE_ROOT; };
+    B1C2D3E4F5A6789012345679 /* NestedScrollingHelper.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NestedScrollingHelper.swift; sourceTree = SOURCE_ROOT; };
+    B2C3D4E5F6A789B012345679 /* AtfleeBarChart.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = bar/AtfleeBarChart.swift; sourceTree = SOURCE_ROOT; };
+    B3C4D5E6F7A89BC012345679 /* AtfleeCombinedChart.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = combine/AtfleeCombinedChart.swift; sourceTree = SOURCE_ROOT; };
     27f14df8c8c128dcabd51239 /* RoundedHorizontalBarChartRenderer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = bar/RoundedHorizontalBarChartRenderer.swift; sourceTree = SOURCE_ROOT; };
     607d0cd9a1bda1546382c12e /* RoundedCombinedChartRenderer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = RoundedCombinedChartRenderer.swift; sourceTree = SOURCE_ROOT; };
     F35166142B32DEAE00BE781E /* DataApproximator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DataApproximator.swift; sourceTree = "<group>"; };
@@ -739,6 +745,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A1B2C3D4E5F6789012345678 /* NestedScrollingHelper.swift in Sources */,
+				A2B3C4D5E6F789A012345678 /* AtfleeBarChart.swift in Sources */,
+				A3B4C5D6E7F89AB012345678 /* AtfleeCombinedChart.swift in Sources */,
 				F35166D72B32DEAE00BE781E /* CombinedHighlighter.swift in Sources */,
 				9DAEF881284355CB0018D713 /* RNBarLineChartBaseManager.swift in Sources */,
 				9DAEF882284355CB0018D713 /* CircleMarker.swift in Sources */,
