@@ -5,8 +5,9 @@
 //  Created by Cascade on 2025/01/07.
 //
 //  Nested scrolling strategy:
-//  - Override gestureRecognizerShouldBegin with lenient vertical detection
-//  - DGCharts' shouldRecognizeSimultaneouslyWith allows ScrollView coordination
+//  - Always allow chart pan to begin (even vertical)
+//  - dragYEnabled=false prevents vertical chart movement
+//  - Allow simultaneous recognition so ScrollView can scroll
 //
 
 import UIKit
@@ -14,10 +15,6 @@ import DGCharts
 import SwiftyJSON
 
 class AtfleeCombinedChart: CombinedChartView {
-    
-    // Vertical scroll threshold: lower = more lenient toward vertical
-    // 0.5 means ~27° from vertical axis triggers ScrollView (vs 45° default)
-    private let verticalThreshold: CGFloat = 0.5
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -31,18 +28,25 @@ class AtfleeCombinedChart: CombinedChartView {
     
     private func setupForNestedScrolling() {
         self.dragYEnabled = false
-        print("[iOS] AtfleeCombinedChart: Lenient vertical scroll (~27°)")
     }
     
+    // MARK: - Gesture Recognizer Delegate
+    
     override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        if let pan = gestureRecognizer as? UIPanGestureRecognizer {
-            let velocity = pan.velocity(in: self)
-            // More lenient: abs(y) > abs(x) * 0.5 means ~27° from vertical
-            // Default DGCharts uses abs(y) > abs(x) which is 45°
-            if abs(velocity.y) > abs(velocity.x) * verticalThreshold {
-                return false  // Let ScrollView handle
-            }
+        if gestureRecognizer is UIPanGestureRecognizer {
+            return true
         }
         return super.gestureRecognizerShouldBegin(gestureRecognizer)
+    }
+    
+    // Allow simultaneous recognition
+    override func gestureRecognizer(
+        _ gestureRecognizer: UIGestureRecognizer,
+        shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+    ) -> Bool {
+        if gestureRecognizer is UIPanGestureRecognizer && otherGestureRecognizer is UIPanGestureRecognizer {
+            return true
+        }
+        return super.gestureRecognizer(gestureRecognizer, shouldRecognizeSimultaneouslyWith: otherGestureRecognizer)
     }
 }
