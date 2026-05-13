@@ -218,47 +218,59 @@ open class AtfleeMarker: MarkerView {
 
         UIGraphicsPushContext(context)
 
-        // 기본 padding 및 크기 정의
+        // 가로 배치: [날짜] gap [값+이모티콘] gap [화살표]
         let bgPadding: CGFloat = 8
         let paddedRect = rect.insetBy(dx: bgPadding, dy: bgPadding)
-        let itemSpacing: CGFloat = 8
-        let arrowSize: CGFloat = 20
+        let gapTitleValue: CGFloat = 6   // 날짜↔값 사이
+        let gapValueArrow: CGFloat = 10  // 값↔화살표 사이
+        let arrowSize: CGFloat = 18      // Figma: 18px
         let iconSize: CGFloat = CGFloat(imageSize)
 
-        // label, icon, arrowImage 배치 (label/image 는 좌측, arrowImage 는 우측 정렬)
-        var labelSize = CGSize.zero
+        // 각 요소 크기 측정
+        var titleSize = CGSize.zero
+        if let title = labelTitle, title.length > 0 {
+            titleSize = title.size(withAttributes: _drawTitleAttributes)
+        }
+        var valueSize = CGSize.zero
         if let lbl = labelns, lbl.length > 0 {
-            labelSize = lbl.size(withAttributes: _drawAttributes)
+            valueSize = lbl.size(withAttributes: _drawAttributes)
         }
 
-        let baseY = paddedRect.maxY - labelSize.height // arrow, icon, label 모두 같은 Y축 기준
+        // 세로 중앙 정렬 기준
+        let maxTextH = max(titleSize.height, valueSize.height)
+        let centerY = paddedRect.midY
 
-        // ① 좌측 정렬: label → emotion icon
+        // ① 날짜 (좌측)
         var currX = paddedRect.minX
-        if labelSize.width > 0 {
-            let labelRect = CGRect(x: currX, y: baseY, width: labelSize.width, height: labelSize.height)
-            labelns?.draw(in: labelRect, withAttributes: _drawAttributes)
-            currX += labelSize.width + itemSpacing
+        if titleSize.width > 0 {
+            let titleY = centerY - titleSize.height / 2
+            let titleRect = CGRect(x: currX, y: titleY, width: titleSize.width, height: titleSize.height)
+            labelTitle?.draw(in: titleRect, withAttributes: _drawTitleAttributes)
+            currX += titleSize.width + gapTitleValue
+        }
+
+        // ② 값 + 이모티콘
+        if valueSize.width > 0 {
+            let valueY = centerY - valueSize.height / 2
+            let valueRect = CGRect(x: currX, y: valueY, width: valueSize.width, height: valueSize.height)
+            labelns?.draw(in: valueRect, withAttributes: _drawAttributes)
+            currX += valueSize.width
         }
 
         if let img = imageEmotion {
-            let iconY = baseY + (labelSize.height - iconSize)
+            let iconY = centerY - iconSize / 2
+            currX += 5  // 값↘이모티콘 간격
             let iconRect = CGRect(x: currX, y: iconY, width: iconSize, height: iconSize)
             img.draw(in: iconRect)
-            // currX 업데이트는 추후 확장을 위해 남겨두지 않음
+            currX += iconSize
         }
 
-        // ② 우측 정렬: arrowImage
+        // ③ 화살표 (우측)
         if let img = arrowImage {
-            let arrowY = baseY + (labelSize.height - arrowSize)
-            let arrowX = paddedRect.maxX - arrowSize
-            let arrowRect = CGRect(x: arrowX, y: arrowY, width: arrowSize, height: arrowSize)
+            currX += gapValueArrow
+            let arrowY = centerY - arrowSize / 2
+            let arrowRect = CGRect(x: currX, y: arrowY, width: arrowSize, height: arrowSize)
             img.draw(in: arrowRect)
-        }
-
-        // 타이틀(기존 방식 그대로)
-        if let title = labelTitle, title.length > 0 {
-            title.draw(in: paddedRect, withAttributes: _drawTitleAttributes)
         }
 
         UIGraphicsPopContext()
@@ -335,13 +347,14 @@ open class AtfleeMarker: MarkerView {
             }
         }
 
+        // 가로 배치: 줄바꿈 없이 값만 표시
         if let candleEntry = entry as? CandleChartDataEntry {
-            label = "\n" + candleEntry.close.description
+            label = candleEntry.close.description
         } else {
             if markerString.isEmpty {
-                label = "\n" + String(format:"%." + decimalPlaces + "f", entry.y) + markerUnit
+                label = String(format:"%." + decimalPlaces + "f", entry.y) + markerUnit
             } else {
-                label = "\n" + markerString
+                label = markerString
             }
         }
         
@@ -408,9 +421,17 @@ open class AtfleeMarker: MarkerView {
             bottomRowWidth = itemWidths.reduce(0, +) + itemSpacing * CGFloat(itemWidths.count - 1)
         }
 
-        let contentWidth = max(titleSize.width, bottomRowWidth)
-        let maxHeight = max(titleSize.height, labelSize.height)
-        _labelSize = CGSize(width: contentWidth, height: maxHeight + 8) // 패딩줬기때문에 라벨 하단 짤려서 넣어줘야함
+        // 가로 배치: 전체 너비 = 날짜 + gap + 값 + (이모티콘) + gap + 화살표
+        let gapTitleValue: CGFloat = 6
+        let gapValueArrow: CGFloat = 10
+        var totalWidth: CGFloat = 0
+        if titleSize.width > 0 { totalWidth += titleSize.width }
+        if bottomRowWidth > 0 {
+            if titleSize.width > 0 { totalWidth += gapTitleValue }
+            totalWidth += bottomRowWidth
+        }
+        let rowHeight = max(titleSize.height, labelSize.height)
+        _labelSize = CGSize(width: totalWidth, height: rowHeight + 4)  // py=2 상하
         _size.width = _labelSize.width + self.insets.left + self.insets.right
         _size.height = _labelSize.height + self.insets.top + self.insets.bottom
         _size.width = max(minimumSize.width, _size.width)
