@@ -178,7 +178,7 @@ open class AtfleeMarker: MarkerView {
         context.saveGState()
         let roundRect = UIBezierPath(roundedRect: rect, byRoundingCorners:.allCorners,
                                      cornerRadii: CGSize(width: 8, height: 8))
-        context.setFillColor(UIColor.white.cgColor)
+        context.setFillColor(UIColor(red: 0.98, green: 0.98, blue: 0.98, alpha: 1.0).cgColor)  // #FAFAFA
         context.setShadow(offset: CGSize(width: 1.0, height: 4.0), blur: 7.5)
 //        context.setBlendMode(.multiply)
         context.addPath(roundRect.cgPath)
@@ -305,7 +305,7 @@ open class AtfleeMarker: MarkerView {
         _drawTitleAttributes.removeAll()
         _drawTitleAttributes[NSAttributedString.Key.font] = self.titleFont
         _drawTitleAttributes[NSAttributedString.Key.paragraphStyle] = _paragraphStyle
-        _drawTitleAttributes[NSAttributedString.Key.foregroundColor] = #colorLiteral(red: 0.9515632987, green: 0.4954123497, blue: 0.1712778509, alpha: 1)
+        _drawTitleAttributes[NSAttributedString.Key.foregroundColor] = UIColor(red: 0.263, green: 0.263, blue: 0.263, alpha: 1.0)  // #434343
         let titleSize = labelTitle?.size(withAttributes: _drawTitleAttributes) ?? CGSize.zero
         
         //
