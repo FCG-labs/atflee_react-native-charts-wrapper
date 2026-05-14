@@ -532,6 +532,10 @@ public class RNAtfleeMarkerView extends MarkerView {
 
     public void setFixedOnTop(boolean fixed) {
         this.fixedOnTop = fixed;
+        // Figma: 메인(fixedOnTop) = #FFFFFF, 전체변화 = #FAFAFA
+        if (mMarkerContent != null) {
+            mMarkerContent.setBackgroundColor(fixed ? 0xFFFFFFFF : 0xFFFAFAFA);
+        }
     }
 
 

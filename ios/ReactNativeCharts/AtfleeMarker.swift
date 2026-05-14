@@ -179,8 +179,14 @@ open class AtfleeMarker: MarkerView {
         context.saveGState()
         let roundRect = UIBezierPath(roundedRect: rect, byRoundingCorners:.allCorners,
                                      cornerRadii: CGSize(width: 8, height: 8))
-        context.setFillColor(UIColor(red: 0.98, green: 0.98, blue: 0.98, alpha: 1.0).cgColor)  // #FAFAFA
-        context.setShadow(offset: CGSize(width: 1.0, height: 4.0), blur: 7.5)
+        let bgColor: UIColor
+        if fixedOnTop {
+            bgColor = UIColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)  // #FFFFFF
+        } else {
+            bgColor = UIColor(red: 0.98, green: 0.98, blue: 0.98, alpha: 1.0)  // #FAFAFA
+        }
+        context.setFillColor(bgColor.cgColor)
+//        context.setShadow(offset: CGSize(width: 1.0, height: 4.0), blur: 7.5)
 //        context.setBlendMode(.multiply)
         context.addPath(roundRect.cgPath)
         context.fillPath()
