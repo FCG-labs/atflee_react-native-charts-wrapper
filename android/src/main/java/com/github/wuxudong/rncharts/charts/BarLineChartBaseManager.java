@@ -132,10 +132,29 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                 chart.setVisibleXRangeMaximum((float) x.getDouble("max"));
             }
 
-            // max가 있으면 min 설정 건너뜀 → autoZoomPending에서 fitScreen 후 설정
-            // max가 없으면 기존대로 min 설정
-            if (!hasMax && BridgeUtils.validate(x, ReadableType.Number, "min")) {
-                chart.setVisibleXRangeMinimum((float) x.getDouble("min"));
+            // min 설정 (max 유무와 무관하게 항상 적용)
+            if (BridgeUtils.validate(x, ReadableType.Number, "min")) {
+                float visibleMin = (float) x.getDouble("min");
+                chart.setVisibleXRangeMinimum(visibleMin);
+
+                // setVisibleXRangeMinimum 은 maxScaleX(줌인 제한)를 올바르게 설정하지만
+                // minScaleX 도 같이 올려서 줌아웃을 막아버림.
+                // 리플렉션으로 minScaleX 를 0.7 로 덮어써서 줌아웃 허용.
+                try {
+                    java.lang.reflect.Field minScaleXField = chart.getViewPortHandler().getClass().getDeclaredField("mMinScaleX");
+                    minScaleXField.setAccessible(true);
+                    minScaleXField.setFloat(chart.getViewPortHandler(), 0.7f);
+                } catch (Exception e) {
+                    android.util.Log.e("ChartZoom", "override minScaleX failed", e);
+                }
+
+                // visibleMin == totalRange → 전체 모드: performFullZoomOut으로 완전 줌아웃
+                if (chart.getData() != null) {
+                    float totalRange = chart.getData().getXMax() - chart.getData().getXMin();
+                    if (totalRange > 0 && Math.abs(visibleMin - totalRange) < 0.5f) {
+                        performFullZoomOut(chart);
+                    }
+                }
             }
         }
 
@@ -474,12 +493,20 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         // 초기 상태도 제스처 가능한 최저 줌아웃에 맞춘다.
         float targetScaleX = 0.7f;
 
+        // 줌인 제한: 7개까지만 확대 가능 → maxScaleX = totalRange / 7
+        float maxScaleX = totalRange / 7f;
+
         try {
             // minScaleX를 targetScaleX 이하로 설정 (1.0 하한선 우회)
             float minScale = targetScaleX;
             java.lang.reflect.Field minScaleXField = chart.getViewPortHandler().getClass().getDeclaredField("mMinScaleX");
             minScaleXField.setAccessible(true);
             minScaleXField.setFloat(chart.getViewPortHandler(), minScale);
+
+            // maxScaleX 설정 → 줌인 시 7개까지만 확대
+            java.lang.reflect.Field maxScaleXField = chart.getViewPortHandler().getClass().getDeclaredField("mMaxScaleX");
+            maxScaleXField.setAccessible(true);
+            maxScaleXField.setFloat(chart.getViewPortHandler(), maxScaleX);
 
             // 줌아웃
             float currentScaleX = chart.getScaleX();
@@ -491,6 +518,7 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
             }
             android.util.Log.d("ChartZoom", "performFullZoomOut: scaleX=" + chart.getScaleX()
                 + " minScaleX=" + chart.getViewPortHandler().getMinScaleX()
+                + " maxScaleX=" + maxScaleX
                 + " targetScaleX=" + targetScaleX + " visibleRange=" + visibleRange + " totalRange=" + totalRange);
         } catch (Exception e) {
             android.util.Log.e("ChartZoom", "reflection failed", e);

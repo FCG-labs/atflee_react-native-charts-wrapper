@@ -322,8 +322,6 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
 
                 float x = (float) pt.x;
                 float y = (float) pt.y;
-                if (y < mViewPortHandler.contentTop()) y = mViewPortHandler.contentTop();
-                else if (y > mViewPortHandler.contentBottom()) y = mViewPortHandler.contentBottom();
 
                 float r = dataSet.getCircleRadius();
                 mRenderPaint.setStyle(Paint.Style.FILL);

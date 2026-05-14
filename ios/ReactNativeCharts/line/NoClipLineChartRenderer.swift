@@ -137,8 +137,6 @@ open class NoClipLineChartRenderer: LineChartRenderer {
         // Disable clipping so highlight lines & markers can draw into extra offset area
         context.saveGState()
         context.resetClip()
-        // Use default DGCharts highlight rendering (circles, vertical line etc.)
-        super.drawHighlighted(context: context, indices: indices)
 
         guard
             let dataProvider = dataProvider,
@@ -159,15 +157,23 @@ open class NoClipLineChartRenderer: LineChartRenderer {
             let trans = dataProvider.getTransformer(forAxis: set.axisDependency)
             var pt    = trans.pixelForValues(x: e.x, y: e.y * phaseY)
 
-            // Clamp to content rect so markers can still draw when a value
-            // sits above or below the visible axis range.
-            if pt.y < viewPortHandler.contentTop {
-                pt.y = viewPortHandler.contentTop
-            } else if pt.y > viewPortHandler.contentBottom {
-                pt.y = viewPortHandler.contentBottom
-            }
-
             high.setDraw(x: pt.x, y: pt.y)
+        }
+
+        // Use default DGCharts highlight rendering after draw positions are corrected.
+        super.drawHighlighted(context: context, indices: indices)
+
+        for high in indices {
+            guard
+                let set = lineData.dataSets[high.dataSetIndex] as? LineChartDataSetProtocol,
+                set.isHighlightEnabled,
+                let e   = set.entryForXValue(high.x, closestToY: high.y)
+            else { continue }
+
+            if !entryInBoundsX(e, dataSet: set) { continue }
+
+            let trans = dataProvider.getTransformer(forAxis: set.axisDependency)
+            let pt    = trans.pixelForValues(x: e.x, y: e.y * phaseY)
 
             context.saveGState()
             context.setStrokeColor(set.highlightColor.cgColor)

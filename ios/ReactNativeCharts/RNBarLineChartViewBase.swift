@@ -142,10 +142,20 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             barLineChart.setVisibleXRangeMaximum(x["max"].doubleValue)
         }
 
-        // max가 있으면 min 설정 건너뜀 → autoZoomPending에서 fitScreen 후 설정
-        // max가 없으면 기존대로 min 설정
-        if !hasMax && x["min"].double != nil {
-            barLineChart.setVisibleXRangeMinimum(x["min"].doubleValue)
+        // min 설정 (max 유무와 무관하게 항상 적용)
+        if x["min"].double != nil {
+            let visibleMin = x["min"].doubleValue
+            barLineChart.setVisibleXRangeMinimum(visibleMin)
+
+            // visibleMin == totalRange → 전체 모드: performFullZoomOut으로 완전 줌아웃
+            // 주: performFullZoomOut 이 minScaleX 를 덮어쓰므로
+            //     setVisibleXRangeMinimum 재적용 불필요 (minScaleX 덮어쓰기 방지)
+            if let data = barLineChart.data {
+                let totalRange = data.xMax - data.xMin
+                if totalRange > 0 && abs(visibleMin - totalRange) < 0.5 {
+                    performFullZoomOut()
+                }
+            }
         }
 
         let y = json["y"]
@@ -168,6 +178,9 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             let centerX = barLineChart.data?.xMax ?? 0
             let axis = barLineChart.getAxis(.left).isEnabled ? YAxis.AxisDependency.left : YAxis.AxisDependency.right
             barLineChart.zoom(scaleX: relative, scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
+        } else if savedZoom != nil {
+            // zoom prop이 대기 중 → visibleMin 줌인 건너뛰기 (이중 줌 방지)
+            NSLog("[ChartZoom] updateVisibleRange: savedZoom pending, skipping visibleMin zoom-in")
         } else if let saved = savedVisibleRange,
                   let xMap = saved["x"] as? NSDictionary {
             let rawDataXMin = barLineChart.data?.xMin ?? barLineChart.chartXMin
@@ -421,12 +434,16 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         // 초기 상태도 제스처 가능한 최저 줌아웃에 맞춘다.
         let targetScaleX: CGFloat = 0.7
 
+        // 줌인 제한: 7개까지만 확대 가능 → maxScaleX = totalRange / 7
+        let maxScaleX = CGFloat(totalRange) / 7.0
+
         // minScaleX를 targetScaleX 이하로 설정 (1.0 하한선 우회)
         let minScale = targetScaleX
         do {
             try vph.setValue(minScale, forKey: "minScaleX")
+            try vph.setValue(maxScaleX, forKey: "maxScaleX")
         } catch {
-            NSLog("[ChartZoom] KVC set minScaleX failed: %@", error.localizedDescription)
+            NSLog("[ChartZoom] KVC set minScaleX/maxScaleX failed: %@", error.localizedDescription)
         }
 
         // 줌아웃
@@ -436,8 +453,8 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             let axis: YAxis.AxisDependency = barLineChart.leftAxis.isEnabled ? .left : .right
             barLineChart.zoom(scaleX: relativeScale, scaleY: 1.0, xValue: 0, yValue: 0.0, axis: axis)
         }
-        NSLog("[ChartZoom] performFullZoomOut: scaleX=%f minScaleX=%f targetScaleX=%f visibleRange=%f totalRange=%f",
-            barLineChart.scaleX, vph.minScaleX, targetScaleX, visibleRange, totalRange)
+        NSLog("[ChartZoom] performFullZoomOut: scaleX=%f minScaleX=%f maxScaleX=%f targetScaleX=%f visibleRange=%f totalRange=%f",
+            barLineChart.scaleX, vph.minScaleX, maxScaleX, targetScaleX, visibleRange, totalRange)
     }
 
     func setDataAndLockIndex(_ data: NSDictionary) {
