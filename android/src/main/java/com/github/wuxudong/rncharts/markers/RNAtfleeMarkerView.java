@@ -538,7 +538,11 @@ public class RNAtfleeMarkerView extends MarkerView {
     public void setMarkerBgColor(int color) {
         this.markerColor = color;
         if (mMarkerContent != null) {
-            mMarkerContent.setBackgroundColor(color | 0xFF000000);  // ensure alpha
+            // Use GradientDrawable to preserve cornerRadius 8dp from marker_bg.xml
+            android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
+            bg.setCornerRadius(8f * mMarkerContent.getResources().getDisplayMetrics().density);
+            bg.setColor(color | 0xFF000000);
+            mMarkerContent.setBackground(bg);
         }
     }
 
