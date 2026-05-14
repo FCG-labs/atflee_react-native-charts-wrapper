@@ -469,18 +469,14 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         android.util.Log.d("ChartZoom", "fitScreen: visibleRange=" + visibleRange
             + " totalRange=" + totalRange + " scaleX=" + chart.getScaleX());
 
-        if (visibleRange >= totalRange) {
-            // 이미 모든 데이터가 보이면 줌아웃 불필요
-            android.util.Log.d("ChartZoom", "already fully zoomed out");
-            return;
-        }
-
-        // targetScaleX: 모든 데이터가 보이려면 현재 대비 visibleRange/totalRange 비율로 줌아웃
-        float targetScaleX = chart.getScaleX() * (visibleRange / totalRange);
+        // Charts 기준 fitScreen은 scaleX=1.0에서 이미 전체 데이터가 보인다고 판단하지만,
+        // 실제 pinch gesture는 scaleX < 1.0까지 더 줌아웃된다.
+        // 초기 상태도 제스처 가능한 최저 줌아웃에 맞춘다.
+        float targetScaleX = 0.7f;
 
         try {
             // minScaleX를 targetScaleX 이하로 설정 (1.0 하한선 우회)
-            float minScale = Math.min(targetScaleX, 0.1f);
+            float minScale = targetScaleX;
             java.lang.reflect.Field minScaleXField = chart.getViewPortHandler().getClass().getDeclaredField("mMinScaleX");
             minScaleXField.setAccessible(true);
             minScaleXField.setFloat(chart.getViewPortHandler(), minScale);

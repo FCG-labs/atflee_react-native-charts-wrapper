@@ -416,17 +416,13 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         NSLog("[ChartZoom] fitScreen: visibleRange=%f totalRange=%f scaleX=%f",
             visibleRange, totalRange, barLineChart.scaleX)
 
-        if visibleRange >= totalRange {
-            // 이미 모든 데이터가 보이면 줌아웃 불필요
-            NSLog("[ChartZoom] already fully zoomed out")
-            return
-        }
-
-        // targetScaleX: 모든 데이터가 보이려면 현재 대비 visibleRange/totalRange 비율로 줌아웃
-        let targetScaleX = barLineChart.scaleX * (visibleRange / totalRange)
+        // Charts 기준 fitScreen은 scaleX=1.0에서 이미 전체 데이터가 보인다고 판단하지만,
+        // 실제 pinch gesture는 scaleX < 1.0까지 더 줌아웃된다.
+        // 초기 상태도 제스처 가능한 최저 줌아웃에 맞춘다.
+        let targetScaleX: CGFloat = 0.7
 
         // minScaleX를 targetScaleX 이하로 설정 (1.0 하한선 우회)
-        let minScale = min(targetScaleX, 0.1)
+        let minScale = targetScaleX
         do {
             try vph.setValue(minScale, forKey: "minScaleX")
         } catch {
