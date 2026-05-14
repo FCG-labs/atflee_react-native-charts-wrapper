@@ -400,10 +400,10 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
     private void setMarkerParams(RNAtfleeMarkerView marker, ReadableMap propMap) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP &&
                 BridgeUtils.validate(propMap, ReadableType.Number, "markerColor")) {
+            int color = propMap.getInt("markerColor");
             marker.getTvContent()
-                    .setBackgroundTintList(
-                            ColorStateList.valueOf(propMap.getInt("markerColor"))
-                    );
+                    .setBackgroundTintList(ColorStateList.valueOf(color));
+            marker.setMarkerBgColor(color);
         }
 
         if (BridgeUtils.validate(propMap, ReadableType.Number, "titleColor")) {

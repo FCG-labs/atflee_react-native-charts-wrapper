@@ -46,6 +46,7 @@ public class RNAtfleeMarkerView extends MarkerView {
 
     private boolean arrowHidden = false;
     private boolean fixedOnTop = false;
+    private int markerColor = 0xFFFAFAFA;  // default #FAFAFA
 
     private static final int OVERLAY_TAG = 999;
     private static final float HIT_SLOP_DP = 12f; // legacy: kept for compatibility
@@ -532,9 +533,12 @@ public class RNAtfleeMarkerView extends MarkerView {
 
     public void setFixedOnTop(boolean fixed) {
         this.fixedOnTop = fixed;
-        // Figma: 메인(fixedOnTop) = #FFFFFF, 전체변화 = #FAFAFA
+    }
+
+    public void setMarkerBgColor(int color) {
+        this.markerColor = color;
         if (mMarkerContent != null) {
-            mMarkerContent.setBackgroundColor(fixed ? 0xFFFFFFFF : 0xFFFAFAFA);
+            mMarkerContent.setBackgroundColor(color | 0xFF000000);  // ensure alpha
         }
     }
 

@@ -52,7 +52,7 @@ open class AtfleeMarker: MarkerView {
     fileprivate var _drawAttributes = [NSAttributedString.Key: Any]()
     
     fileprivate var imageEmotion: UIImage? = nil
-    fileprivate let imageSize = 20.0
+    fileprivate let imageSize = 16.0
 
     // ───────────────── init 그대로 ─────────────────
     public init(color: UIColor, font: UIFont, textColor: UIColor, textAlign: NSTextAlignment, textWeight: String,titleFont: UIFont) {
@@ -179,12 +179,9 @@ open class AtfleeMarker: MarkerView {
         context.saveGState()
         let roundRect = UIBezierPath(roundedRect: rect, byRoundingCorners:.allCorners,
                                      cornerRadii: CGSize(width: 8, height: 8))
-        let bgColor: UIColor
-        if fixedOnTop {
-            bgColor = UIColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 1.0)  // #FFFFFF
-        } else {
-            bgColor = UIColor(red: 0.98, green: 0.98, blue: 0.98, alpha: 1.0)  // #FAFAFA
-        }
+        // markerColor prop 사용 (JS에서 markerColor로 전달)
+        // 메인: #FFFFFF, 전체변화: #FAFAFA
+        let bgColor = self.color ?? UIColor(red: 0.98, green: 0.98, blue: 0.98, alpha: 1.0)
         context.setFillColor(bgColor.cgColor)
 //        context.setShadow(offset: CGSize(width: 1.0, height: 4.0), blur: 7.5)
 //        context.setBlendMode(.multiply)
@@ -373,7 +370,11 @@ open class AtfleeMarker: MarkerView {
         labelns = label as NSString
         
         _drawAttributes.removeAll()
-        _drawAttributes[NSAttributedString.Key.paragraphStyle] = _paragraphStyle
+        // Figma: caption_medium — letterSpacing -0.24px, center
+        let paraStyle = NSMutableParagraphStyle()
+        paraStyle.alignment = .center
+        _drawAttributes[NSAttributedString.Key.paragraphStyle] = paraStyle
+        _drawAttributes[NSAttributedString.Key.kern] = -0.24  // letterSpacing
         // Figma: 값 색상 #101010 (Grayscale_1000)
         _drawAttributes[NSAttributedString.Key.foregroundColor] = UIColor(red: 0.063, green: 0.063, blue: 0.063, alpha: 1.0)  // #101010
 

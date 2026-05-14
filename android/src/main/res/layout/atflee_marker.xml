@@ -13,7 +13,7 @@
         android:gravity="center_vertical"
         android:paddingHorizontal="8dp"
         android:paddingVertical="2dp"
-        android:background="#FAFAFA"
+        android:background="@drawable/marker_bg"
         >
 
             <TextView
