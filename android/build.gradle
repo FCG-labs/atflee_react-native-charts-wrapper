@@ -46,7 +46,7 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
     implementation "com.facebook.react:react-native:+"  // From node_modules
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
-    implementation 'com.github.lihangleo2:ShadowLayout:3.3.3' // 그림자 효과 적용
+    // ShadowLayout removed - Figma: no shadow
 }
 
 tasks.withType(JavaCompile).configureEach {

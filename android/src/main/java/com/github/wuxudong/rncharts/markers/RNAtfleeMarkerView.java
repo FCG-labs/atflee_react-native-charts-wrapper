@@ -12,8 +12,6 @@ import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.View.MeasureSpec;
 import android.graphics.Color;
-import com.lihang.ShadowLayout;
-
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.WritableMap;
@@ -40,7 +38,7 @@ public class RNAtfleeMarkerView extends MarkerView {
     private final ImageView imageEmotion;
     private final ImageView image_arrow;
     private Entry lastEntry;
-    private final ShadowLayout mShadowLayout;
+    private final View mMarkerContent;
     // Transparent overlay to intercept taps on the marker only
     private View overlayButton = null;
     // When true, marker won't draw (used to suppress drawing during chart touches)
@@ -75,7 +73,7 @@ public class RNAtfleeMarkerView extends MarkerView {
         tvContent = findViewById(R.id.y_value);
         imageEmotion = findViewById(R.id.image_emotion);
 
-        mShadowLayout = findViewById(R.id.mShadowLayout);
+        mMarkerContent = findViewById(R.id.markerContent);
         image_arrow = findViewById(R.id.image_arrow);
         // Default fade duration (milliseconds)
         fadeDuration = 300L;

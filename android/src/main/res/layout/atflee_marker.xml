@@ -1,31 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content">
 
-    <com.lihang.ShadowLayout
-        android:id="@+id/mShadowLayout"
+    <!-- Figma: 그림자 없음, cornerRadius 8dp -->
+    <LinearLayout
+        android:id="@+id/markerContent"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="center_horizontal"
-        app:hl_cornerRadius="8dp"
-        app:hl_shadowColor="#2a000000"
-        app:hl_shadowLimit="5dp"
-        app:hl_shadowOffsetY="2dp"
-        app:hl_shadowOffsetX="2dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingHorizontal="8dp"
+        android:paddingVertical="2dp"
+        android:background="#FAFAFA"
         >
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:paddingHorizontal="8dp"
-            android:paddingVertical="2dp"
-            android:background="#FAFAFA"
-            >
 
             <TextView
                 android:id="@+id/x_value"
@@ -73,8 +62,6 @@
                     android:layout_marginLeft="10dp"
                     android:src="@drawable/dropdown_circle_right" />
             </LinearLayout>
-        </LinearLayout>
-
-    </com.lihang.ShadowLayout>
+    </LinearLayout>
 
 </LinearLayout>
