@@ -140,8 +140,7 @@ public class ChartDataSetConfigUtils {
             float spaceLen = dash.hasKey("spaceLength") ? (float) dash.getDouble("spaceLength") : 0f;
             float phase = dash.hasKey("phase") ? (float) dash.getDouble("phase") : 0f;
             if (lineLen > 0f && spaceLen > 0f) {
-                dataSet.setHighlightLineDashLengths(new float[]{lineLen, spaceLen});
-                dataSet.setHighlightLineDashPhase(phase);
+                dataSet.enableDashedHighlightLine(lineLen, spaceLen, phase);
             }
         }
     }

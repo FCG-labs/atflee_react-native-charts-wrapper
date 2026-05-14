@@ -315,7 +315,12 @@ open class AtfleeMarker: MarkerView {
         }
 
         _drawTitleAttributes.removeAll()
-        _drawTitleAttributes[NSAttributedString.Key.font] = self.titleFont
+        // Figma: 날짜 Regular weight (Noto Sans KR Regular)
+        if let notoRegular = UIFont(name: "NotoSansKR-Regular", size: 12.0) {
+            _drawTitleAttributes[NSAttributedString.Key.font] = notoRegular
+        } else {
+            _drawTitleAttributes[NSAttributedString.Key.font] = UIFont.systemFont(ofSize: 12.0, weight: .regular)
+        }
         _drawTitleAttributes[NSAttributedString.Key.paragraphStyle] = _paragraphStyle
         _drawTitleAttributes[NSAttributedString.Key.foregroundColor] = UIColor(red: 0.263, green: 0.263, blue: 0.263, alpha: 1.0)  // #434343
         let titleSize = labelTitle?.size(withAttributes: _drawTitleAttributes) ?? CGSize.zero
@@ -362,15 +367,24 @@ open class AtfleeMarker: MarkerView {
         
         _drawAttributes.removeAll()
         _drawAttributes[NSAttributedString.Key.paragraphStyle] = _paragraphStyle
-        _drawAttributes[NSAttributedString.Key.foregroundColor] = self.textColor
+        // Figma: 값 색상 #101010 (Grayscale_1000)
+        _drawAttributes[NSAttributedString.Key.foregroundColor] = UIColor(red: 0.063, green: 0.063, blue: 0.063, alpha: 1.0)  // #101010
 
-        let isBold = textWeight == "bold"
         let baseFont: UIFont = self.font ?? UIFont.systemFont(ofSize: 12.0)
         let fontSize = baseFont.pointSize
 
-        let labelFont: UIFont = isBold
-            ? UIFont.boldSystemFont(ofSize: fontSize)
-            : baseFont
+        // Figma: 값은 Medium weight (Noto Sans KR Medium)
+        let labelFont: UIFont
+        if textWeight == "bold" {
+            labelFont = UIFont.boldSystemFont(ofSize: fontSize)
+        } else {
+            // Medium weight (weight=500)
+            if let notoMedium = UIFont(name: "NotoSansKR-Medium", size: fontSize) {
+                labelFont = notoMedium
+            } else {
+                labelFont = UIFont.systemFont(ofSize: fontSize, weight: .medium)
+            }
+        }
 
         _drawAttributes[.font] = labelFont
 
