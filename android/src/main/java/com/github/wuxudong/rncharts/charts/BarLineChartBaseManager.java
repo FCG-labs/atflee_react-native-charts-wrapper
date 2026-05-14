@@ -456,28 +456,46 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
     }
 
     private void performFullZoomOut(BarLineChartBase chart) {
-        // setMinimumScaleX()에 1.0 하한선이 있어 직접 호출 불가
-        // fitScreen()도 mMinScaleX=1f로 설정
-        // 리플렉션으로 mMinScaleX를 작은 값으로 설정 후 줌아웃
+        // setMinimumScaleX()에 1.0 하한선 → 리플렉션으로 우회
         chart.fitScreen();
 
-        float minScale = 0.01f;
+        if (chart.getData() == null) return;
+
+        float totalRange = chart.getData().getXMax() - chart.getData().getXMin();
+        if (totalRange <= 0) return;
+
+        // fitScreen 후 scaleX=1.0에서 보이는 범위
+        float visibleRange = chart.getHighestVisibleX() - chart.getLowestVisibleX();
+        android.util.Log.d("ChartZoom", "fitScreen: visibleRange=" + visibleRange
+            + " totalRange=" + totalRange + " scaleX=" + chart.getScaleX());
+
+        if (visibleRange >= totalRange) {
+            // 이미 모든 데이터가 보이면 줌아웃 불필요
+            android.util.Log.d("ChartZoom", "already fully zoomed out");
+            return;
+        }
+
+        // targetScaleX: 모든 데이터가 보이려면 현재 대비 visibleRange/totalRange 비율로 줌아웃
+        float targetScaleX = chart.getScaleX() * (visibleRange / totalRange);
 
         try {
+            // minScaleX를 targetScaleX 이하로 설정 (1.0 하한선 우회)
+            float minScale = Math.min(targetScaleX, 0.1f);
             java.lang.reflect.Field minScaleXField = chart.getViewPortHandler().getClass().getDeclaredField("mMinScaleX");
             minScaleXField.setAccessible(true);
             minScaleXField.setFloat(chart.getViewPortHandler(), minScale);
 
-            // 현재 scaleX에서 minScale로 줌아웃
+            // 줌아웃
             float currentScaleX = chart.getScaleX();
-            if (currentScaleX > minScale) {
-                float relativeScale = minScale / currentScaleX;
+            if (currentScaleX > targetScaleX) {
+                float relativeScale = targetScaleX / currentScaleX;
                 YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled() ?
                         YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
                 chart.zoom(relativeScale, 1f, 0f, 0f, axis);
             }
             android.util.Log.d("ChartZoom", "performFullZoomOut: scaleX=" + chart.getScaleX()
-                + " minScaleX=" + chart.getViewPortHandler().getMinScaleX());
+                + " minScaleX=" + chart.getViewPortHandler().getMinScaleX()
+                + " targetScaleX=" + targetScaleX + " visibleRange=" + visibleRange + " totalRange=" + totalRange);
         } catch (Exception e) {
             android.util.Log.e("ChartZoom", "reflection failed", e);
         }

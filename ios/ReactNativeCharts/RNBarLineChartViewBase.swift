@@ -402,44 +402,46 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
     }
 
     private func performFullZoomOut() {
-        // setMinimumScaleX()에 1.0 하한선이 있어 직접 호출 불가
-        // fitScreen()도 mMinScaleX=1.0으로 설정
-        // KVC로 minScaleX 직접 설정 (setter 이름이 setMinimumScaleX:라서
-        // KVC key "minScaleX"는 setter를 못 찾고 ivar에 직접 접근)
+        // setMinimumScaleX()에 1.0 하한선 → KVC로 우회
         barLineChart.fitScreen()
 
         let vph = barLineChart.viewPortHandler
-        let minScale: CGFloat = 0.01
+        guard let data = barLineChart.data else { return }
 
-        // KVC로 minScaleX 직접 설정 (1.0 하한선 우회)
-        do {
-            try vph.setValue(minScale, forKey: "minScaleX")
-            NSLog("[ChartZoom] KVC set minScaleX succeeded: %f", vph.minScaleX)
-        } catch {
-            NSLog("[ChartZoom] KVC set minScaleX failed: %@", error.localizedDescription)
-            // 폴백: ivar 검색하여 디버그 로깅
-            let ivarCount = UnsafeMutablePointer<UInt32>.allocate(capacity: 1)
-            defer { ivarCount.deallocate() }
-            if let ivars = class_copyIvarList(object_getClass(vph), ivarCount) {
-                for i in 0..<ivarCount.pointee {
-                    let ivar = ivars[Int(i)]
-                    if let name = ivar_getName(ivar) {
-                        NSLog("[ChartZoom] ivar[%d]: %s", i, name)
-                    }
-                }
-                free(ivars)
-            }
+        let totalRange = data.xMax - data.xMin
+        guard totalRange > 0 else { return }
+
+        // fitScreen 후 scaleX=1.0에서 보이는 범위
+        let visibleRange = barLineChart.highestVisibleX - barLineChart.lowestVisibleX
+        NSLog("[ChartZoom] fitScreen: visibleRange=%f totalRange=%f scaleX=%f",
+            visibleRange, totalRange, barLineChart.scaleX)
+
+        if visibleRange >= totalRange {
+            // 이미 모든 데이터가 보이면 줌아웃 불필요
+            NSLog("[ChartZoom] already fully zoomed out")
+            return
         }
 
-        // 현재 scaleX에서 줌아웃
+        // targetScaleX: 모든 데이터가 보이려면 현재 대비 visibleRange/totalRange 비율로 줌아웃
+        let targetScaleX = barLineChart.scaleX * (visibleRange / totalRange)
+
+        // minScaleX를 targetScaleX 이하로 설정 (1.0 하한선 우회)
+        let minScale = min(targetScaleX, 0.1)
+        do {
+            try vph.setValue(minScale, forKey: "minScaleX")
+        } catch {
+            NSLog("[ChartZoom] KVC set minScaleX failed: %@", error.localizedDescription)
+        }
+
+        // 줌아웃
         let currentScaleX = barLineChart.scaleX
-        if currentScaleX > minScale {
-            let relativeScale = minScale / currentScaleX
+        if currentScaleX > targetScaleX {
+            let relativeScale = targetScaleX / currentScaleX
             let axis: YAxis.AxisDependency = barLineChart.leftAxis.isEnabled ? .left : .right
             barLineChart.zoom(scaleX: relativeScale, scaleY: 1.0, xValue: 0, yValue: 0.0, axis: axis)
         }
-        NSLog("[ChartZoom] performFullZoomOut: scaleX=%f minScaleX=%f",
-            barLineChart.scaleX, vph.minScaleX)
+        NSLog("[ChartZoom] performFullZoomOut: scaleX=%f minScaleX=%f targetScaleX=%f visibleRange=%f totalRange=%f",
+            barLineChart.scaleX, vph.minScaleX, targetScaleX, visibleRange, totalRange)
     }
 
     func setDataAndLockIndex(_ data: NSDictionary) {
