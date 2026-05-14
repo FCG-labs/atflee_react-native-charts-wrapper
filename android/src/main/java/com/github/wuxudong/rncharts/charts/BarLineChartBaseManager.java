@@ -456,21 +456,39 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
     }
 
     private void performFullZoomOut(BarLineChartBase chart) {
-        // fitScreen()은 minScaleX=1.0으로 설정하여 줌아웃을 차단함
-        // 대신 minScaleX를 매우 작은 값으로 설정하여 완전 줌아웃 허용
-        chart.getViewPortHandler().setMinimumScaleX(0.001f);
-        // 현재 scaleX에서 최소 스케일까지 줌아웃
-        float currentScaleX = chart.getScaleX();
-        float targetScaleX = 0.001f;
-        if (currentScaleX > targetScaleX) {
-            float relativeScale = targetScaleX / currentScaleX;
-            YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled() ?
-                    YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
-            chart.zoom(relativeScale, 1f, 0f, 0f, axis);
+        // setMinimumScaleX()에 1.0 하한선이 있어 직접 호출 불가
+        // fitScreen()도 mMinScaleX=1f로 설정
+        // 리플렉션으로 mMinScaleX를 작은 값으로 설정 후 줌아웃
+        chart.fitScreen();
+
+        try {
+            java.lang.reflect.Field minScaleXField = chart.getViewPortHandler().getClass().getDeclaredField("mMinScaleX");
+            minScaleXField.setAccessible(true);
+
+            float contentWidth = chart.getViewPortHandler().getContentWidth();
+            if (contentWidth > 0 && chart.getData() != null) {
+                float dataRange = chart.getData().getXMax() - chart.getData().getXMin();
+                if (dataRange > 0) {
+                    float targetScaleX = contentWidth / dataRange; // < 1.0 이면 줌아웃
+                    float minScale = Math.min(targetScaleX, 0.01f);
+                    minScaleXField.setFloat(chart.getViewPortHandler(), minScale);
+
+                    // 현재 scaleX에서 targetScaleX로 줌아웃
+                    float currentScaleX = chart.getScaleX();
+                    if (currentScaleX > targetScaleX) {
+                        float relativeScale = targetScaleX / currentScaleX;
+                        YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled() ?
+                                YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
+                        chart.zoom(relativeScale, 1f, 0f, 0f, axis);
+                    }
+                    android.util.Log.d("ChartZoom", "performFullZoomOut: scaleX=" + chart.getScaleX()
+                        + " minScaleX=" + chart.getViewPortHandler().getMinScaleX()
+                        + " targetScaleX=" + targetScaleX + " dataRange=" + dataRange + " contentWidth=" + contentWidth);
+                }
+            }
+        } catch (Exception e) {
+            android.util.Log.e("ChartZoom", "reflection failed", e);
         }
-        android.util.Log.d("ChartZoom", "performFullZoomOut: scaleX=" + chart.getScaleX()
-            + " minScaleX=" + chart.getViewPortHandler().getMinScaleX()
-            + " maxScaleX=" + chart.getViewPortHandler().getMaxScaleX());
     }
 
     @Override

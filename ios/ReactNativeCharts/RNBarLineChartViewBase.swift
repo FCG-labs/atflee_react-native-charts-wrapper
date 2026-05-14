@@ -402,19 +402,47 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
     }
 
     private func performFullZoomOut() {
-        // fitScreen()은 minScaleX=1.0으로 설정하여 줌아웃을 차단함
-        // 대신 minScaleX를 매우 작은 값으로 설정하여 완전 줌아웃 허용
-        barLineChart.viewPortHandler.setMinimumScaleX(0.001)
-        // 현재 scaleX에서 최소 스케일까지 줌아웃
+        // setMinimumScaleX()에 1.0 하한선이 있어 직접 호출 불가
+        // fitScreen()도 mMinScaleX=1.0으로 설정
+        // ObjC 런타임으로 mMinScaleX를 작은 값으로 설정 후 줌아웃
+        barLineChart.fitScreen()
+
+        let contentWidth = barLineChart.viewPortHandler.contentWidth
+        guard contentWidth > 0, let data = barLineChart.data else { return }
+
+        let dataRange = data.xMax - data.xMin
+        guard dataRange > 0 else { return }
+
+        let targetScaleX = contentWidth / dataRange // < 1.0 이면 줌아웃
+        let minScale = min(targetScaleX, 0.01)
+
+        // ObjC 런타임으로 mMinScaleX 직접 설정 (1.0 하한선 우회)
+        let vph = barLineChart.viewPortHandler
+        let ivarCount = UnsafeMutablePointer<UInt32>.allocate(capacity: 1)
+        defer { ivarCount.deallocate() }
+        if let ivars = class_copyIvarList(object_getClass(vph), ivarCount) {
+            for i in 0..<ivarCount.pointee {
+                let ivar = ivars[Int(i)]
+                let name = ivar_getName(ivar)
+                if let nameStr = String(cString: name!) as String?, nameStr == "mMinScaleX" {
+                    let offset = ivar_getOffset(ivar)
+                    let ptr = Unmanaged.passUnretained(vph).toOpaque().advanced(by: offset)
+                    ptr.assumingMemoryBound(to: CGFloat.self).pointee = minScale
+                    break
+                }
+            }
+            free(ivars)
+        }
+
+        // 현재 scaleX에서 targetScaleX로 줌아웃
         let currentScaleX = barLineChart.scaleX
-        let targetScaleX: CGFloat = 0.001
         if currentScaleX > targetScaleX {
             let relativeScale = targetScaleX / currentScaleX
             let axis: YAxis.AxisDependency = barLineChart.leftAxis.isEnabled ? .left : .right
             barLineChart.zoom(scaleX: relativeScale, scaleY: 1.0, xValue: 0, yValue: 0.0, axis: axis)
         }
-        NSLog("[ChartZoom] performFullZoomOut: scaleX=%f minScaleX=%f maxScaleX=%f",
-            barLineChart.scaleX, barLineChart.viewPortHandler.minScaleX, barLineChart.viewPortHandler.maxScaleX)
+        NSLog("[ChartZoom] performFullZoomOut: scaleX=%f minScaleX=%f targetScaleX=%f dataRange=%f contentWidth=%f",
+            barLineChart.scaleX, barLineChart.viewPortHandler.minScaleX, targetScaleX, dataRange, contentWidth)
     }
 
     func setDataAndLockIndex(_ data: NSDictionary) {
