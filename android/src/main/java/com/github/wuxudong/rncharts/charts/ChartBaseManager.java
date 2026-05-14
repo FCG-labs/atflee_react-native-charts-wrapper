@@ -774,6 +774,7 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
     @Override
     protected void onAfterUpdateTransaction(T chart) {
         super.onAfterUpdateTransaction(chart);
+        android.util.Log.d("ChartZoom", "ChartBaseManager.onAfterUpdateTransaction called");
         chart.notifyDataSetChanged();
         onAfterDataSetChanged(chart);
         chart.requestLayout();

@@ -110,6 +110,16 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
     }
 
     func setVisibleRange(_ config: NSDictionary) {
+        NSLog("[ChartZoom] setVisibleRange called: config=%@ scaleX=%f minScaleX=%f", config, barLineChart.scaleX, barLineChart.viewPortHandler.minScaleX)
+        if config == NSNull() || config.count == 0 {
+            // visibleRange 해제 → 제약 초기화 + fitScreen
+            savedVisibleRange = nil
+            barLineChart.viewPortHandler.setMinimumScaleX(1.0)
+            barLineChart.viewPortHandler.setMaximumScaleX(CGFloat.greatestFiniteMagnitude)
+            barLineChart.fitScreen()
+            NSLog("[ChartZoom] setVisibleRange NULL: fitScreen done. scaleX=%f minScaleX=%f", barLineChart.scaleX, barLineChart.viewPortHandler.minScaleX)
+            return
+        }
         // delay visibleRange handling until chart data is set
         savedVisibleRange = config
         // execute on next run-loop to ensure layout is finished
@@ -125,12 +135,16 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         let json = BridgeUtils.toJson(config)
 
         let x = json["x"]
-        if x["min"].double != nil {
-            let min = x["min"].doubleValue
-            barLineChart.setVisibleXRangeMinimum(min)
-        }
-        if x["max"].double != nil {
+
+        let hasMax = x["max"].double != nil
+        if hasMax {
             barLineChart.setVisibleXRangeMaximum(x["max"].doubleValue)
+        }
+
+        // max가 있으면 min 설정 건너뜀 → autoZoomPending에서 fitScreen 후 설정
+        // max가 없으면 기존대로 min 설정
+        if !hasMax && x["min"].double != nil {
+            barLineChart.setVisibleXRangeMinimum(x["min"].doubleValue)
         }
 
         let y = json["y"]
@@ -154,27 +168,37 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             let axis = barLineChart.getAxis(.left).isEnabled ? YAxis.AxisDependency.left : YAxis.AxisDependency.right
             barLineChart.zoom(scaleX: relative, scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
         } else if let saved = savedVisibleRange,
-                  let xMap = saved["x"] as? NSDictionary,
-                  let visibleMin = xMap["min"] as? CGFloat,
-                  visibleMin > 0 {
+                  let xMap = saved["x"] as? NSDictionary {
             let rawDataXMin = barLineChart.data?.xMin ?? barLineChart.chartXMin
             let rawDataXMax = barLineChart.data?.xMax ?? barLineChart.chartXMax
             let effectiveXMin = min(rawDataXMin, barLineChart.chartXMin)
             let effectiveXMax = max(rawDataXMax, barLineChart.chartXMax)
-            // print("[RNBarLineChartViewBase:updateVisibleRange] rawDataXMin: \(rawDataXMin), rawDataXMax: \(rawDataXMax), chartXMin: \(barLineChart.chartXMin), chartXMax: \(barLineChart.chartXMax), effectiveXMin: \(effectiveXMin), effectiveXMax: \(effectiveXMax)")
             let totalRange = Double(effectiveXMax - effectiveXMin)
-            let isBarChart = (barLineChart is BarChartView) || (barLineChart is HorizontalBarChartView)
 
-            if totalRange > Double(visibleMin) {
-                let relative = totalRange / Double(visibleMin)
-                let centerX: Double = effectiveXMax
-                let axis = barLineChart.getAxis(.left).isEnabled ? YAxis.AxisDependency.left : YAxis.AxisDependency.right
-                barLineChart.zoom(scaleX: relative, scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
-            } else if totalRange > 0 {
-                let relative = Double(visibleMin) / totalRange
-                let centerX: Double = effectiveXMax
-                let axis = barLineChart.getAxis(.left).isEnabled ? YAxis.AxisDependency.left : YAxis.AxisDependency.right
-                barLineChart.zoom(scaleX: CGFloat(relative), scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
+            // max가 전체 데이터 범위 이상이면 fitScreen으로 줌아웃 시작
+            let visibleMax = xMap["max"] as? CGFloat
+            let shouldZoomOut = visibleMax != nil && totalRange > 0 && Double(visibleMax!) >= totalRange
+
+            if shouldZoomOut {
+                // min 제약 리셋 후 fitScreen → 완전 줌아웃 보장
+                barLineChart.setVisibleXRangeMinimum(0)
+                barLineChart.fitScreen()
+                // fitScreen 후에 min 설정 → 줌인 제한만 적용, 현재 뷰는 유지
+                if let visibleMin = xMap["min"] as? CGFloat, visibleMin > 0 {
+                    barLineChart.setVisibleXRangeMinimum(Double(visibleMin))
+                }
+            } else if let visibleMin = xMap["min"] as? CGFloat, visibleMin > 0 {
+                if totalRange > Double(visibleMin) {
+                    let relative = totalRange / Double(visibleMin)
+                    let centerX: Double = effectiveXMax
+                    let axis = barLineChart.getAxis(.left).isEnabled ? YAxis.AxisDependency.left : YAxis.AxisDependency.right
+                    barLineChart.zoom(scaleX: relative, scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
+                } else if totalRange > 0 {
+                    let relative = Double(visibleMin) / totalRange
+                    let centerX: Double = effectiveXMax
+                    let axis = barLineChart.getAxis(.left).isEnabled ? YAxis.AxisDependency.left : YAxis.AxisDependency.right
+                    barLineChart.zoom(scaleX: CGFloat(relative), scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
+                }
             }
         }
 
@@ -185,6 +209,11 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
     }
 
     func setMaxScale(_ config: NSDictionary) {
+        if config == NSNull() || config.count == 0 {
+            barLineChart.viewPortHandler.setMaximumScaleX(CGFloat.greatestFiniteMagnitude)
+            barLineChart.viewPortHandler.setMaximumScaleY(CGFloat.greatestFiniteMagnitude)
+            return
+        }
         let json = BridgeUtils.toJson(config)
 
         let maxScaleX = json["x"]
@@ -236,6 +265,12 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
     }
 
     func setZoom(_ config: NSDictionary) {
+        if config == NSNull() || config.count == 0 {
+            // zoom 해제 → zoomScaleX 초기화
+            self.zoomScaleX = nil
+            self.savedZoom = nil
+            return
+        }
         self.savedZoom = config
         let json = BridgeUtils.toJson(config)
         if json["scaleX"].float != nil {
@@ -326,28 +361,31 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
         applyExtraOffsets()
 
-        // clear zoom after applied, but keep visibleRange
-        if let visibleRange = savedVisibleRange {
-            updateVisibleRange(visibleRange)
+        // didSetProps에서 호출됨 → 모든 prop 업데이트 완료 후이므로 지연 불필요
+        NSLog("[ChartZoom] onAfterDataSetChanged: savedVisibleRange=%@ zoomScaleX=%@ scaleX=%f minScaleX=%f maxScaleX=%f chartWidth=%f", 
+            String(describing: savedVisibleRange), 
+            String(describing: zoomScaleX), 
+            barLineChart.scaleX, 
+            barLineChart.viewPortHandler.minScaleX, 
+            barLineChart.viewPortHandler.maxScaleX, 
+            barLineChart.frame.width)
 
-            // Auto zoom to the minimum visibleRange (parity with Android implementation)
-            // if savedZoom == nil {
-            //     if let x = visibleRange["x"] as? NSDictionary,
-            //        let min = x["min"] as? CGFloat,
-            //        min > 0 {
-            //         let currentRange = barLineChart.visibleXRange
-            //         if currentRange > Double(min) {
-            //             let relativeScale = currentRange / Double(min)
-            //             let centerX = barLineChart.chartXMax
-            //             let axis: YAxis.AxisDependency = barLineChart.leftAxis.enabled ? .left : .right
-            //             barLineChart.zoom(scaleX: CGFloat(relativeScale),
-            //                               scaleY: 1.0,
-            //                               xValue: centerX,
-            //                               yValue: 0.0,
-            //                               axis: axis)
-            //         }
-            //     }
-            // }
+        // savedVisibleRange == nil → all 모드: 무조건 fitScreen + 이전 줌 초기화
+        if savedVisibleRange == nil {
+            zoomScaleX = nil
+            barLineChart.viewPortHandler.setMinimumScaleX(1.0)
+            barLineChart.viewPortHandler.setMaximumScaleX(CGFloat.greatestFiniteMagnitude)
+            // 명시적으로 scale 1.0으로 줌아웃
+            if barLineChart.scaleX > 1.0 {
+                let relativeScale = 1.0 / barLineChart.scaleX
+                let centerX = barLineChart.data?.xMax ?? 0
+                let axis: YAxis.AxisDependency = barLineChart.leftAxis.isEnabled ? .left : .right
+                barLineChart.zoom(scaleX: relativeScale, scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
+            }
+            barLineChart.fitScreen()
+            NSLog("[ChartZoom] zoomOut done. scaleX after=%f minScaleX=%f", barLineChart.scaleX, barLineChart.viewPortHandler.minScaleX)
+        } else if let visibleRange = savedVisibleRange {
+            updateVisibleRange(visibleRange)
         }
 
         if let zoom = savedZoom {

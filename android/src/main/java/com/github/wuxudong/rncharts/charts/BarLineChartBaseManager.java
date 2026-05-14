@@ -108,22 +108,35 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
 
     @ReactProp(name = "visibleRange")
     public void setVisibleXRangeMinimum(BarLineChartBase chart, ReadableMap propMap) {
-         // delay visibleRange handling until chart data is set
          ChartExtraProperties props = extraPropertiesHolder.getExtraProperties(chart);
-         props.savedVisibleRange = propMap;
-         props.autoZoomPending = true;
-
+         android.util.Log.d("ChartZoom", "setVisibleXRangeMinimum: propMap=" + propMap + " scaleX=" + chart.getScaleX());
+         if (propMap == null) {
+             // visibleRange 해제 → 제약 초기화 + fitScreen
+             props.savedVisibleRange = null;
+             props.autoZoomPending = false;
+             chart.getViewPortHandler().setMinimumScaleX(1f);
+             chart.getViewPortHandler().setMaximumScaleX(Float.MAX_VALUE);
+             chart.fitScreen();
+             android.util.Log.d("ChartZoom", "setVisibleXRangeMinimum NULL: fitScreen done. scaleX=" + chart.getScaleX() + " minScaleX=" + chart.getViewPortHandler().getMinScaleX());
+         } else {
+             props.savedVisibleRange = propMap;
+             props.autoZoomPending = true;
+         }
     }
 
     private void updateVisibleRange(BarLineChartBase chart, ReadableMap propMap) {
         if (BridgeUtils.validate(propMap, ReadableType.Map, "x")) {
             ReadableMap x = propMap.getMap("x");
-            if (BridgeUtils.validate(x, ReadableType.Number, "min")) {
-                chart.setVisibleXRangeMinimum((float) x.getDouble("min"));
+
+            boolean hasMax = BridgeUtils.validate(x, ReadableType.Number, "max");
+            if (hasMax) {
+                chart.setVisibleXRangeMaximum((float) x.getDouble("max"));
             }
 
-            if (BridgeUtils.validate(x, ReadableType.Number, "max")) {
-                chart.setVisibleXRangeMaximum((float) x.getDouble("max"));
+            // max가 있으면 min 설정 건너뜀 → autoZoomPending에서 fitScreen 후 설정
+            // max가 없으면 기존대로 min 설정
+            if (!hasMax && BridgeUtils.validate(x, ReadableType.Number, "min")) {
+                chart.setVisibleXRangeMinimum((float) x.getDouble("min"));
             }
         }
 
@@ -155,52 +168,23 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
 
         ChartExtraProperties extra = extraPropertiesHolder.getExtraProperties(chart);
 
-        if (extra.zoomScaleX != null) {
-            float targetScale = extra.zoomScaleX;
-            if (targetScale > 0 && chart.getScaleX() != targetScale) {
-                float relativeScale = targetScale / chart.getScaleX();
-                float centerX = chart.getData() != null ? (float) chart.getData().getXMax() : 0f;
-                YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled() ?
-                        YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
-                chart.zoom(relativeScale, 1f, centerX, 0f, axis);
-                // clear initial zoom so that future manual zooms aren't overridden
-                extra.zoomScaleX = null;
-            }
-        } else {
-             if (extra.autoZoomPending) {
-                // Remove any existing edge labels before recalculating based on new data.
-                com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.setEnabled(chart, false);
-                ReadableMap saved = extra.savedVisibleRange;
-                if (saved != null && BridgeUtils.validate(saved, ReadableType.Map, "x")) {
-                    ReadableMap xRange = saved.getMap("x");
-                    if (BridgeUtils.validate(xRange, ReadableType.Number, "min")) {
-                        float visibleMin = (float) xRange.getDouble("min");
-                        if (visibleMin > 0) {
-                            float rawDataXMin = chart.getData() != null ? (float) chart.getData().getXMin() : chart.getXChartMin();
-                            float rawDataXMax = chart.getData() != null ? (float) chart.getData().getXMax() : chart.getXChartMax();
-                            float effectiveXMin = Math.min(rawDataXMin, chart.getXChartMin());
-                            float effectiveXMax = Math.max(rawDataXMax, chart.getXChartMax());
-                            float totalRange = effectiveXMax - effectiveXMin;
-                            if (totalRange > 0) {
-                                float relativeScale;
-                                if (totalRange > visibleMin) {
-                                    // zoom out so only visibleMin is shown
-                                    relativeScale = totalRange / visibleMin;
-                                } else {
-                                    // zoom in so entries spread to visibleMin width
-                                    relativeScale = visibleMin / totalRange;
-                                }
-                                float centerX = effectiveXMax;
-                                YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled()
-                                        ? YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
-                                chart.zoom(relativeScale, 1f, centerX, 0f, axis);
-                            }
-                            // auto zoom handled
-                            extra.autoZoomPending = false;
-                        }
-                    }
-                }
-            }
+        // 줌 로직은 onAfterDataSetChanged 오버라이드에서 처리
+    }
+
+    @ReactProp(name = "maxScale")
+    public void setMaxScale(BarLineChartBase chart, ReadableMap propMap) {
+        if (propMap == null) {
+            chart.getViewPortHandler().setMaximumScaleX(Float.MAX_VALUE);
+            chart.getViewPortHandler().setMaximumScaleY(Float.MAX_VALUE);
+            return;
+        }
+        if (BridgeUtils.validate(propMap, ReadableType.Number, "x")) {
+            float maxScaleX = (float) propMap.getDouble("x");
+            chart.getViewPortHandler().setMaximumScaleX(maxScaleX);
+        }
+        if (BridgeUtils.validate(propMap, ReadableType.Number, "y")) {
+            float maxScaleY = (float) propMap.getDouble("y");
+            chart.getViewPortHandler().setMaximumScaleY(maxScaleY);
         }
     }
 
@@ -251,6 +235,12 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
 
     @ReactProp(name = "zoom")
     public void setZoom(BarLineChartBase chart, ReadableMap propMap) {
+        ChartExtraProperties extra = extraPropertiesHolder.getExtraProperties(chart);
+        if (propMap == null) {
+            // zoom 해제 → zoomScaleX 초기화
+            extra.zoomScaleX = null;
+            return;
+        }
         if (BridgeUtils.validate(propMap, ReadableType.Number, "scaleX") &&
                 BridgeUtils.validate(propMap, ReadableType.Number, "scaleY") &&
                 BridgeUtils.validate(propMap, ReadableType.Number, "xValue") &&
@@ -270,8 +260,7 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                     axisDependency
             );
 
-            // sendLoadCompleteEvent(chart);
-            extraPropertiesHolder.getExtraProperties(chart).zoomScaleX = (float) propMap.getDouble("scaleX");
+            extra.zoomScaleX = (float) propMap.getDouble("scaleX");
         }
     }
 
@@ -476,6 +465,28 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         if (extraProperties.savedVisibleRange != null) {
             extraProperties.autoZoomPending = true;
             updateVisibleRange(chart, extraProperties.savedVisibleRange);
+        } else {
+            // savedVisibleRange == null → all 모드: 완전 줌아웃
+            extraProperties.zoomScaleX = null;
+            extraProperties.autoZoomPending = false;
+            if (chart.getWidth() > 0) {
+                // 차트가 레이아웃된 상태 → 즉시 줌아웃
+                chart.getViewPortHandler().setMinimumScaleX(1f);
+                chart.getViewPortHandler().setMaximumScaleX(Float.MAX_VALUE);
+                if (chart.getScaleX() > 1f) {
+                    float relativeScale = 1f / chart.getScaleX();
+                    float centerX = chart.getData() != null ? (float) chart.getData().getXMax() : 0f;
+                    YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled() ?
+                            YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
+                    chart.zoom(relativeScale, 1f, centerX, 0f, axis);
+                }
+                chart.fitScreen();
+                android.util.Log.d("ChartZoom", "onAfterDataSetChanged: fitScreen done. scaleX=" + chart.getScaleX()
+                    + " minScaleX=" + chart.getViewPortHandler().getMinScaleX());
+            } else {
+                // chartWidth=0 → 아직 레이아웃 안됨. OnPreDraw에서 chartLoadComplete 후 JS에서 fitScreen 호출됨
+                android.util.Log.d("ChartZoom", "onAfterDataSetChanged: chartWidth=0, skip zoom. JS chartLoadComplete will handle.");
+            }
         }
 
 
