@@ -114,10 +114,9 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
     func setVisibleRange(_ config: NSDictionary) {
         NSLog("[ChartZoom] setVisibleRange called: config=%@ scaleX=%f minScaleX=%f", config, barLineChart.scaleX, barLineChart.viewPortHandler.minScaleX)
         if config == NSNull() || config.count == 0 {
-            // visibleRange 해제 → 제약 초기화 + fitScreen
+            // visibleRange 해제 → fitScreen만 호출
             savedVisibleRange = nil
-            barLineChart.viewPortHandler.setMinimumScaleX(1.0)
-            // maxScaleX는 건드리지 않음 - 줌인 7개 제한 유지
+            // setMinimumScaleX(1.0) 제거 - scaleX < 1.0이 필요한 경우 줌아웃 차단
             barLineChart.fitScreen()
             NSLog("[ChartZoom] setVisibleRange NULL: fitScreen done. scaleX=%f minScaleX=%f maxScaleX=%f", barLineChart.scaleX, barLineChart.viewPortHandler.minScaleX, barLineChart.viewPortHandler.maxScaleX)
             return
@@ -403,15 +402,8 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
     }
 
     private func performFullZoomOut() {
-        barLineChart.viewPortHandler.setMinimumScaleX(1.0)
-        // maxScaleX는 건드리지 않음 - fitScreen()은 minScaleX까지만 줌아웃, maxScaleX 영향 없음
-        // maxScaleX를 무한대로 설정하면 줌인 7개 제한이 사라짐
-        if barLineChart.scaleX > 1.0 {
-            let relativeScale = 1.0 / barLineChart.scaleX
-            let centerX = barLineChart.data?.xMax ?? 0
-            let axis: YAxis.AxisDependency = barLineChart.leftAxis.isEnabled ? .left : .right
-            barLineChart.zoom(scaleX: relativeScale, scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
-        }
+        // minScaleX 설정하지 않음 - fitScreen()이 알아서 최소 스케일 계산
+        // setMinimumScaleX(1.0)은 scaleX < 1.0이 필요한 경우 줌아웃 차단
         barLineChart.fitScreen()
         NSLog("[ChartZoom] performFullZoomOut: frame.width=%f scaleX=%f minScaleX=%f maxScaleX=%f",
             barLineChart.frame.width, barLineChart.scaleX, barLineChart.viewPortHandler.minScaleX, barLineChart.viewPortHandler.maxScaleX)

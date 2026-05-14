@@ -111,11 +111,10 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
          ChartExtraProperties props = extraPropertiesHolder.getExtraProperties(chart);
          android.util.Log.d("ChartZoom", "setVisibleXRangeMinimum: propMap=" + propMap + " scaleX=" + chart.getScaleX());
          if (propMap == null) {
-             // visibleRange 해제 → 제약 초기화 + fitScreen
+             // visibleRange 해제 → fitScreen만 호출
              props.savedVisibleRange = null;
              props.autoZoomPending = false;
-             chart.getViewPortHandler().setMinimumScaleX(1f);
-             // maxScaleX는 건드리지 않음 - 줌인 7개 제한 유지
+             // setMinimumScaleX(1f) 제거 - scaleX < 1.0이 필요한 경우 줌아웃 차단
              chart.fitScreen();
              android.util.Log.d("ChartZoom", "setVisibleXRangeMinimum NULL: fitScreen done. scaleX=" + chart.getScaleX() + " minScaleX=" + chart.getViewPortHandler().getMinScaleX() + " maxScaleX=" + chart.getViewPortHandler().getMaxScaleX());
          } else {
@@ -457,16 +456,8 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
     }
 
     private void performFullZoomOut(BarLineChartBase chart) {
-        chart.getViewPortHandler().setMinimumScaleX(1f);
-        // maxScaleX는 건드리지 않음 - fitScreen()은 minScaleX까지만 줌아웃하므로 maxScaleX 영향 없음
-        // maxScaleX를 MAX_VALUE로 설정하면 줌인 7개 제한이 사라짐
-        if (chart.getScaleX() > 1f) {
-            float relativeScale = 1f / chart.getScaleX();
-            float centerX = chart.getData() != null ? (float) chart.getData().getXMax() : 0f;
-            YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled() ?
-                    YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
-            chart.zoom(relativeScale, 1f, centerX, 0f, axis);
-        }
+        // minScaleX 설정하지 않음 - fitScreen()이 알아서 최소 스케일 계산
+        // setMinimumScaleX(1f)는 scaleX < 1.0이 필요한 경우 줌아웃을 차단함
         chart.fitScreen();
         android.util.Log.d("ChartZoom", "performFullZoomOut: chartWidth=" + chart.getWidth()
             + " scaleX after=" + chart.getScaleX() + " minScaleX=" + chart.getViewPortHandler().getMinScaleX()
