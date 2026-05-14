@@ -402,11 +402,23 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
     }
 
     private func performFullZoomOut() {
-        // minScaleX 설정하지 않음 - fitScreen()이 알아서 최소 스케일 계산
-        // setMinimumScaleX(1.0)은 scaleX < 1.0이 필요한 경우 줌아웃 차단
         barLineChart.fitScreen()
-        NSLog("[ChartZoom] performFullZoomOut: frame.width=%f scaleX=%f minScaleX=%f maxScaleX=%f",
-            barLineChart.frame.width, barLineChart.scaleX, barLineChart.viewPortHandler.minScaleX, barLineChart.viewPortHandler.maxScaleX)
+        // fitScreen()은 scaleX=1.0, minScaleX=1.0으로 설정
+        // 하지만 이후 calcModulus()가 minScaleX를 실제값(< 1.0)으로 재계산
+        // 다음 레이아웃 사이클 후 minScaleX로 줌아웃
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            let minScaleX = self.barLineChart.viewPortHandler.minScaleX
+            let currentScaleX = self.barLineChart.scaleX
+            NSLog("[ChartZoom] performFullZoomOut deferred: currentScaleX=%f minScaleX=%f", currentScaleX, minScaleX)
+            if currentScaleX > minScaleX {
+                let relativeScale = minScaleX / currentScaleX
+                let centerX = self.barLineChart.data?.xMax ?? 0
+                let axis: YAxis.AxisDependency = self.barLineChart.leftAxis.isEnabled ? .left : .right
+                self.barLineChart.zoom(scaleX: relativeScale, scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
+            }
+            NSLog("[ChartZoom] performFullZoomOut final: scaleX=%f minScaleX=%f", self.barLineChart.scaleX, self.barLineChart.viewPortHandler.minScaleX)
+        }
     }
 
     func setDataAndLockIndex(_ data: NSDictionary) {

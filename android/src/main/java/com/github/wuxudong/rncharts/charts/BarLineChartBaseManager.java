@@ -456,12 +456,23 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
     }
 
     private void performFullZoomOut(BarLineChartBase chart) {
-        // minScaleX 설정하지 않음 - fitScreen()이 알아서 최소 스케일 계산
-        // setMinimumScaleX(1f)는 scaleX < 1.0이 필요한 경우 줌아웃을 차단함
         chart.fitScreen();
-        android.util.Log.d("ChartZoom", "performFullZoomOut: chartWidth=" + chart.getWidth()
-            + " scaleX after=" + chart.getScaleX() + " minScaleX=" + chart.getViewPortHandler().getMinScaleX()
-            + " maxScaleX=" + chart.getViewPortHandler().getMaxScaleX());
+        // fitScreen()은 scaleX=1.0, minScaleX=1.0으로 설정
+        // 하지만 이후 calcModulus()가 minScaleX를 실제값(< 1.0)으로 재계산
+        // 다음 드로우 사이클 후 minScaleX로 줌아웃
+        chart.post(() -> {
+            float minScaleX = chart.getViewPortHandler().getMinScaleX();
+            float currentScaleX = chart.getScaleX();
+            android.util.Log.d("ChartZoom", "performFullZoomOut deferred: currentScaleX=" + currentScaleX + " minScaleX=" + minScaleX);
+            if (currentScaleX > minScaleX) {
+                float relativeScale = minScaleX / currentScaleX;
+                float centerX = chart.getData() != null ? (float) chart.getData().getXMax() / 2f : 0f;
+                YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled() ?
+                        YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
+                chart.zoom(relativeScale, 1f, centerX, 0f, axis);
+            }
+            android.util.Log.d("ChartZoom", "performFullZoomOut final: scaleX=" + chart.getScaleX() + " minScaleX=" + chart.getViewPortHandler().getMinScaleX());
+        });
     }
 
     @Override
