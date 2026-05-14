@@ -404,45 +404,42 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
     private func performFullZoomOut() {
         // setMinimumScaleX()에 1.0 하한선이 있어 직접 호출 불가
         // fitScreen()도 mMinScaleX=1.0으로 설정
-        // ObjC 런타임으로 mMinScaleX를 작은 값으로 설정 후 줌아웃
+        // KVC로 minScaleX 직접 설정 (setter 이름이 setMinimumScaleX:라서
+        // KVC key "minScaleX"는 setter를 못 찾고 ivar에 직접 접근)
         barLineChart.fitScreen()
 
-        let contentWidth = barLineChart.viewPortHandler.contentWidth
-        guard contentWidth > 0, let data = barLineChart.data else { return }
-
-        let dataRange = data.xMax - data.xMin
-        guard dataRange > 0 else { return }
-
-        let targetScaleX = contentWidth / dataRange // < 1.0 이면 줌아웃
-        let minScale = min(targetScaleX, 0.01)
-
-        // ObjC 런타임으로 mMinScaleX 직접 설정 (1.0 하한선 우회)
         let vph = barLineChart.viewPortHandler
-        let ivarCount = UnsafeMutablePointer<UInt32>.allocate(capacity: 1)
-        defer { ivarCount.deallocate() }
-        if let ivars = class_copyIvarList(object_getClass(vph), ivarCount) {
-            for i in 0..<ivarCount.pointee {
-                let ivar = ivars[Int(i)]
-                let name = ivar_getName(ivar)
-                if let nameStr = String(cString: name!) as String?, nameStr == "mMinScaleX" {
-                    let offset = ivar_getOffset(ivar)
-                    let ptr = Unmanaged.passUnretained(vph).toOpaque().advanced(by: offset)
-                    ptr.assumingMemoryBound(to: CGFloat.self).pointee = minScale
-                    break
+        let minScale: CGFloat = 0.01
+
+        // KVC로 minScaleX 직접 설정 (1.0 하한선 우회)
+        do {
+            try vph.setValue(minScale, forKey: "minScaleX")
+            NSLog("[ChartZoom] KVC set minScaleX succeeded: %f", vph.minScaleX)
+        } catch {
+            NSLog("[ChartZoom] KVC set minScaleX failed: %@", error.localizedDescription)
+            // 폴백: ivar 검색하여 디버그 로깅
+            let ivarCount = UnsafeMutablePointer<UInt32>.allocate(capacity: 1)
+            defer { ivarCount.deallocate() }
+            if let ivars = class_copyIvarList(object_getClass(vph), ivarCount) {
+                for i in 0..<ivarCount.pointee {
+                    let ivar = ivars[Int(i)]
+                    if let name = ivar_getName(ivar) {
+                        NSLog("[ChartZoom] ivar[%d]: %s", i, name)
+                    }
                 }
+                free(ivars)
             }
-            free(ivars)
         }
 
-        // 현재 scaleX에서 targetScaleX로 줌아웃
+        // 현재 scaleX에서 줌아웃
         let currentScaleX = barLineChart.scaleX
-        if currentScaleX > targetScaleX {
-            let relativeScale = targetScaleX / currentScaleX
+        if currentScaleX > minScale {
+            let relativeScale = minScale / currentScaleX
             let axis: YAxis.AxisDependency = barLineChart.leftAxis.isEnabled ? .left : .right
             barLineChart.zoom(scaleX: relativeScale, scaleY: 1.0, xValue: 0, yValue: 0.0, axis: axis)
         }
-        NSLog("[ChartZoom] performFullZoomOut: scaleX=%f minScaleX=%f targetScaleX=%f dataRange=%f contentWidth=%f",
-            barLineChart.scaleX, barLineChart.viewPortHandler.minScaleX, targetScaleX, dataRange, contentWidth)
+        NSLog("[ChartZoom] performFullZoomOut: scaleX=%f minScaleX=%f",
+            barLineChart.scaleX, vph.minScaleX)
     }
 
     func setDataAndLockIndex(_ data: NSDictionary) {
