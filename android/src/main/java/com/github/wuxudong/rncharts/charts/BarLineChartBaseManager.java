@@ -115,9 +115,9 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
              props.savedVisibleRange = null;
              props.autoZoomPending = false;
              chart.getViewPortHandler().setMinimumScaleX(1f);
-             chart.getViewPortHandler().setMaximumScaleX(Float.MAX_VALUE);
+             // maxScaleX는 건드리지 않음 - 줌인 7개 제한 유지
              chart.fitScreen();
-             android.util.Log.d("ChartZoom", "setVisibleXRangeMinimum NULL: fitScreen done. scaleX=" + chart.getScaleX() + " minScaleX=" + chart.getViewPortHandler().getMinScaleX());
+             android.util.Log.d("ChartZoom", "setVisibleXRangeMinimum NULL: fitScreen done. scaleX=" + chart.getScaleX() + " minScaleX=" + chart.getViewPortHandler().getMinScaleX() + " maxScaleX=" + chart.getViewPortHandler().getMaxScaleX());
          } else {
              props.savedVisibleRange = propMap;
              props.autoZoomPending = true;
@@ -456,6 +456,23 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
 
     }
 
+    private void performFullZoomOut(BarLineChartBase chart) {
+        chart.getViewPortHandler().setMinimumScaleX(1f);
+        // maxScaleX는 건드리지 않음 - fitScreen()은 minScaleX까지만 줌아웃하므로 maxScaleX 영향 없음
+        // maxScaleX를 MAX_VALUE로 설정하면 줌인 7개 제한이 사라짐
+        if (chart.getScaleX() > 1f) {
+            float relativeScale = 1f / chart.getScaleX();
+            float centerX = chart.getData() != null ? (float) chart.getData().getXMax() : 0f;
+            YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled() ?
+                    YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
+            chart.zoom(relativeScale, 1f, centerX, 0f, axis);
+        }
+        chart.fitScreen();
+        android.util.Log.d("ChartZoom", "performFullZoomOut: chartWidth=" + chart.getWidth()
+            + " scaleX after=" + chart.getScaleX() + " minScaleX=" + chart.getViewPortHandler().getMinScaleX()
+            + " maxScaleX=" + chart.getViewPortHandler().getMaxScaleX());
+    }
+
     @Override
     protected void onAfterDataSetChanged(T chart) {
         super.onAfterDataSetChanged(chart);
@@ -471,21 +488,18 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
             extraProperties.autoZoomPending = false;
             if (chart.getWidth() > 0) {
                 // 차트가 레이아웃된 상태 → 즉시 줌아웃
-                chart.getViewPortHandler().setMinimumScaleX(1f);
-                chart.getViewPortHandler().setMaximumScaleX(Float.MAX_VALUE);
-                if (chart.getScaleX() > 1f) {
-                    float relativeScale = 1f / chart.getScaleX();
-                    float centerX = chart.getData() != null ? (float) chart.getData().getXMax() : 0f;
-                    YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled() ?
-                            YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
-                    chart.zoom(relativeScale, 1f, centerX, 0f, axis);
-                }
-                chart.fitScreen();
-                android.util.Log.d("ChartZoom", "onAfterDataSetChanged: fitScreen done. scaleX=" + chart.getScaleX()
-                    + " minScaleX=" + chart.getViewPortHandler().getMinScaleX());
+                performFullZoomOut(chart);
             } else {
-                // chartWidth=0 → 아직 레이아웃 안됨. OnPreDraw에서 chartLoadComplete 후 JS에서 fitScreen 호출됨
-                android.util.Log.d("ChartZoom", "onAfterDataSetChanged: chartWidth=0, skip zoom. JS chartLoadComplete will handle.");
+                // chartWidth=0 → 레이아웃 후 줌아웃
+                android.util.Log.d("ChartZoom", "onAfterDataSetChanged: chartWidth=0, deferring zoom to OnGlobalLayout");
+                chart.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                    @Override
+                    public void onGlobalLayout() {
+                        chart.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+                        android.util.Log.d("ChartZoom", "OnGlobalLayout: chartWidth=" + chart.getWidth() + " scaleX=" + chart.getScaleX());
+                        performFullZoomOut(chart);
+                    }
+                });
             }
         }
 
