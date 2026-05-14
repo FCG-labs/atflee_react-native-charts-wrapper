@@ -39,8 +39,9 @@ open class AtfleeMarker: MarkerView {
     open var fixedOnTop: Bool = false
 
     
-    fileprivate var insets = UIEdgeInsets(top: 8.0,left: 8.0,bottom: 20.0,right: 8.0)
-    fileprivate var topInsets = UIEdgeInsets(top: 20.0,left: 8.0,bottom: 8.0,right: 8.0)
+    // Figma: padding 2px 8px
+    fileprivate var insets = UIEdgeInsets(top: 2.0,left: 8.0,bottom: 2.0,right: 8.0)
+    fileprivate var topInsets = UIEdgeInsets(top: 2.0,left: 8.0,bottom: 2.0,right: 8.0)
 
     fileprivate var labelTitle: NSString?
     fileprivate var _drawTitleAttributes = [NSAttributedString.Key: Any]()
@@ -401,7 +402,8 @@ open class AtfleeMarker: MarkerView {
             }
         }
 
-        arrowImage = arrowHidden ? nil : UIImage(named: "arrow_right_circle")
+        // Figma: 18x18 원형 화살표 SVG 직접 렌더링
+        arrowImage = arrowHidden ? nil : Self.drawArrowCircleImage(size: 18)
 
         switch emotionCode {
         case "1":
@@ -422,7 +424,7 @@ open class AtfleeMarker: MarkerView {
         let arrowExists = arrowImage != nil
         let iconExists = imageEmotion != nil
         let itemSpacing: CGFloat = 8
-        let arrowSize: CGFloat = 20
+        let arrowSize: CGFloat = 18  // Figma: 18px
         let iconSize: CGFloat = CGFloat(imageSize)
 
         var itemWidths: [CGFloat] = []
@@ -445,7 +447,7 @@ open class AtfleeMarker: MarkerView {
             totalWidth += bottomRowWidth
         }
         let rowHeight = max(titleSize.height, labelSize.height)
-        _labelSize = CGSize(width: totalWidth, height: rowHeight + 4)  // py=2 상하
+        _labelSize = CGSize(width: totalWidth, height: rowHeight)
         _size.width = _labelSize.width + self.insets.left + self.insets.right
         _size.height = _labelSize.height + self.insets.top + self.insets.bottom
         _size.width = max(minimumSize.width, _size.width)
@@ -493,6 +495,30 @@ open class AtfleeMarker: MarkerView {
         chartView.addSubview(overlayButton)
     }
     
+    // Figma SVG: 18x18 원형 + 오른쪽 화살표
+    // <rect width="18" height="18" rx="9" fill="#FAFAFA"/>
+    // <path d="M7.5 12.75L11.25 9L7.5 5.25" stroke="#ABABAB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    private static func drawArrowCircleImage(size: CGFloat) -> UIImage {
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: size, height: size))
+        return renderer.image { ctx in
+            let rect = CGRect(x: 0, y: 0, width: size, height: size)
+            // 배경 원형
+            let circle = UIBezierPath(roundedRect: rect, cornerRadius: size / 2)
+            UIColor(red: 0.98, green: 0.98, blue: 0.98, alpha: 1.0).setFill()  // #FAFAFA
+            circle.fill()
+            // 화살표 패스
+            let arrow = UIBezierPath()
+            arrow.move(to: CGPoint(x: size * 7.5 / 18, y: size * 12.75 / 18))
+            arrow.addLine(to: CGPoint(x: size * 11.25 / 18, y: size * 9.0 / 18))
+            arrow.addLine(to: CGPoint(x: size * 7.5 / 18, y: size * 5.25 / 18))
+            arrow.lineWidth = 1.5
+            arrow.lineCapStyle = .round
+            arrow.lineJoinStyle = .round
+            UIColor(red: 0.671, green: 0.671, blue: 0.671, alpha: 1.0).setStroke()  // #ABABAB
+            arrow.stroke()
+        }
+    }
+
     func resetState() {
         fadeStart = nil
         lastEntry = nil
