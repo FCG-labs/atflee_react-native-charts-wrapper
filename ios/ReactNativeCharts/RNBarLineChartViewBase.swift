@@ -402,23 +402,19 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
     }
 
     private func performFullZoomOut() {
-        barLineChart.fitScreen()
-        // fitScreen()은 scaleX=1.0, minScaleX=1.0으로 설정
-        // 하지만 이후 calcModulus()가 minScaleX를 실제값(< 1.0)으로 재계산
-        // 다음 레이아웃 사이클 후 minScaleX로 줌아웃
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            let minScaleX = self.barLineChart.viewPortHandler.minScaleX
-            let currentScaleX = self.barLineChart.scaleX
-            NSLog("[ChartZoom] performFullZoomOut deferred: currentScaleX=%f minScaleX=%f", currentScaleX, minScaleX)
-            if currentScaleX > minScaleX {
-                let relativeScale = minScaleX / currentScaleX
-                let centerX = self.barLineChart.data?.xMax ?? 0
-                let axis: YAxis.AxisDependency = self.barLineChart.leftAxis.isEnabled ? .left : .right
-                self.barLineChart.zoom(scaleX: relativeScale, scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
-            }
-            NSLog("[ChartZoom] performFullZoomOut final: scaleX=%f minScaleX=%f", self.barLineChart.scaleX, self.barLineChart.viewPortHandler.minScaleX)
+        // fitScreen()은 minScaleX=1.0으로 설정하여 줌아웃을 차단함
+        // 대신 minScaleX를 매우 작은 값으로 설정하여 완전 줌아웃 허용
+        barLineChart.viewPortHandler.setMinimumScaleX(0.001)
+        // 현재 scaleX에서 최소 스케일까지 줌아웃
+        let currentScaleX = barLineChart.scaleX
+        let targetScaleX: CGFloat = 0.001
+        if currentScaleX > targetScaleX {
+            let relativeScale = targetScaleX / currentScaleX
+            let axis: YAxis.AxisDependency = barLineChart.leftAxis.isEnabled ? .left : .right
+            barLineChart.zoom(scaleX: relativeScale, scaleY: 1.0, xValue: 0, yValue: 0.0, axis: axis)
         }
+        NSLog("[ChartZoom] performFullZoomOut: scaleX=%f minScaleX=%f maxScaleX=%f",
+            barLineChart.scaleX, barLineChart.viewPortHandler.minScaleX, barLineChart.viewPortHandler.maxScaleX)
     }
 
     func setDataAndLockIndex(_ data: NSDictionary) {

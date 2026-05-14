@@ -456,23 +456,21 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
     }
 
     private void performFullZoomOut(BarLineChartBase chart) {
-        chart.fitScreen();
-        // fitScreen()은 scaleX=1.0, minScaleX=1.0으로 설정
-        // 하지만 이후 calcModulus()가 minScaleX를 실제값(< 1.0)으로 재계산
-        // 다음 드로우 사이클 후 minScaleX로 줌아웃
-        chart.post(() -> {
-            float minScaleX = chart.getViewPortHandler().getMinScaleX();
-            float currentScaleX = chart.getScaleX();
-            android.util.Log.d("ChartZoom", "performFullZoomOut deferred: currentScaleX=" + currentScaleX + " minScaleX=" + minScaleX);
-            if (currentScaleX > minScaleX) {
-                float relativeScale = minScaleX / currentScaleX;
-                float centerX = chart.getData() != null ? (float) chart.getData().getXMax() / 2f : 0f;
-                YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled() ?
-                        YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
-                chart.zoom(relativeScale, 1f, centerX, 0f, axis);
-            }
-            android.util.Log.d("ChartZoom", "performFullZoomOut final: scaleX=" + chart.getScaleX() + " minScaleX=" + chart.getViewPortHandler().getMinScaleX());
-        });
+        // fitScreen()은 minScaleX=1.0으로 설정하여 줌아웃을 차단함
+        // 대신 minScaleX를 매우 작은 값으로 설정하여 완전 줌아웃 허용
+        chart.getViewPortHandler().setMinimumScaleX(0.001f);
+        // 현재 scaleX에서 최소 스케일까지 줌아웃
+        float currentScaleX = chart.getScaleX();
+        float targetScaleX = 0.001f;
+        if (currentScaleX > targetScaleX) {
+            float relativeScale = targetScaleX / currentScaleX;
+            YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled() ?
+                    YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
+            chart.zoom(relativeScale, 1f, 0f, 0f, axis);
+        }
+        android.util.Log.d("ChartZoom", "performFullZoomOut: scaleX=" + chart.getScaleX()
+            + " minScaleX=" + chart.getViewPortHandler().getMinScaleX()
+            + " maxScaleX=" + chart.getViewPortHandler().getMaxScaleX());
     }
 
     @Override
