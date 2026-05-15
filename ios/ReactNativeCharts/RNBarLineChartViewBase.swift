@@ -148,11 +148,14 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             barLineChart.setVisibleYRangeMaximum(y["right"]["max"].doubleValue, axis: YAxis.AxisDependency.right)
         }
 
-        if let target = zoomScaleX, target > 0, barLineChart.scaleX != target {
-            let relative = target / barLineChart.scaleX
-            let centerX = barLineChart.data?.xMax ?? 0
-            let axis = barLineChart.getAxis(.left).isEnabled ? YAxis.AxisDependency.left : YAxis.AxisDependency.right
-            barLineChart.zoom(scaleX: relative, scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
+        if let target = zoomScaleX, target > 0 {
+            if barLineChart.scaleX != target {
+                let relative = target / barLineChart.scaleX
+                let centerX = barLineChart.data?.xMax ?? 0
+                let axis = barLineChart.getAxis(.left).isEnabled ? YAxis.AxisDependency.left : YAxis.AxisDependency.right
+                barLineChart.zoom(scaleX: relative, scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
+            }
+            // zoom prop이 명시적으로 있으면 auto-zoom 건너뜀
         } else if let saved = savedVisibleRange,
                   let xMap = saved["x"] as? NSDictionary,
                   let visibleMin = xMap["min"] as? CGFloat,
