@@ -163,9 +163,35 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                 YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled() ?
                         YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
                 chart.zoom(relativeScale, 1f, centerX, 0f, axis);
-                extra.zoomScaleX = null;
             }
+            extra.zoomScaleX = null;
         } else if (extra.autoZoomPending) {
+            // Auto-zoom based on visibleRange.x.min (mirrors iOS behavior)
+            if (BridgeUtils.validate(propMap, ReadableType.Map, "x")) {
+                ReadableMap xRange = propMap.getMap("x");
+                if (BridgeUtils.validate(xRange, ReadableType.Number, "min")) {
+                    float visibleMin = (float) xRange.getDouble("min");
+                    if (visibleMin > 0) {
+                        float rawDataXMin = chart.getData() != null ? (float) chart.getData().getXMin() : chart.getXChartMin();
+                        float rawDataXMax = chart.getData() != null ? (float) chart.getData().getXMax() : chart.getXChartMax();
+                        float effectiveXMin = Math.min(rawDataXMin, chart.getXChartMin());
+                        float effectiveXMax = Math.max(rawDataXMax, chart.getXChartMax());
+                        float totalRange = effectiveXMax - effectiveXMin;
+                        if (totalRange > 0) {
+                            float relativeScale;
+                            if (totalRange > visibleMin) {
+                                relativeScale = totalRange / visibleMin;
+                            } else {
+                                relativeScale = visibleMin / totalRange;
+                            }
+                            float centerX = effectiveXMax;
+                            YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled() ?
+                                    YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
+                            chart.zoom(relativeScale, 1f, centerX, 0f, axis);
+                        }
+                    }
+                }
+            }
             com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.setEnabled(chart, false);
             extra.autoZoomPending = false;
         }

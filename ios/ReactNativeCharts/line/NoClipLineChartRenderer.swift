@@ -19,74 +19,15 @@ open class NoClipLineChartRenderer: LineChartRenderer {
         super.init(dataProvider: dataProvider, animator: animator, viewPortHandler: viewPortHandler)
     }
 
-    open override func drawData(context: CGContext) {
+    // Override drawDataSet to enforce round line joins/caps on each dataset stroke.
+    // DGCharts' internal saveGState/restoreGState preserves our settings,
+    // ensuring the line never produces miter spikes at sharp angles.
+    open override func drawDataSet(context: CGContext, dataSet: LineChartDataSetProtocol) {
         context.saveGState()
         context.setLineJoin(.round)
         context.setLineCap(.round)
         context.setMiterLimit(1)
-        super.drawData(context: context)
-        drawRoundedLineOverlay(context: context)
-        context.restoreGState()
-    }
-
-    private func drawRoundedLineOverlay(context: CGContext) {
-        guard
-            let dataProvider = dataProvider,
-            let lineData = dataProvider.lineData
-        else { return }
-
-        let phaseX = animator.phaseX
-
-        context.saveGState()
-        context.resetClip()
-        context.setLineJoin(.round)
-        context.setLineCap(.round)
-        context.setMiterLimit(1)
-
-        for dataSetIndex in lineData.indices {
-            guard
-                let dataSet = lineData[dataSetIndex] as? LineChartDataSetProtocol,
-                dataSet.isVisible,
-                dataSet.mode == .linear,
-                dataSet.entryCount > 1
-            else { continue }
-
-            let entryCount = Int(min(
-                ceil(Double(dataSet.entryCount) * Double(phaseX)),
-                Double(dataSet.entryCount)
-            ))
-            let trans = dataProvider.getTransformer(forAxis: dataSet.axisDependency)
-            let matrix = trans.valueToPixelMatrix
-            let path = CGMutablePath()
-            var hasMoved = false
-            var pt = CGPoint()
-
-            for j in 0..<entryCount {
-                guard let e = dataSet.entryForIndex(j) else { continue }
-                pt.x = CGFloat(e.x)
-                pt.y = CGFloat(e.y)
-                pt = pt.applying(matrix)
-
-                let allowance = max(dataSet.lineWidth, dataSet.circleRadius)
-                if pt.x > viewPortHandler.contentRight + allowance { break }
-                if pt.x < viewPortHandler.contentLeft - allowance { continue }
-
-                if hasMoved {
-                    path.addLine(to: pt)
-                } else {
-                    path.move(to: pt)
-                    hasMoved = true
-                }
-            }
-
-            if hasMoved {
-                context.setStrokeColor(dataSet.color(atIndex: 0).cgColor)
-                context.setLineWidth(dataSet.lineWidth)
-                context.addPath(path)
-                context.strokePath()
-            }
-        }
-
+        super.drawDataSet(context: context, dataSet: dataSet)
         context.restoreGState()
     }
 
