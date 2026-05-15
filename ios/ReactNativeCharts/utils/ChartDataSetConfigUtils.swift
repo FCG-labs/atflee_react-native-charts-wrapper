@@ -109,6 +109,16 @@ class ChartDataSetConfigUtils: NSObject {
         if config["highlightLineWidth"].float != nil {
             dataSet.highlightLineWidth = CGFloat(config["highlightLineWidth"].floatValue);
         }
+
+        if let dash = config["dashedHighlightLine"].dictionary {
+            let lineLen = dash["lineLength"]?.float ?? 0
+            let spaceLen = dash["spaceLength"]?.float ?? 0
+            let phase = dash["phase"]?.float ?? 0
+            if lineLen > 0 && spaceLen > 0 {
+                dataSet.highlightLineDashLengths = [CGFloat(lineLen), CGFloat(spaceLen)]
+                dataSet.highlightLineDashPhase = CGFloat(phase)
+            }
+        }
     }
 
     static func commonLineRadarConfig( _ dataSet:LineRadarChartDataSet,  config:JSON) {

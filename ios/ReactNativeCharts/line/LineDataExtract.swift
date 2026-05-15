@@ -14,7 +14,9 @@ class LineDataExtract : DataExtract {
     }
 
     override func createDataSet(_ entries: [ChartDataEntry], label: String) -> ChartDataSetProtocol {
-        return LineChartDataSet(entries: entries, label: label)
+        let dataSet = LineChartDataSet(entries: entries, label: label)
+        dataSet.lineCapType = .round
+        return dataSet
     }
 
     override func dataSetConfig(_ dataSet: ChartDataSetProtocol, config: JSON) {

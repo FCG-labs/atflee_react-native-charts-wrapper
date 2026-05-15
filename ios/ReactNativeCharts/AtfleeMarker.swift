@@ -39,8 +39,9 @@ open class AtfleeMarker: MarkerView {
     open var fixedOnTop: Bool = false
 
     
-    fileprivate var insets = UIEdgeInsets(top: 8.0,left: 8.0,bottom: 20.0,right: 8.0)
-    fileprivate var topInsets = UIEdgeInsets(top: 20.0,left: 8.0,bottom: 8.0,right: 8.0)
+    // Figma: padding 2px 8px
+    fileprivate var insets = UIEdgeInsets(top: 2.0,left: 8.0,bottom: 2.0,right: 8.0)
+    fileprivate var topInsets = UIEdgeInsets(top: 2.0,left: 8.0,bottom: 2.0,right: 8.0)
 
     fileprivate var labelTitle: NSString?
     fileprivate var _drawTitleAttributes = [NSAttributedString.Key: Any]()
@@ -51,7 +52,7 @@ open class AtfleeMarker: MarkerView {
     fileprivate var _drawAttributes = [NSAttributedString.Key: Any]()
     
     fileprivate var imageEmotion: UIImage? = nil
-    fileprivate let imageSize = 20.0
+    fileprivate let imageSize = 16.0
 
     // ───────────────── init 그대로 ─────────────────
     public init(color: UIColor, font: UIFont, textColor: UIColor, textAlign: NSTextAlignment, textWeight: String,titleFont: UIFont) {
@@ -178,8 +179,11 @@ open class AtfleeMarker: MarkerView {
         context.saveGState()
         let roundRect = UIBezierPath(roundedRect: rect, byRoundingCorners:.allCorners,
                                      cornerRadii: CGSize(width: 8, height: 8))
-        context.setFillColor(UIColor.white.cgColor)
-        context.setShadow(offset: CGSize(width: 1.0, height: 4.0), blur: 7.5)
+        // markerColor prop 사용 (JS에서 markerColor로 전달)
+        // 메인: #FFFFFF, 전체변화: #FAFAFA
+        let bgColor = self.color ?? UIColor(red: 0.98, green: 0.98, blue: 0.98, alpha: 1.0)
+        context.setFillColor(bgColor.cgColor)
+//        context.setShadow(offset: CGSize(width: 1.0, height: 4.0), blur: 7.5)
 //        context.setBlendMode(.multiply)
         context.addPath(roundRect.cgPath)
         context.fillPath()
@@ -218,47 +222,59 @@ open class AtfleeMarker: MarkerView {
 
         UIGraphicsPushContext(context)
 
-        // 기본 padding 및 크기 정의
+        // 가로 배치: [날짜] gap [값+이모티콘] gap [화살표]
         let bgPadding: CGFloat = 8
         let paddedRect = rect.insetBy(dx: bgPadding, dy: bgPadding)
-        let itemSpacing: CGFloat = 8
-        let arrowSize: CGFloat = 20
+        let gapTitleValue: CGFloat = 6   // 날짜↔값 사이
+        let gapValueArrow: CGFloat = 10  // 값↔화살표 사이
+        let arrowSize: CGFloat = 18      // Figma: 18px
         let iconSize: CGFloat = CGFloat(imageSize)
 
-        // label, icon, arrowImage 배치 (label/image 는 좌측, arrowImage 는 우측 정렬)
-        var labelSize = CGSize.zero
+        // 각 요소 크기 측정
+        var titleSize = CGSize.zero
+        if let title = labelTitle, title.length > 0 {
+            titleSize = title.size(withAttributes: _drawTitleAttributes)
+        }
+        var valueSize = CGSize.zero
         if let lbl = labelns, lbl.length > 0 {
-            labelSize = lbl.size(withAttributes: _drawAttributes)
+            valueSize = lbl.size(withAttributes: _drawAttributes)
         }
 
-        let baseY = paddedRect.maxY - labelSize.height // arrow, icon, label 모두 같은 Y축 기준
+        // 세로 중앙 정렬 기준
+        let maxTextH = max(titleSize.height, valueSize.height)
+        let centerY = paddedRect.midY
 
-        // ① 좌측 정렬: label → emotion icon
+        // ① 날짜 (좌측)
         var currX = paddedRect.minX
-        if labelSize.width > 0 {
-            let labelRect = CGRect(x: currX, y: baseY, width: labelSize.width, height: labelSize.height)
-            labelns?.draw(in: labelRect, withAttributes: _drawAttributes)
-            currX += labelSize.width + itemSpacing
+        if titleSize.width > 0 {
+            let titleY = centerY - titleSize.height / 2
+            let titleRect = CGRect(x: currX, y: titleY, width: titleSize.width, height: titleSize.height)
+            labelTitle?.draw(in: titleRect, withAttributes: _drawTitleAttributes)
+            currX += titleSize.width + gapTitleValue
+        }
+
+        // ② 값 + 이모티콘
+        if valueSize.width > 0 {
+            let valueY = centerY - valueSize.height / 2
+            let valueRect = CGRect(x: currX, y: valueY, width: valueSize.width, height: valueSize.height)
+            labelns?.draw(in: valueRect, withAttributes: _drawAttributes)
+            currX += valueSize.width
         }
 
         if let img = imageEmotion {
-            let iconY = baseY + (labelSize.height - iconSize)
+            let iconY = centerY - iconSize / 2
+            currX += 5  // 값↘이모티콘 간격
             let iconRect = CGRect(x: currX, y: iconY, width: iconSize, height: iconSize)
             img.draw(in: iconRect)
-            // currX 업데이트는 추후 확장을 위해 남겨두지 않음
+            currX += iconSize
         }
 
-        // ② 우측 정렬: arrowImage
+        // ③ 화살표 (우측)
         if let img = arrowImage {
-            let arrowY = baseY + (labelSize.height - arrowSize)
-            let arrowX = paddedRect.maxX - arrowSize
-            let arrowRect = CGRect(x: arrowX, y: arrowY, width: arrowSize, height: arrowSize)
+            currX += gapValueArrow
+            let arrowY = centerY - arrowSize / 2
+            let arrowRect = CGRect(x: currX, y: arrowY, width: arrowSize, height: arrowSize)
             img.draw(in: arrowRect)
-        }
-
-        // 타이틀(기존 방식 그대로)
-        if let title = labelTitle, title.length > 0 {
-            title.draw(in: paddedRect, withAttributes: _drawTitleAttributes)
         }
 
         UIGraphicsPopContext()
@@ -303,9 +319,14 @@ open class AtfleeMarker: MarkerView {
         }
 
         _drawTitleAttributes.removeAll()
-        _drawTitleAttributes[NSAttributedString.Key.font] = self.titleFont
+        // Figma: 날짜 Regular weight (Noto Sans KR Regular)
+        if let notoRegular = UIFont(name: "NotoSansKR-Regular", size: 12.0) {
+            _drawTitleAttributes[NSAttributedString.Key.font] = notoRegular
+        } else {
+            _drawTitleAttributes[NSAttributedString.Key.font] = UIFont.systemFont(ofSize: 12.0, weight: .regular)
+        }
         _drawTitleAttributes[NSAttributedString.Key.paragraphStyle] = _paragraphStyle
-        _drawTitleAttributes[NSAttributedString.Key.foregroundColor] = #colorLiteral(red: 0.9515632987, green: 0.4954123497, blue: 0.1712778509, alpha: 1)
+        _drawTitleAttributes[NSAttributedString.Key.foregroundColor] = UIColor(red: 0.263, green: 0.263, blue: 0.263, alpha: 1.0)  // #434343
         let titleSize = labelTitle?.size(withAttributes: _drawTitleAttributes) ?? CGSize.zero
         
         //
@@ -335,29 +356,43 @@ open class AtfleeMarker: MarkerView {
             }
         }
 
+        // 가로 배치: 줄바꿈 없이 값만 표시
         if let candleEntry = entry as? CandleChartDataEntry {
-            label = "\n" + candleEntry.close.description
+            label = candleEntry.close.description
         } else {
             if markerString.isEmpty {
-                label = "\n" + String(format:"%." + decimalPlaces + "f", entry.y) + markerUnit
+                label = String(format:"%." + decimalPlaces + "f", entry.y) + markerUnit
             } else {
-                label = "\n" + markerString
+                label = markerString
             }
         }
         
         labelns = label as NSString
         
         _drawAttributes.removeAll()
-        _drawAttributes[NSAttributedString.Key.paragraphStyle] = _paragraphStyle
-        _drawAttributes[NSAttributedString.Key.foregroundColor] = self.textColor
+        // Figma: caption_medium — letterSpacing -0.24px, center
+        let paraStyle = NSMutableParagraphStyle()
+        paraStyle.alignment = .center
+        _drawAttributes[NSAttributedString.Key.paragraphStyle] = paraStyle
+        _drawAttributes[NSAttributedString.Key.kern] = -0.24  // letterSpacing
+        // Figma: 값 색상 #101010 (Grayscale_1000)
+        _drawAttributes[NSAttributedString.Key.foregroundColor] = UIColor(red: 0.063, green: 0.063, blue: 0.063, alpha: 1.0)  // #101010
 
-        let isBold = textWeight == "bold"
         let baseFont: UIFont = self.font ?? UIFont.systemFont(ofSize: 12.0)
         let fontSize = baseFont.pointSize
 
-        let labelFont: UIFont = isBold
-            ? UIFont.boldSystemFont(ofSize: fontSize)
-            : baseFont
+        // Figma: 값은 Medium weight (Noto Sans KR Medium)
+        let labelFont: UIFont
+        if textWeight == "bold" {
+            labelFont = UIFont.boldSystemFont(ofSize: fontSize)
+        } else {
+            // Medium weight (weight=500)
+            if let notoMedium = UIFont(name: "NotoSansKR-Medium", size: fontSize) {
+                labelFont = notoMedium
+            } else {
+                labelFont = UIFont.systemFont(ofSize: fontSize, weight: .medium)
+            }
+        }
 
         _drawAttributes[.font] = labelFont
 
@@ -374,7 +409,8 @@ open class AtfleeMarker: MarkerView {
             }
         }
 
-        arrowImage = arrowHidden ? nil : UIImage(named: "arrow_right_circle")
+        // Figma: 18x18 원형 화살표 SVG 직접 렌더링
+        arrowImage = arrowHidden ? nil : Self.drawArrowCircleImage(size: 18)
 
         switch emotionCode {
         case "1":
@@ -395,7 +431,7 @@ open class AtfleeMarker: MarkerView {
         let arrowExists = arrowImage != nil
         let iconExists = imageEmotion != nil
         let itemSpacing: CGFloat = 8
-        let arrowSize: CGFloat = 20
+        let arrowSize: CGFloat = 18  // Figma: 18px
         let iconSize: CGFloat = CGFloat(imageSize)
 
         var itemWidths: [CGFloat] = []
@@ -408,9 +444,17 @@ open class AtfleeMarker: MarkerView {
             bottomRowWidth = itemWidths.reduce(0, +) + itemSpacing * CGFloat(itemWidths.count - 1)
         }
 
-        let contentWidth = max(titleSize.width, bottomRowWidth)
-        let maxHeight = max(titleSize.height, labelSize.height)
-        _labelSize = CGSize(width: contentWidth, height: maxHeight + 8) // 패딩줬기때문에 라벨 하단 짤려서 넣어줘야함
+        // 가로 배치: 전체 너비 = 날짜 + gap + 값 + (이모티콘) + gap + 화살표
+        let gapTitleValue: CGFloat = 6
+        let gapValueArrow: CGFloat = 10
+        var totalWidth: CGFloat = 0
+        if titleSize.width > 0 { totalWidth += titleSize.width }
+        if bottomRowWidth > 0 {
+            if titleSize.width > 0 { totalWidth += gapTitleValue }
+            totalWidth += bottomRowWidth
+        }
+        let rowHeight = max(titleSize.height, labelSize.height)
+        _labelSize = CGSize(width: totalWidth, height: rowHeight)
         _size.width = _labelSize.width + self.insets.left + self.insets.right
         _size.height = _labelSize.height + self.insets.top + self.insets.bottom
         _size.width = max(minimumSize.width, _size.width)
@@ -458,6 +502,30 @@ open class AtfleeMarker: MarkerView {
         chartView.addSubview(overlayButton)
     }
     
+    // Figma SVG: 18x18 원형 + 오른쪽 화살표
+    // <rect width="18" height="18" rx="9" fill="#FAFAFA"/>
+    // <path d="M7.5 12.75L11.25 9L7.5 5.25" stroke="#ABABAB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    private static func drawArrowCircleImage(size: CGFloat) -> UIImage {
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: size, height: size))
+        return renderer.image { ctx in
+            let rect = CGRect(x: 0, y: 0, width: size, height: size)
+            // 배경 원형
+            let circle = UIBezierPath(roundedRect: rect, cornerRadius: size / 2)
+            UIColor(red: 0.98, green: 0.98, blue: 0.98, alpha: 1.0).setFill()  // #FAFAFA
+            circle.fill()
+            // 화살표 패스
+            let arrow = UIBezierPath()
+            arrow.move(to: CGPoint(x: size * 7.5 / 18, y: size * 12.75 / 18))
+            arrow.addLine(to: CGPoint(x: size * 11.25 / 18, y: size * 9.0 / 18))
+            arrow.addLine(to: CGPoint(x: size * 7.5 / 18, y: size * 5.25 / 18))
+            arrow.lineWidth = 1.5
+            arrow.lineCapStyle = .round
+            arrow.lineJoinStyle = .round
+            UIColor(red: 0.671, green: 0.671, blue: 0.671, alpha: 1.0).setStroke()  // #ABABAB
+            arrow.stroke()
+        }
+    }
+
     func resetState() {
         fadeStart = nil
         lastEntry = nil

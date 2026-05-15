@@ -104,6 +104,17 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
 
     public NoClipLineChartRenderer(LineDataProvider chart, ChartAnimator animator, ViewPortHandler viewPortHandler) {
         super(chart, animator, viewPortHandler);
+        mRenderPaint.setStrokeJoin(Paint.Join.ROUND);
+        mRenderPaint.setStrokeCap(Paint.Cap.ROUND);
+        mRenderPaint.setStrokeMiter(1f);
+    }
+
+    @Override
+    public void drawData(Canvas c) {
+        mRenderPaint.setStrokeJoin(Paint.Join.ROUND);
+        mRenderPaint.setStrokeCap(Paint.Cap.ROUND);
+        mRenderPaint.setStrokeMiter(1f);
+        super.drawData(c);
     }
 
     @Override
@@ -287,6 +298,10 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
     @Override
     public void drawExtras(Canvas c) {
         super.drawExtras(c);
+        drawCirclesOverlay(c);
+    }
+
+    public void drawCirclesOverlay(Canvas c) {
         LineDataProvider provider = mChart;
         if (provider == null) return;
         LineData lineData = provider.getLineData();
@@ -315,17 +330,15 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
                 Entry e = dataSet.getEntryForIndex(j);
                 if (e == null) continue;
                 MPPointD pt = provider.getTransformer(dataSet.getAxisDependency())
-                        .getPixelForValues(e.getX(), e.getY() * phaseY);
-
-                if (!mViewPortHandler.isInBoundsRight((float) pt.x)) { MPPointD.recycleInstance(pt); break; }
-                if (!mViewPortHandler.isInBoundsLeft((float) pt.x))  { MPPointD.recycleInstance(pt); continue; }
+                        .getPixelForValues(e.getX(), e.getY());
 
                 float x = (float) pt.x;
                 float y = (float) pt.y;
-                if (y < mViewPortHandler.contentTop()) y = mViewPortHandler.contentTop();
-                else if (y > mViewPortHandler.contentBottom()) y = mViewPortHandler.contentBottom();
 
                 float r = dataSet.getCircleRadius();
+                if (x > mViewPortHandler.contentRight() + r) { MPPointD.recycleInstance(pt); break; }
+                if (x < mViewPortHandler.contentLeft() - r)  { MPPointD.recycleInstance(pt); continue; }
+
                 mRenderPaint.setStyle(Paint.Style.FILL);
                 int circleColorCount = dataSet.getCircleColorCount();
                 int circleIdx = circleColorCount > 0 ? (j % circleColorCount) : 0;

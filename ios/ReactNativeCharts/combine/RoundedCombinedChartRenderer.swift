@@ -94,11 +94,21 @@ class RoundedCombinedChartRenderer: CombinedChartRenderer {
         for renderer in customRenderers {
             renderer.drawExtras(context: context)
         }
+        drawLineCirclesOnTop(context: context)
     }
 
     override func drawHighlighted(context: CGContext, indices: [Highlight]) {
         for renderer in customRenderers {
             renderer.drawHighlighted(context: context, indices: indices)
+        }
+        drawLineCirclesOnTop(context: context)
+    }
+
+    private func drawLineCirclesOnTop(context: CGContext) {
+        for renderer in customRenderers {
+            if let lineRenderer = renderer as? NoClipLineChartRenderer {
+                lineRenderer.drawCirclesOverlay(context: context)
+            }
         }
     }
 

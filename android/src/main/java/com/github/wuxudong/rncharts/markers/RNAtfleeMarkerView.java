@@ -12,8 +12,6 @@ import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.View.MeasureSpec;
 import android.graphics.Color;
-import com.lihang.ShadowLayout;
-
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.WritableMap;
@@ -40,7 +38,7 @@ public class RNAtfleeMarkerView extends MarkerView {
     private final ImageView imageEmotion;
     private final ImageView image_arrow;
     private Entry lastEntry;
-    private final ShadowLayout mShadowLayout;
+    private final View mMarkerContent;
     // Transparent overlay to intercept taps on the marker only
     private View overlayButton = null;
     // When true, marker won't draw (used to suppress drawing during chart touches)
@@ -48,6 +46,7 @@ public class RNAtfleeMarkerView extends MarkerView {
 
     private boolean arrowHidden = false;
     private boolean fixedOnTop = false;
+    private int markerColor = 0xFFFAFAFA;  // default #FAFAFA
 
     private static final int OVERLAY_TAG = 999;
     private static final float HIT_SLOP_DP = 12f; // legacy: kept for compatibility
@@ -75,7 +74,7 @@ public class RNAtfleeMarkerView extends MarkerView {
         tvContent = findViewById(R.id.y_value);
         imageEmotion = findViewById(R.id.image_emotion);
 
-        mShadowLayout = findViewById(R.id.mShadowLayout);
+        mMarkerContent = findViewById(R.id.markerContent);
         image_arrow = findViewById(R.id.image_arrow);
         // Default fade duration (milliseconds)
         fadeDuration = 300L;
@@ -534,6 +533,17 @@ public class RNAtfleeMarkerView extends MarkerView {
 
     public void setFixedOnTop(boolean fixed) {
         this.fixedOnTop = fixed;
+    }
+
+    public void setMarkerBgColor(int color) {
+        this.markerColor = color;
+        if (mMarkerContent != null) {
+            // Use GradientDrawable to preserve cornerRadius 8dp from marker_bg.xml
+            android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
+            bg.setCornerRadius(8f * mMarkerContent.getResources().getDisplayMetrics().density);
+            bg.setColor(color | 0xFF000000);
+            mMarkerContent.setBackground(bg);
+        }
     }
 
 

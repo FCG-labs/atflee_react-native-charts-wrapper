@@ -19,6 +19,18 @@ open class NoClipLineChartRenderer: LineChartRenderer {
         super.init(dataProvider: dataProvider, animator: animator, viewPortHandler: viewPortHandler)
     }
 
+    // Override drawDataSet to enforce round line joins/caps on each dataset stroke.
+    // DGCharts' internal saveGState/restoreGState preserves our settings,
+    // ensuring the line never produces miter spikes at sharp angles.
+    open override func drawDataSet(context: CGContext, dataSet: LineChartDataSetProtocol) {
+        context.saveGState()
+        context.setLineJoin(.round)
+        context.setLineCap(.round)
+        context.setMiterLimit(1)
+        super.drawDataSet(context: context, dataSet: dataSet)
+        context.restoreGState()
+    }
+
     // MARK: - Values
     open override func drawValues(context: CGContext) {
         // Disable any clipping region so that value-labels can render outside contentRect if needed.
@@ -137,8 +149,6 @@ open class NoClipLineChartRenderer: LineChartRenderer {
         // Disable clipping so highlight lines & markers can draw into extra offset area
         context.saveGState()
         context.resetClip()
-        // Use default DGCharts highlight rendering (circles, vertical line etc.)
-        super.drawHighlighted(context: context, indices: indices)
 
         guard
             let dataProvider = dataProvider,
@@ -159,15 +169,23 @@ open class NoClipLineChartRenderer: LineChartRenderer {
             let trans = dataProvider.getTransformer(forAxis: set.axisDependency)
             var pt    = trans.pixelForValues(x: e.x, y: e.y * phaseY)
 
-            // Clamp to content rect so markers can still draw when a value
-            // sits above or below the visible axis range.
-            if pt.y < viewPortHandler.contentTop {
-                pt.y = viewPortHandler.contentTop
-            } else if pt.y > viewPortHandler.contentBottom {
-                pt.y = viewPortHandler.contentBottom
-            }
-
             high.setDraw(x: pt.x, y: pt.y)
+        }
+
+        // Use default DGCharts highlight rendering after draw positions are corrected.
+        super.drawHighlighted(context: context, indices: indices)
+
+        for high in indices {
+            guard
+                let set = lineData.dataSets[high.dataSetIndex] as? LineChartDataSetProtocol,
+                set.isHighlightEnabled,
+                let e   = set.entryForXValue(high.x, closestToY: high.y)
+            else { continue }
+
+            if !entryInBoundsX(e, dataSet: set) { continue }
+
+            let trans = dataProvider.getTransformer(forAxis: set.axisDependency)
+            let pt    = trans.pixelForValues(x: e.x, y: e.y * phaseY)
 
             context.saveGState()
             context.setStrokeColor(set.highlightColor.cgColor)
@@ -180,6 +198,8 @@ open class NoClipLineChartRenderer: LineChartRenderer {
             context.restoreGState()
         }
 
+        drawCirclesOverlay(context: context)
+
         context.restoreGState()
     }
 
@@ -188,6 +208,10 @@ open class NoClipLineChartRenderer: LineChartRenderer {
     /// offset region above the chart. This mirrors the default implementation
     /// but omits the vertical in-bounds check.
     open override func drawExtras(context: CGContext) {
+        drawCirclesOverlay(context: context)
+    }
+
+    open func drawCirclesOverlay(context: CGContext) {
         guard
             let dataProvider = dataProvider,
             let lineData     = dataProvider.lineData
@@ -218,13 +242,13 @@ open class NoClipLineChartRenderer: LineChartRenderer {
                 guard let e = dataSet.entryForIndex(j) else { continue }
 
                 pt.x = CGFloat(e.x)
-                pt.y = CGFloat(e.y * phaseY)
+                pt.y = CGFloat(e.y)
                 pt    = pt.applying(matrix)
 
-                if !viewPortHandler.isInBoundsRight(pt.x) { break }
-                if !viewPortHandler.isInBoundsLeft(pt.x) { continue }
-
                 let radius = CGFloat(dataSet.circleRadius)
+                if pt.x > viewPortHandler.contentRight + radius { break }
+                if pt.x < viewPortHandler.contentLeft - radius { continue }
+
                 var circleRect = CGRect(
                     x: pt.x - radius,
                     y: pt.y - radius,
