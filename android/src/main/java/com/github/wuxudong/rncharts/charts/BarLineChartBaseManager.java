@@ -207,6 +207,16 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         chart.setKeepPositionOnRotation(enabled);
     }
 
+    @ReactProp(name = "maxScale")
+    public void setMaxScale(BarLineChartBase chart, ReadableMap propMap) {
+        if (BridgeUtils.validate(propMap, ReadableType.Number, "x")) {
+            chart.getViewPortHandler().setMaximumScaleX((float) propMap.getDouble("x"));
+        }
+        if (BridgeUtils.validate(propMap, ReadableType.Number, "y")) {
+            chart.getViewPortHandler().setMaximumScaleY((float) propMap.getDouble("y"));
+        }
+    }
+
     @ReactProp(name = "scaleEnabled")
     public void setScaleEnabled(BarLineChartBase chart, boolean enabled) {
         chart.setScaleEnabled(enabled);

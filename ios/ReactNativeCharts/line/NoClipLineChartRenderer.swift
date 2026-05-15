@@ -198,6 +198,8 @@ open class NoClipLineChartRenderer: LineChartRenderer {
             context.restoreGState()
         }
 
+        drawCirclesOverlay(context: context)
+
         context.restoreGState()
     }
 
