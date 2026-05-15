@@ -74,6 +74,7 @@ public class AtfleeCombinedChartRenderer extends CombinedChartRenderer {
         // After all extras, paint top-edge line value labels on top to avoid being covered
         for (DataRenderer r : mRenderers) {
             if (r instanceof NoClipLineChartRenderer) {
+                ((NoClipLineChartRenderer) r).drawCirclesOverlay(c);
                 ((NoClipLineChartRenderer) r).drawTopLabelsOverlay(c);
             }
         }

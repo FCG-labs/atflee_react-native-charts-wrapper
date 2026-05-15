@@ -19,6 +19,77 @@ open class NoClipLineChartRenderer: LineChartRenderer {
         super.init(dataProvider: dataProvider, animator: animator, viewPortHandler: viewPortHandler)
     }
 
+    open override func drawData(context: CGContext) {
+        context.saveGState()
+        context.setLineJoin(.round)
+        context.setLineCap(.round)
+        context.setMiterLimit(1)
+        super.drawData(context: context)
+        drawRoundedLineOverlay(context: context)
+        context.restoreGState()
+    }
+
+    private func drawRoundedLineOverlay(context: CGContext) {
+        guard
+            let dataProvider = dataProvider,
+            let lineData = dataProvider.lineData
+        else { return }
+
+        let phaseX = animator.phaseX
+
+        context.saveGState()
+        context.resetClip()
+        context.setLineJoin(.round)
+        context.setLineCap(.round)
+        context.setMiterLimit(1)
+
+        for dataSetIndex in lineData.indices {
+            guard
+                let dataSet = lineData[dataSetIndex] as? LineChartDataSetProtocol,
+                dataSet.isVisible,
+                dataSet.mode == .linear,
+                dataSet.entryCount > 1
+            else { continue }
+
+            let entryCount = Int(min(
+                ceil(Double(dataSet.entryCount) * Double(phaseX)),
+                Double(dataSet.entryCount)
+            ))
+            let trans = dataProvider.getTransformer(forAxis: dataSet.axisDependency)
+            let matrix = trans.valueToPixelMatrix
+            let path = CGMutablePath()
+            var hasMoved = false
+            var pt = CGPoint()
+
+            for j in 0..<entryCount {
+                guard let e = dataSet.entryForIndex(j) else { continue }
+                pt.x = CGFloat(e.x)
+                pt.y = CGFloat(e.y)
+                pt = pt.applying(matrix)
+
+                let allowance = max(dataSet.lineWidth, dataSet.circleRadius)
+                if pt.x > viewPortHandler.contentRight + allowance { break }
+                if pt.x < viewPortHandler.contentLeft - allowance { continue }
+
+                if hasMoved {
+                    path.addLine(to: pt)
+                } else {
+                    path.move(to: pt)
+                    hasMoved = true
+                }
+            }
+
+            if hasMoved {
+                context.setStrokeColor(dataSet.color(atIndex: 0).cgColor)
+                context.setLineWidth(dataSet.lineWidth)
+                context.addPath(path)
+                context.strokePath()
+            }
+        }
+
+        context.restoreGState()
+    }
+
     // MARK: - Values
     open override func drawValues(context: CGContext) {
         // Disable any clipping region so that value-labels can render outside contentRect if needed.
@@ -194,6 +265,10 @@ open class NoClipLineChartRenderer: LineChartRenderer {
     /// offset region above the chart. This mirrors the default implementation
     /// but omits the vertical in-bounds check.
     open override func drawExtras(context: CGContext) {
+        drawCirclesOverlay(context: context)
+    }
+
+    open func drawCirclesOverlay(context: CGContext) {
         guard
             let dataProvider = dataProvider,
             let lineData     = dataProvider.lineData
@@ -224,13 +299,13 @@ open class NoClipLineChartRenderer: LineChartRenderer {
                 guard let e = dataSet.entryForIndex(j) else { continue }
 
                 pt.x = CGFloat(e.x)
-                pt.y = CGFloat(e.y * phaseY)
+                pt.y = CGFloat(e.y)
                 pt    = pt.applying(matrix)
 
-                if !viewPortHandler.isInBoundsRight(pt.x) { break }
-                if !viewPortHandler.isInBoundsLeft(pt.x) { continue }
-
                 let radius = CGFloat(dataSet.circleRadius)
+                if pt.x > viewPortHandler.contentRight + radius { break }
+                if pt.x < viewPortHandler.contentLeft - radius { continue }
+
                 var circleRect = CGRect(
                     x: pt.x - radius,
                     y: pt.y - radius,

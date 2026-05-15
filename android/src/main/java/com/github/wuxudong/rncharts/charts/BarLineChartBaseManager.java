@@ -108,53 +108,22 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
 
     @ReactProp(name = "visibleRange")
     public void setVisibleXRangeMinimum(BarLineChartBase chart, ReadableMap propMap) {
+         // delay visibleRange handling until chart data is set
          ChartExtraProperties props = extraPropertiesHolder.getExtraProperties(chart);
-         android.util.Log.d("ChartZoom", "setVisibleXRangeMinimum: propMap=" + propMap + " scaleX=" + chart.getScaleX());
-         if (propMap == null) {
-             // visibleRange 해제 → fitScreen만 호출
-             props.savedVisibleRange = null;
-             props.autoZoomPending = false;
-             // setMinimumScaleX(1f) 제거 - scaleX < 1.0이 필요한 경우 줌아웃 차단
-             chart.fitScreen();
-             android.util.Log.d("ChartZoom", "setVisibleXRangeMinimum NULL: fitScreen done. scaleX=" + chart.getScaleX() + " minScaleX=" + chart.getViewPortHandler().getMinScaleX() + " maxScaleX=" + chart.getViewPortHandler().getMaxScaleX());
-         } else {
-             props.savedVisibleRange = propMap;
-             props.autoZoomPending = true;
-         }
+         props.savedVisibleRange = propMap;
+         props.autoZoomPending = true;
     }
 
     private void updateVisibleRange(BarLineChartBase chart, ReadableMap propMap) {
         if (BridgeUtils.validate(propMap, ReadableType.Map, "x")) {
             ReadableMap x = propMap.getMap("x");
 
-            boolean hasMax = BridgeUtils.validate(x, ReadableType.Number, "max");
-            if (hasMax) {
-                chart.setVisibleXRangeMaximum((float) x.getDouble("max"));
+            if (BridgeUtils.validate(x, ReadableType.Number, "min")) {
+                chart.setVisibleXRangeMinimum((float) x.getDouble("min"));
             }
 
-            // min 설정 (max 유무와 무관하게 항상 적용)
-            if (BridgeUtils.validate(x, ReadableType.Number, "min")) {
-                float visibleMin = (float) x.getDouble("min");
-                chart.setVisibleXRangeMinimum(visibleMin);
-
-                // setVisibleXRangeMinimum 은 maxScaleX(줌인 제한)를 올바르게 설정하지만
-                // minScaleX 도 같이 올려서 줌아웃을 막아버림.
-                // 리플렉션으로 minScaleX 를 0.7 로 덮어써서 줌아웃 허용.
-                try {
-                    java.lang.reflect.Field minScaleXField = chart.getViewPortHandler().getClass().getDeclaredField("mMinScaleX");
-                    minScaleXField.setAccessible(true);
-                    minScaleXField.setFloat(chart.getViewPortHandler(), 0.7f);
-                } catch (Exception e) {
-                    android.util.Log.e("ChartZoom", "override minScaleX failed", e);
-                }
-
-                // visibleMin == totalRange → 전체 모드: performFullZoomOut으로 완전 줌아웃
-                if (chart.getData() != null) {
-                    float totalRange = chart.getData().getXMax() - chart.getData().getXMin();
-                    if (totalRange > 0 && Math.abs(visibleMin - totalRange) < 0.5f) {
-                        performFullZoomOut(chart);
-                    }
-                }
+            if (BridgeUtils.validate(x, ReadableType.Number, "max")) {
+                chart.setVisibleXRangeMaximum((float) x.getDouble("max"));
             }
         }
 
@@ -186,23 +155,19 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
 
         ChartExtraProperties extra = extraPropertiesHolder.getExtraProperties(chart);
 
-        // 줌 로직은 onAfterDataSetChanged 오버라이드에서 처리
-    }
-
-    @ReactProp(name = "maxScale")
-    public void setMaxScale(BarLineChartBase chart, ReadableMap propMap) {
-        if (propMap == null) {
-            chart.getViewPortHandler().setMaximumScaleX(Float.MAX_VALUE);
-            chart.getViewPortHandler().setMaximumScaleY(Float.MAX_VALUE);
-            return;
-        }
-        if (BridgeUtils.validate(propMap, ReadableType.Number, "x")) {
-            float maxScaleX = (float) propMap.getDouble("x");
-            chart.getViewPortHandler().setMaximumScaleX(maxScaleX);
-        }
-        if (BridgeUtils.validate(propMap, ReadableType.Number, "y")) {
-            float maxScaleY = (float) propMap.getDouble("y");
-            chart.getViewPortHandler().setMaximumScaleY(maxScaleY);
+        if (extra.zoomScaleX != null) {
+            float targetScale = extra.zoomScaleX;
+            if (targetScale > 0 && chart.getScaleX() != targetScale) {
+                float relativeScale = targetScale / chart.getScaleX();
+                float centerX = chart.getData() != null ? (float) chart.getData().getXMax() : 0f;
+                YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled() ?
+                        YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
+                chart.zoom(relativeScale, 1f, centerX, 0f, axis);
+                extra.zoomScaleX = null;
+            }
+        } else if (extra.autoZoomPending) {
+            com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.setEnabled(chart, false);
+            extra.autoZoomPending = false;
         }
     }
 
@@ -474,57 +439,6 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
 
     }
 
-    private void performFullZoomOut(BarLineChartBase chart) {
-        // setMinimumScaleX()에 1.0 하한선 → 리플렉션으로 우회
-        chart.fitScreen();
-
-        if (chart.getData() == null) return;
-
-        float totalRange = chart.getData().getXMax() - chart.getData().getXMin();
-        if (totalRange <= 0) return;
-
-        // fitScreen 후 scaleX=1.0에서 보이는 범위
-        float visibleRange = chart.getHighestVisibleX() - chart.getLowestVisibleX();
-        android.util.Log.d("ChartZoom", "fitScreen: visibleRange=" + visibleRange
-            + " totalRange=" + totalRange + " scaleX=" + chart.getScaleX());
-
-        // Charts 기준 fitScreen은 scaleX=1.0에서 이미 전체 데이터가 보인다고 판단하지만,
-        // 실제 pinch gesture는 scaleX < 1.0까지 더 줌아웃된다.
-        // 초기 상태도 제스처 가능한 최저 줌아웃에 맞춘다.
-        float targetScaleX = 0.7f;
-
-        // 줌인 제한: 7개까지만 확대 가능 → maxScaleX = totalRange / 7
-        float maxScaleX = totalRange / 7f;
-
-        try {
-            // minScaleX를 targetScaleX 이하로 설정 (1.0 하한선 우회)
-            float minScale = targetScaleX;
-            java.lang.reflect.Field minScaleXField = chart.getViewPortHandler().getClass().getDeclaredField("mMinScaleX");
-            minScaleXField.setAccessible(true);
-            minScaleXField.setFloat(chart.getViewPortHandler(), minScale);
-
-            // maxScaleX 설정 → 줌인 시 7개까지만 확대
-            java.lang.reflect.Field maxScaleXField = chart.getViewPortHandler().getClass().getDeclaredField("mMaxScaleX");
-            maxScaleXField.setAccessible(true);
-            maxScaleXField.setFloat(chart.getViewPortHandler(), maxScaleX);
-
-            // 줌아웃
-            float currentScaleX = chart.getScaleX();
-            if (currentScaleX > targetScaleX) {
-                float relativeScale = targetScaleX / currentScaleX;
-                YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled() ?
-                        YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
-                chart.zoom(relativeScale, 1f, 0f, 0f, axis);
-            }
-            android.util.Log.d("ChartZoom", "performFullZoomOut: scaleX=" + chart.getScaleX()
-                + " minScaleX=" + chart.getViewPortHandler().getMinScaleX()
-                + " maxScaleX=" + maxScaleX
-                + " targetScaleX=" + targetScaleX + " visibleRange=" + visibleRange + " totalRange=" + totalRange);
-        } catch (Exception e) {
-            android.util.Log.e("ChartZoom", "reflection failed", e);
-        }
-    }
-
     @Override
     protected void onAfterDataSetChanged(T chart) {
         super.onAfterDataSetChanged(chart);
@@ -534,25 +448,6 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         if (extraProperties.savedVisibleRange != null) {
             extraProperties.autoZoomPending = true;
             updateVisibleRange(chart, extraProperties.savedVisibleRange);
-        } else {
-            // savedVisibleRange == null → all 모드: 완전 줌아웃
-            extraProperties.zoomScaleX = null;
-            extraProperties.autoZoomPending = false;
-            if (chart.getWidth() > 0) {
-                // 차트가 레이아웃된 상태 → 즉시 줌아웃
-                performFullZoomOut(chart);
-            } else {
-                // chartWidth=0 → 레이아웃 후 줌아웃
-                android.util.Log.d("ChartZoom", "onAfterDataSetChanged: chartWidth=0, deferring zoom to OnGlobalLayout");
-                chart.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                    @Override
-                    public void onGlobalLayout() {
-                        chart.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-                        android.util.Log.d("ChartZoom", "OnGlobalLayout: chartWidth=" + chart.getWidth() + " scaleX=" + chart.getScaleX());
-                        performFullZoomOut(chart);
-                    }
-                });
-            }
         }
 
 
