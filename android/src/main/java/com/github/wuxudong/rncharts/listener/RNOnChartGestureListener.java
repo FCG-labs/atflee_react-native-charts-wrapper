@@ -215,24 +215,19 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
         if (!(base instanceof BarLineChartBase)) return;
         BarLineChartBase chart = (BarLineChartBase) base;
 
-        // approximate number of x-entries currently visible (inclusive)
-        float leftX = chart.getLowestVisibleX();
-        float rightX = chart.getHighestVisibleX();
-
-        // If user pans past the data range, clamp so that we don't count the 'blank' region
-        ChartData dataForClamp = chart.getData();
-        if (dataForClamp != null) {
-            float minX = dataForClamp.getXMin();
-            float maxX = dataForClamp.getXMax();
-            if (leftX < minX) leftX = minX;
-            if (rightX > maxX) rightX = maxX;
-        }
-
+        // scaleX 기반 visibleCount 계산 — drag/deceleration 중에는 scaleX가 변하지 않으므로
+        // boundary 도달 시 lowestVisibleX/highestVisibleX의 fluctuation에 영향받지 않고 안정적.
         int visibleCount;
         ChartData _d = chart.getData();
         if (_d != null) {
             int totalEntries = (int) (_d.getXMax() - _d.getXMin() + 1);
-            visibleCount = (int) Math.floor(rightX) - (int) Math.ceil(leftX) + 1;
+            float scaleX = chart.getScaleX();
+            float axisRange = chart.getXAxis().getAxisMaximum() - chart.getXAxis().getAxisMinimum();
+            if (scaleX > 0 && axisRange > 0) {
+                visibleCount = (int) Math.round(axisRange / scaleX);
+            } else {
+                visibleCount = totalEntries;
+            }
             if (visibleCount < 1) visibleCount = 1;
             if (visibleCount > totalEntries) visibleCount = totalEntries;
         } else {
@@ -240,10 +235,8 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
         }
         Boolean landscapeOverride = EdgeLabelHelper.getLandscapeOverride(chart);
         boolean isLandscape = (landscapeOverride != null) ? landscapeOverride.booleanValue() : (chart.getWidth() > chart.getHeight());
-        Log.d("RNChartDebug", "[adjust] landscapeOverride=" + landscapeOverride + ", isLandscape=" + isLandscape);
         int threshold = isLandscape ? 15 : 8;
         boolean showValues = visibleCount <= threshold;
-        Log.d("RNChartDebug", "[adjust] visibleCount=" + visibleCount + ", threshold=" + threshold + ", showValues=" + showValues);
 
         ChartData data = chart.getData();
         if (data != null) {
@@ -265,7 +258,6 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
                     }
 
                     boolean desired = showValues;
-                    Log.d("RNChartDebug", "[adjust] DataSet=" + set.getLabel() + ", baseDraw=" + baseDraw + ", desired=" + desired + ", current=" + set.isDrawValuesEnabled());
                     if (set.isDrawValuesEnabled() != desired) {
                         set.setDrawValues(desired);
                     }
@@ -303,11 +295,6 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
 
             WritableMap event = getEvent(action, me, chart);
             try {
-                // 1. 이벤트 객체 생성 직후 상태
-                Log.d("RNChartEvent", "[sendEvent] event created: " + event);
-                Log.d("RNChartEvent", "[sendEvent] action: " + action + ", chartId: " + chart.getId());
-                Log.d("RNChartEvent", "[sendEvent] motionEvent: x=" + me.getX() + ", y=" + me.getY());
-
                 ReactContext reactContext = (ReactContext) chart.getContext();
 
                 reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
