@@ -527,7 +527,11 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
             boolean draw = propMap.getBoolean("drawLabels");
             axis.setDrawLabels(draw);
             if (chart instanceof BarLineChartBase && axis == chart.getXAxis()) {
-                com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.setUserDrawLabels((BarLineChartBase) chart, draw);
+                BarLineChartBase barLineChart = (BarLineChartBase) chart;
+                com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.setUserDrawLabels(barLineChart, draw);
+                if (!draw) {
+                    com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.setEnabled(barLineChart, false);
+                }
             }
         }
         if (BridgeUtils.validate(propMap, ReadableType.Boolean, "drawAxisLine")) {

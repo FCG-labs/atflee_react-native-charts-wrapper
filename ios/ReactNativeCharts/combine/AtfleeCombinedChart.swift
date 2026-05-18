@@ -28,6 +28,12 @@ class AtfleeCombinedChart: CombinedChartView {
     
     private func setupForNestedScrolling() {
         self.dragYEnabled = false
+        self.renderer = RoundedCombinedChartRenderer(
+            chart: self,
+            animator: self.chartAnimator,
+            viewPortHandler: self.viewPortHandler,
+            barRadius: 0
+        )
     }
     
     // MARK: - Gesture Recognizer Delegate

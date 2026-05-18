@@ -213,13 +213,15 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
 
         Boolean explicit = EdgeLabelHelper.getExplicitFlag(chart);
         boolean desiredEdge;
-        if (explicit != null) {
-            desiredEdge = userDisabledLabels ? true : explicit.booleanValue();
+        if (userDisabledLabels) {
+            desiredEdge = false;
+        } else if (explicit != null) {
+            desiredEdge = explicit.booleanValue();
         } else {
-            desiredEdge = userDisabledLabels ? true : !showValues;
+            desiredEdge = !showValues;
         }
 
-        boolean showAxis = desiredEdge ? false : showValues;
+        boolean showAxis = userDisabledLabels ? false : (desiredEdge ? false : showValues);
         axis.setDrawLabels(showAxis);
 
         EdgeLabelHelper.setEnabled(chart, desiredEdge);
