@@ -183,7 +183,7 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                                     : visibleMin / totalRange;
                             float currentScale = chart.getScaleX();
                             float relativeScale = currentScale > 0 ? targetScale / currentScale : targetScale;
-                            float centerX = effectiveXMax;
+                            float centerX = effectiveXMax - visibleMin / 2f;
                             YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled() ?
                                     YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
                             chart.zoom(relativeScale, 1f, centerX, 0f, axis);
