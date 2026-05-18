@@ -114,7 +114,15 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
         mRenderPaint.setStrokeJoin(Paint.Join.ROUND);
         mRenderPaint.setStrokeCap(Paint.Cap.ROUND);
         mRenderPaint.setStrokeMiter(1f);
+        c.save();
+        c.clipRect(
+                mViewPortHandler.contentLeft(),
+                mViewPortHandler.contentTop(),
+                mViewPortHandler.contentRight(),
+                mViewPortHandler.contentBottom()
+        );
         super.drawData(c);
+        c.restore();
     }
 
     @Override
