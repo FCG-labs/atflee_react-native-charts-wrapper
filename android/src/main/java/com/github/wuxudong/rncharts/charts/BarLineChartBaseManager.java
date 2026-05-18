@@ -178,12 +178,11 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                         float effectiveXMax = Math.max(rawDataXMax, chart.getXChartMax());
                         float totalRange = effectiveXMax - effectiveXMin;
                         if (totalRange > 0) {
-                            float relativeScale;
-                            if (totalRange > visibleMin) {
-                                relativeScale = totalRange / visibleMin;
-                            } else {
-                                relativeScale = visibleMin / totalRange;
-                            }
+                            float targetScale = totalRange > visibleMin
+                                    ? totalRange / visibleMin
+                                    : visibleMin / totalRange;
+                            float currentScale = chart.getScaleX();
+                            float relativeScale = currentScale > 0 ? targetScale / currentScale : targetScale;
                             float centerX = effectiveXMax;
                             YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled() ?
                                     YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
