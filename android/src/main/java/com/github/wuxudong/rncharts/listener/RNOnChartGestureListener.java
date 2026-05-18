@@ -164,9 +164,7 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
         ChartData _d = chart.getData();
         if (_d != null) {
             int totalEntries = (int) (_d.getXMax() - _d.getXMin() + 1);
-            float scale = chart.getScaleX();
-            if (scale < 1f) scale = 1f; // safety guard
-            visibleCount = (int) Math.ceil(totalEntries / scale);
+            visibleCount = (int) Math.floor(rightX) - (int) Math.ceil(leftX) + 1;
             if (visibleCount < 1) visibleCount = 1;
             if (visibleCount > totalEntries) visibleCount = totalEntries;
         } else {
