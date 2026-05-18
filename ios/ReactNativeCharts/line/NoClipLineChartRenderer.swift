@@ -247,8 +247,9 @@ open class NoClipLineChartRenderer: LineChartRenderer {
                 pt    = pt.applying(matrix)
 
                 let radius = CGFloat(dataSet.circleRadius)
-                if pt.x > viewPortHandler.contentRight + radius { break }
-                if pt.x < viewPortHandler.contentLeft - radius { continue }
+                if pt.x > viewPortHandler.contentRight { break }
+                if pt.x < viewPortHandler.contentLeft { continue }
+                pt.x = min(max(pt.x, viewPortHandler.contentLeft + radius), viewPortHandler.contentRight - radius)
 
                 var circleRect = CGRect(
                     x: pt.x - radius,

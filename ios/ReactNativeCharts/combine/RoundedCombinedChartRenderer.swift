@@ -79,9 +79,12 @@ class RoundedCombinedChartRenderer: CombinedChartRenderer {
     }
 
     override func drawData(context: CGContext) {
+        context.saveGState()
+        context.clip(to: viewPortHandler.contentRect)
         for renderer in customRenderers {
             renderer.drawData(context: context)
         }
+        context.restoreGState()
     }
 
     override func drawValues(context: CGContext) {
