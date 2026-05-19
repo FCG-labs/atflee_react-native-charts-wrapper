@@ -1,6 +1,7 @@
 package com.github.wuxudong.rncharts.charts.helpers;
 
 import android.util.TypedValue;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.View.OnLayoutChangeListener;
@@ -15,6 +16,7 @@ import com.github.mikephil.charting.formatter.ValueFormatter;
 
 /** Helper for fixed edge labels overlayed on the chart. */
 public class EdgeLabelHelper {
+    private static final String TAG = "RNCharts-EdgeLabel";
     private static final float PADDING_DP_LEFT = 8f;
     private static final float PADDING_DP_RIGHT = 32f;
     private static java.util.WeakHashMap<BarLineChartBase, Boolean> enabledMap = new java.util.WeakHashMap<>();
@@ -204,6 +206,23 @@ public class EdgeLabelHelper {
             right.setText(vf.getFormattedValue(rightIndex));
         }
 
+        Log.i(TAG, "update"
+                + " chartId=" + bar.getId()
+                + " enabled=" + Boolean.TRUE.equals(enabledMap.get(bar))
+                + " atMinScale=" + atMinScale
+                + " scaleX=" + bar.getScaleX()
+                + " minScaleX=" + minScaleXMap.get(bar)
+                + " lowestVisibleX=" + bar.getLowestVisibleX()
+                + " highestVisibleX=" + bar.getHighestVisibleX()
+                + " inputLeft=" + leftValue
+                + " inputRight=" + rightValue
+                + " dataMin=" + minIndex
+                + " dataMax=" + maxIndex
+                + " leftIndex=" + leftIndex
+                + " rightIndex=" + rightIndex
+                + " leftLabel=" + left.getText()
+                + " rightLabel=" + right.getText());
+
         reposition(bar);
     }
 
@@ -222,13 +241,35 @@ public class EdgeLabelHelper {
     public static boolean isAtMinScaleX(BarLineChartBase chart) {
         Float minScaleX = minScaleXMap.get(chart);
         ChartData data = chart.getData();
+        boolean isEntireDataVisible = false;
         if (data != null) {
             float left = chart.getLowestVisibleX();
             float right = chart.getHighestVisibleX();
-            if (left <= data.getXMin() + 0.51f && right >= data.getXMax() - 0.51f) return true;
+            isEntireDataVisible = left <= data.getXMin() + 0.51f && right >= data.getXMax() - 0.51f;
+            if (isEntireDataVisible) {
+                Log.i(TAG, "isAtMinScale=true"
+                        + " chartId=" + chart.getId()
+                        + " reason=entireDataVisible"
+                        + " scaleX=" + chart.getScaleX()
+                        + " minScaleX=" + minScaleX
+                        + " lowestVisibleX=" + left
+                        + " highestVisibleX=" + right
+                        + " dataMin=" + data.getXMin()
+                        + " dataMax=" + data.getXMax());
+                return true;
+            }
         }
-        if (minScaleX == null || minScaleX <= 0f) return false;
-        return chart.getScaleX() <= minScaleX + 0.05f;
+        boolean result = minScaleX != null && minScaleX > 0f && chart.getScaleX() <= minScaleX + 0.05f;
+        Log.i(TAG, "isAtMinScale=" + result
+                + " chartId=" + chart.getId()
+                + " reason=scale"
+                + " scaleX=" + chart.getScaleX()
+                + " minScaleX=" + minScaleX
+                + " entireDataVisible=" + isEntireDataVisible
+                + " lowestVisibleX=" + chart.getLowestVisibleX()
+                + " highestVisibleX=" + chart.getHighestVisibleX()
+                + (data != null ? " dataMin=" + data.getXMin() + " dataMax=" + data.getXMax() : ""));
+        return result;
     }
 
     private static float[] base(BarLineChartBase chart) {

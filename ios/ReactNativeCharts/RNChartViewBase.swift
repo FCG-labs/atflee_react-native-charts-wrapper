@@ -754,6 +754,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             let isEntireDataVisible = barLine.lowestVisibleX <= dataMinX + 0.51 && barLine.highestVisibleX >= dataMaxX - 0.51
             let isAtMinScale = isEntireDataVisible || (minScaleX != nil && barLine.scaleX <= minScaleX! + 0.05)
             desiredEdge = userDisabledLabels ? true : isAtMinScale
+            print("[RNCharts-EdgeLabel] visibility chart=\(ObjectIdentifier(barLine)) desiredEdge=\(desiredEdge) currentEdge=\(edgeLabelEnabled) showValues=\(showValues) scaleX=\(barLine.scaleX) minScaleX=\(String(describing: minScaleX)) lowestVisibleX=\(barLine.lowestVisibleX) highestVisibleX=\(barLine.highestVisibleX) dataMin=\(dataMinX) dataMax=\(dataMaxX) entireDataVisible=\(isEntireDataVisible)")
         }
 
         // 3. Choose axis label visibility based on edge label state
@@ -879,6 +880,10 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         let dataMinX = barLine.data?.xMin ?? barLine.chartXMin
         let dataMaxX = barLine.data?.xMax ?? barLine.chartXMax
         let isEntireDataVisible = barLine.lowestVisibleX <= dataMinX + 0.51 && barLine.highestVisibleX >= dataMaxX - 0.51
+        var debugLeftX = Double.nan
+        var debugRightX = Double.nan
+        var debugLeftLabel = ""
+        var debugRightLabel = ""
         if let indexFormatter = formatter as? IndexAxisValueFormatter {
             let axisMaxIdx = Int(floor(barLine.chartXMax))
             let labelMax   = indexFormatter.values.count > 0 ? (indexFormatter.values.count - 1) : 0
@@ -892,14 +897,18 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
             if let v = formatter?.stringForValue(Double(leftIdx), axis: axis) {
                 leftEdgeLabel?.text = v
+                debugLeftLabel = v
                 leftEdgeLabelHasNewline = v.contains("\n")
             }
 
             if !rightEdgeLabel!.isHidden,
                let v = formatter?.stringForValue(Double(rightIdx), axis: axis) {
                 rightEdgeLabel?.text = v
+                debugRightLabel = v
                 rightEdgeLabelHasNewline = v.contains("\n")
             }
+            debugLeftX = Double(leftIdx)
+            debugRightX = Double(rightIdx)
         } else {
             // Continuous axis (e.g., date/time). Use rounded/ceil values and clamp to chart bounds
             var minX = barLine.chartXMin
@@ -916,15 +925,21 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
             if let v = formatter?.stringForValue(leftVal, axis: axis) {
                 leftEdgeLabel?.text = v
+                debugLeftLabel = v
                 leftEdgeLabelHasNewline = v.contains("\n")
             }
 
             if !rightEdgeLabel!.isHidden,
                let v = formatter?.stringForValue(rightVal, axis: axis) {
                 rightEdgeLabel?.text = v
+                debugRightLabel = v
                 rightEdgeLabelHasNewline = v.contains("\n")
             }
+            debugLeftX = leftVal
+            debugRightX = rightVal
         }
+
+        print("[RNCharts-EdgeLabel] update chart=\(ObjectIdentifier(barLine)) enabled=\(edgeLabelEnabled) scaleX=\(barLine.scaleX) minScaleX=\(String(describing: (self as? RNBarLineChartViewBase)?.minScaleX)) lowestVisibleX=\(barLine.lowestVisibleX) highestVisibleX=\(barLine.highestVisibleX) inputLeft=\(left) inputRight=\(right) dataMin=\(dataMinX) dataMax=\(dataMaxX) entireDataVisible=\(isEntireDataVisible) leftX=\(debugLeftX) rightX=\(debugRightX) leftLabel=\(debugLeftLabel) rightLabel=\(debugRightLabel)")
 
         applyEdgeLabelStyle()
         layoutIfNeeded()
