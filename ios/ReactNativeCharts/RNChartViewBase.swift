@@ -49,6 +49,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     private var rightEdgeLabelHasNewline = false
     private var leftEdgeConstraint: NSLayoutConstraint?
     private var rightEdgeConstraint: NSLayoutConstraint?
+    private var leftEdgeCenterConstraint: NSLayoutConstraint?
+    private var rightEdgeCenterConstraint: NSLayoutConstraint?
     var edgeLabelEnabled: Bool = false
     // whether edgeLabelEnabled was explicitly provided from JS; nil means auto
     private var edgeLabelExplicit: Bool? = nil
@@ -792,7 +794,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 addSubview(label)
                 leftEdgeConstraint = label.topAnchor.constraint(equalTo: bottomAnchor, constant: -edgeLabelTopPadding)
                 leftEdgeConstraint?.isActive = true
-                label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12).isActive = true
+                leftEdgeCenterConstraint = label.centerXAnchor.constraint(equalTo: leadingAnchor, constant: 12)
+                leftEdgeCenterConstraint?.isActive = true
                 leftEdgeLabel = label
             }
             if rightEdgeLabel == nil {
@@ -803,7 +806,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 addSubview(label)
                 rightEdgeConstraint = label.topAnchor.constraint(equalTo: bottomAnchor, constant: -edgeLabelTopPadding)
                 rightEdgeConstraint?.isActive = true
-                label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -32).isActive = true
+                rightEdgeCenterConstraint = label.centerXAnchor.constraint(equalTo: leadingAnchor, constant: bounds.width - 32)
+                rightEdgeCenterConstraint?.isActive = true
                 rightEdgeLabel = label
             }
             applyEdgeLabelStyle()
@@ -820,6 +824,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             rightEdgeLabel = nil
             leftEdgeConstraint = nil
             rightEdgeConstraint = nil
+            leftEdgeCenterConstraint = nil
+            rightEdgeCenterConstraint = nil
             if let bar = self as? RNBarLineChartViewBase { bar.applyExtraOffsets() }
         }
     }
@@ -914,7 +920,38 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
         applyEdgeLabelStyle()
         layoutIfNeeded()
+        if let indexFormatter = formatter as? IndexAxisValueFormatter {
+            let axisMaxIdx = Int(floor(barLine.chartXMax))
+            let labelMax = indexFormatter.values.count > 0 ? (indexFormatter.values.count - 1) : 0
+            let safeMaxIdx = min(axisMaxIdx, labelMax)
+            let leftIdx = max(Int(ceil(left)), 0)
+            let rightIdx = min(Int(right.rounded()), safeMaxIdx)
+            updateEdgeLabelPositions(leftX: Double(leftIdx), rightX: Double(rightIdx))
+        } else {
+            let minX = max(barLine.chartXMin, axis.axisMinimum)
+            let maxX = min(barLine.chartXMax, axis.axisMaximum)
+            let leftVal = max(ceil(left), minX)
+            let rightVal = min(right.rounded(), maxX)
+            updateEdgeLabelPositions(leftX: leftVal, rightX: rightVal)
+        }
         (self as? RNBarLineChartViewBase)?.applyExtraOffsets()
+    }
+
+    private func updateEdgeLabelPositions(leftX: Double, rightX: Double) {
+        guard edgeLabelEnabled, let barLine = chart as? BarLineChartViewBase else { return }
+        layoutIfNeeded()
+        leftEdgeLabel?.layoutIfNeeded()
+        rightEdgeLabel?.layoutIfNeeded()
+
+        let transformer = barLine.getTransformer(forAxis: YAxis.AxisDependency.left)
+        let leftPixel = transformer.pixelForValues(x: leftX, y: 0).x
+        let rightPixel = transformer.pixelForValues(x: rightX, y: 0).x
+
+        let leftHalf = max((leftEdgeLabel?.bounds.width ?? leftEdgeLabel?.intrinsicContentSize.width ?? 0) / 2, 0)
+        let rightHalf = max((rightEdgeLabel?.bounds.width ?? rightEdgeLabel?.intrinsicContentSize.width ?? 0) / 2, 0)
+
+        leftEdgeCenterConstraint?.constant = min(max(leftPixel, leftHalf), bounds.width - leftHalf)
+        rightEdgeCenterConstraint?.constant = min(max(rightPixel, rightHalf), bounds.width - rightHalf)
     }
 
     func sendEvent(_ action:String) {

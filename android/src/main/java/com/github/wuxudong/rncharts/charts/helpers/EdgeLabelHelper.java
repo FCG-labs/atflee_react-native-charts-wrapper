@@ -24,6 +24,7 @@ public class EdgeLabelHelper {
     // remembers user-specified drawLabels flag for xAxis
     private static java.util.WeakHashMap<BarLineChartBase, Boolean> userDrawLabelsMap = new java.util.WeakHashMap<>();
     private static java.util.WeakHashMap<BarLineChartBase, float[]> baseOffsets = new java.util.WeakHashMap<>();
+    private static java.util.WeakHashMap<BarLineChartBase, float[]> edgePixels = new java.util.WeakHashMap<>();
     private static java.util.WeakHashMap<BarLineChartBase, View.OnLayoutChangeListener> layoutListeners = new java.util.WeakHashMap<>();
     private static String leftTag(Chart chart) {
         return "edgeLabelLeft-" + chart.getId();
@@ -128,8 +129,19 @@ public class EdgeLabelHelper {
         int padRight = px(chart, PADDING_DP_RIGHT);
 
         int overlayH = overlayHeight(chart);
-        left.layout(chartLeft + padLeft, chartBottom - overlayH, chartLeft + padLeft + leftW, chartBottom);
-        right.layout(chartRight - rightW - padRight, chartBottom - overlayH, chartRight - padRight, chartBottom);
+        float[] pixels = edgePixels.get(chart);
+        int leftX = chartLeft + padLeft;
+        int rightX = chartRight - rightW - padRight;
+        if (pixels != null && pixels.length >= 2) {
+            int minLeft = chartLeft;
+            int maxLeft = chartRight - leftW;
+            int minRight = chartLeft;
+            int maxRight = chartRight - rightW;
+            leftX = Math.max(minLeft, Math.min(Math.round(chartLeft + pixels[0] - leftW / 2f), maxLeft));
+            rightX = Math.max(minRight, Math.min(Math.round(chartLeft + pixels[1] - rightW / 2f), maxRight));
+        }
+        left.layout(leftX, chartBottom - overlayH, leftX + leftW, chartBottom);
+        right.layout(rightX, chartBottom - overlayH, rightX + rightW, chartBottom);
 
         left.bringToFront();
         right.bringToFront();
@@ -180,6 +192,12 @@ public class EdgeLabelHelper {
 
         left.setVisibility(View.VISIBLE);
         right.setVisibility(View.VISIBLE);
+        edgePixels.put(bar, new float[]{
+                (float) bar.getTransformer(com.github.mikephil.charting.components.YAxis.AxisDependency.LEFT)
+                        .getPixelForValues(leftIndex, 0).x,
+                (float) bar.getTransformer(com.github.mikephil.charting.components.YAxis.AxisDependency.LEFT)
+                        .getPixelForValues(rightIndex, 0).x
+        });
 
         left.setText(vf.getFormattedValue(leftIndex));
         if (rightIndex <= leftIndex) {
