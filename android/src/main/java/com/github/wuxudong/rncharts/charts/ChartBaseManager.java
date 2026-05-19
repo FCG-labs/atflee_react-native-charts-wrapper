@@ -92,6 +92,12 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
                 event.putDouble("right", rightValue);
                 event.putDouble("top", rightTop.y);
 
+                if (EdgeLabelHelper.getExplicitFlag(barLineChart) == null) {
+                    boolean desiredEdge = EdgeLabelHelper.isAtMinScaleX(barLineChart);
+                    barLineChart.getXAxis().setDrawLabels(!desiredEdge);
+                    EdgeLabelHelper.setEnabled(barLineChart, desiredEdge);
+                    EdgeLabelHelper.applyPadding(barLineChart);
+                }
                 EdgeLabelHelper.update(barLineChart, leftValue, rightValue);
             }
         }

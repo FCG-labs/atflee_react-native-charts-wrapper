@@ -276,7 +276,7 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
         } else if (explicit != null) {
             desiredEdge = explicit.booleanValue();
         } else {
-            desiredEdge = !showValues;
+            desiredEdge = EdgeLabelHelper.isAtMinScaleX(chart);
         }
 
         boolean showAxis = userDisabledLabels ? false : (desiredEdge ? false : showValues);

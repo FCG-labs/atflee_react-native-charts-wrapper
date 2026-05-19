@@ -21,6 +21,8 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
     var zoomScaleX: CGFloat?
 
+    var minScaleX: CGFloat?
+
     var savedExtraOffsets: NSDictionary?
 
     var _onYaxisMinMaxChange : RCTBubblingEventBlock?
@@ -196,6 +198,16 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         let maxScaleY = json["y"]
         if maxScaleY.double != nil {
             barLineChart.viewPortHandler.setMaximumScaleY(maxScaleY.doubleValue)
+        }
+    }
+
+    func setMinScale(_ config: NSDictionary) {
+        let json = BridgeUtils.toJson(config)
+        let minScaleXValue = json["x"]
+        if minScaleXValue.double != nil {
+            minScaleX = CGFloat(minScaleXValue.doubleValue)
+        } else {
+            minScaleX = nil
         }
     }
 

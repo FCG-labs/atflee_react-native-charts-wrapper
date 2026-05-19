@@ -109,6 +109,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 CATransaction.flush()
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self else { return }
+                    self.updateValueVisibility(self.chart)
                     self.sendEvent("chartLoadComplete")
                     self.hasSentLoadComplete = true
                 }
@@ -747,8 +748,9 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             // explicit flag from JS wins unless labels disabled by user
             desiredEdge = userDisabledLabels ? true : explicit
         } else {
-            // automatic: if labels disabled show edge label, else toggle with zoom
-            desiredEdge = userDisabledLabels ? true : !showValues
+            let minScaleX = (self as? RNBarLineChartViewBase)?.minScaleX
+            let isAtMinScale = minScaleX != nil && barLine.scaleX <= minScaleX! + 0.01
+            desiredEdge = userDisabledLabels ? true : isAtMinScale
         }
 
         // 3. Choose axis label visibility based on edge label state
@@ -1058,12 +1060,15 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         if hasSentLoadComplete {
             if changedProps.contains("data") || changedProps.contains("xAxis") || changedProps.contains("yAxis") || changedProps.contains("valueFormatter") {
                 DispatchQueue.main.async { [weak self] in
-                    self?.sendEvent("chartLoadComplete")
+                    guard let self = self else { return }
+                    self.updateValueVisibility(self.chart)
+                    self.sendEvent("chartLoadComplete")
                 }
             }
         } else if bounds.width > 0 && bounds.height > 0 {
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
+                self.updateValueVisibility(self.chart)
                 self.sendEvent("chartLoadComplete")
                 self.hasSentLoadComplete = true
             }

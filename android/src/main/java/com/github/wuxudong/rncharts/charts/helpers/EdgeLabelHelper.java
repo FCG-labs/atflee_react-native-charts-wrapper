@@ -25,6 +25,7 @@ public class EdgeLabelHelper {
     private static java.util.WeakHashMap<BarLineChartBase, Boolean> userDrawLabelsMap = new java.util.WeakHashMap<>();
     private static java.util.WeakHashMap<BarLineChartBase, float[]> baseOffsets = new java.util.WeakHashMap<>();
     private static java.util.WeakHashMap<BarLineChartBase, float[]> edgePixels = new java.util.WeakHashMap<>();
+    private static java.util.WeakHashMap<BarLineChartBase, Float> minScaleXMap = new java.util.WeakHashMap<>();
     private static java.util.WeakHashMap<BarLineChartBase, View.OnLayoutChangeListener> layoutListeners = new java.util.WeakHashMap<>();
     private static String leftTag(Chart chart) {
         return "edgeLabelLeft-" + chart.getId();
@@ -207,6 +208,20 @@ public class EdgeLabelHelper {
 
     public static void saveBaseOffsets(BarLineChartBase chart, float left, float top, float right, float bottom) {
         baseOffsets.put(chart, new float[]{left, top, right, bottom});
+    }
+
+    public static void setMinScaleX(BarLineChartBase chart, java.lang.Float minScaleX) {
+        if (minScaleX == null) {
+            minScaleXMap.remove(chart);
+        } else {
+            minScaleXMap.put(chart, minScaleX);
+        }
+    }
+
+    public static boolean isAtMinScaleX(BarLineChartBase chart) {
+        Float minScaleX = minScaleXMap.get(chart);
+        if (minScaleX == null || minScaleX <= 0f) return false;
+        return chart.getScaleX() <= minScaleX + 0.01f;
     }
 
     private static float[] base(BarLineChartBase chart) {
