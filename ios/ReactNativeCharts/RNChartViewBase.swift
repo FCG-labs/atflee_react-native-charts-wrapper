@@ -49,6 +49,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     private var rightEdgeLabelHasNewline = false
     private var leftEdgeConstraint: NSLayoutConstraint?
     private var rightEdgeConstraint: NSLayoutConstraint?
+    private var leftEdgeCenterConstraint: NSLayoutConstraint?
+    private var rightEdgeCenterConstraint: NSLayoutConstraint?
     var edgeLabelEnabled: Bool = false
     // whether edgeLabelEnabled was explicitly provided from JS; nil means auto
     private var edgeLabelExplicit: Bool? = nil
@@ -107,6 +109,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 CATransaction.flush()
                 DispatchQueue.main.async { [weak self] in
                     guard let self = self else { return }
+                    self.updateValueVisibility(self.chart)
                     self.sendEvent("chartLoadComplete")
                     self.hasSentLoadComplete = true
                 }
@@ -694,7 +697,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     }
 
     // MARK: - Value text / Edge label visibility based on zoom
-    private func updateValueVisibility(_ chartView: ChartViewBase) {
+    func updateValueVisibility(_ chartView: ChartViewBase) {
         guard let barLine = chartView as? BarLineChartViewBase else { return }
 
         let isLandscape = landscapeOrientationOverride ?? (barLine.bounds.width > barLine.bounds.height)
@@ -745,8 +748,13 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             // explicit flag from JS wins unless labels disabled by user
             desiredEdge = userDisabledLabels ? true : explicit
         } else {
-            // automatic: if labels disabled show edge label, else toggle with zoom
-            desiredEdge = userDisabledLabels ? true : !showValues
+            let minScaleX = (self as? RNBarLineChartViewBase)?.minScaleX
+            let dataMinX = barLine.data?.xMin ?? barLine.chartXMin
+            let dataMaxX = barLine.data?.xMax ?? barLine.chartXMax
+            let isEntireDataVisible = barLine.lowestVisibleX <= dataMinX + 0.51 && barLine.highestVisibleX >= dataMaxX - 0.51
+            let isAtMinScale = isEntireDataVisible || (minScaleX != nil && barLine.scaleX <= minScaleX! + 0.05)
+            desiredEdge = userDisabledLabels ? true : isAtMinScale
+            print("[RNCharts-EdgeLabel] visibility chart=\(ObjectIdentifier(barLine)) desiredEdge=\(desiredEdge) currentEdge=\(edgeLabelEnabled) showValues=\(showValues) scaleX=\(barLine.scaleX) minScaleX=\(String(describing: minScaleX)) lowestVisibleX=\(barLine.lowestVisibleX) highestVisibleX=\(barLine.highestVisibleX) dataMin=\(dataMinX) dataMax=\(dataMaxX) entireDataVisible=\(isEntireDataVisible)")
         }
 
         // 3. Choose axis label visibility based on edge label state
@@ -792,7 +800,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 addSubview(label)
                 leftEdgeConstraint = label.topAnchor.constraint(equalTo: bottomAnchor, constant: -edgeLabelTopPadding)
                 leftEdgeConstraint?.isActive = true
-                label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12).isActive = true
+                leftEdgeCenterConstraint = label.centerXAnchor.constraint(equalTo: leadingAnchor, constant: 12)
+                leftEdgeCenterConstraint?.isActive = true
                 leftEdgeLabel = label
             }
             if rightEdgeLabel == nil {
@@ -803,7 +812,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 addSubview(label)
                 rightEdgeConstraint = label.topAnchor.constraint(equalTo: bottomAnchor, constant: -edgeLabelTopPadding)
                 rightEdgeConstraint?.isActive = true
-                label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -32).isActive = true
+                rightEdgeCenterConstraint = label.centerXAnchor.constraint(equalTo: leadingAnchor, constant: bounds.width - 32)
+                rightEdgeCenterConstraint?.isActive = true
                 rightEdgeLabel = label
             }
             applyEdgeLabelStyle()
@@ -820,6 +830,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             rightEdgeLabel = nil
             leftEdgeConstraint = nil
             rightEdgeConstraint = nil
+            leftEdgeCenterConstraint = nil
+            rightEdgeCenterConstraint = nil
             if let bar = self as? RNBarLineChartViewBase { bar.applyExtraOffsets() }
         }
     }
@@ -865,27 +877,38 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         let formatter = axis.valueFormatter
 
         // If the axis uses index-based labels, compute integer indices; otherwise use continuous values
+        let dataMinX = barLine.data?.xMin ?? barLine.chartXMin
+        let dataMaxX = barLine.data?.xMax ?? barLine.chartXMax
+        let isEntireDataVisible = barLine.lowestVisibleX <= dataMinX + 0.51 && barLine.highestVisibleX >= dataMaxX - 0.51
+        var debugLeftX = Double.nan
+        var debugRightX = Double.nan
+        var debugLeftLabel = ""
+        var debugRightLabel = ""
         if let indexFormatter = formatter as? IndexAxisValueFormatter {
             let axisMaxIdx = Int(floor(barLine.chartXMax))
             let labelMax   = indexFormatter.values.count > 0 ? (indexFormatter.values.count - 1) : 0
             let safeMaxIdx = min(axisMaxIdx, labelMax)
 
-            let leftIdx  = max(Int(ceil(left)), 0)
-            let rightIdx = min(Int(right.rounded()), safeMaxIdx)
+            let leftIdx  = max(Int(ceil(isEntireDataVisible ? dataMinX : left)), 0)
+            let rightIdx = min(Int(ceil(isEntireDataVisible ? dataMaxX : right)), safeMaxIdx)
 
             leftEdgeLabel?.isHidden  = false
             rightEdgeLabel?.isHidden = rightIdx <= leftIdx
 
             if let v = formatter?.stringForValue(Double(leftIdx), axis: axis) {
                 leftEdgeLabel?.text = v
+                debugLeftLabel = v
                 leftEdgeLabelHasNewline = v.contains("\n")
             }
 
             if !rightEdgeLabel!.isHidden,
                let v = formatter?.stringForValue(Double(rightIdx), axis: axis) {
                 rightEdgeLabel?.text = v
+                debugRightLabel = v
                 rightEdgeLabelHasNewline = v.contains("\n")
             }
+            debugLeftX = Double(leftIdx)
+            debugRightX = Double(rightIdx)
         } else {
             // Continuous axis (e.g., date/time). Use rounded/ceil values and clamp to chart bounds
             var minX = barLine.chartXMin
@@ -894,27 +917,61 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             minX = max(minX, axis.axisMinimum)
             maxX = min(maxX, axis.axisMaximum)
 
-            var leftVal  = max(ceil(left), minX)
-            var rightVal = min(right.rounded(), maxX)
+            let leftVal  = max(ceil(isEntireDataVisible ? dataMinX : left), minX)
+            let rightVal = min(ceil(isEntireDataVisible ? dataMaxX : right), maxX)
 
             leftEdgeLabel?.isHidden  = false
             rightEdgeLabel?.isHidden = rightVal <= leftVal
 
             if let v = formatter?.stringForValue(leftVal, axis: axis) {
                 leftEdgeLabel?.text = v
+                debugLeftLabel = v
                 leftEdgeLabelHasNewline = v.contains("\n")
             }
 
             if !rightEdgeLabel!.isHidden,
                let v = formatter?.stringForValue(rightVal, axis: axis) {
                 rightEdgeLabel?.text = v
+                debugRightLabel = v
                 rightEdgeLabelHasNewline = v.contains("\n")
             }
+            debugLeftX = leftVal
+            debugRightX = rightVal
         }
+
+        print("[RNCharts-EdgeLabel] update chart=\(ObjectIdentifier(barLine)) enabled=\(edgeLabelEnabled) scaleX=\(barLine.scaleX) minScaleX=\(String(describing: (self as? RNBarLineChartViewBase)?.minScaleX)) lowestVisibleX=\(barLine.lowestVisibleX) highestVisibleX=\(barLine.highestVisibleX) inputLeft=\(left) inputRight=\(right) dataMin=\(dataMinX) dataMax=\(dataMaxX) entireDataVisible=\(isEntireDataVisible) leftX=\(debugLeftX) rightX=\(debugRightX) leftLabel=\(debugLeftLabel) rightLabel=\(debugRightLabel)")
 
         applyEdgeLabelStyle()
         layoutIfNeeded()
+        if let indexFormatter = formatter as? IndexAxisValueFormatter {
+            let axisMaxIdx = Int(floor(barLine.chartXMax))
+            let labelMax = indexFormatter.values.count > 0 ? (indexFormatter.values.count - 1) : 0
+            let safeMaxIdx = min(axisMaxIdx, labelMax)
+            let leftIdx = max(Int(ceil(isEntireDataVisible ? dataMinX : left)), 0)
+            let rightIdx = min(Int(ceil(isEntireDataVisible ? dataMaxX : right)), safeMaxIdx)
+            updateEdgeLabelPositions(leftX: Double(leftIdx), rightX: Double(rightIdx))
+        } else {
+            let minX = max(barLine.chartXMin, axis.axisMinimum)
+            let maxX = min(barLine.chartXMax, axis.axisMaximum)
+            let leftVal = max(ceil(isEntireDataVisible ? dataMinX : left), minX)
+            let rightVal = min(ceil(isEntireDataVisible ? dataMaxX : right), maxX)
+            updateEdgeLabelPositions(leftX: leftVal, rightX: rightVal)
+        }
         (self as? RNBarLineChartViewBase)?.applyExtraOffsets()
+    }
+
+    private func updateEdgeLabelPositions(leftX: Double, rightX: Double) {
+        guard edgeLabelEnabled, let barLine = chart as? BarLineChartViewBase else { return }
+        layoutIfNeeded()
+        leftEdgeLabel?.layoutIfNeeded()
+        rightEdgeLabel?.layoutIfNeeded()
+
+        let transformer = barLine.getTransformer(forAxis: YAxis.AxisDependency.left)
+        let leftPixel = transformer.pixelForValues(x: leftX, y: 0).x
+        let rightPixel = transformer.pixelForValues(x: rightX, y: 0).x
+
+        leftEdgeCenterConstraint?.constant = leftPixel
+        rightEdgeCenterConstraint?.constant = rightPixel
     }
 
     func sendEvent(_ action:String) {
@@ -970,13 +1027,20 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 
                 dict["left"] = leftValue
                 dict["bottom"] = leftBottom.y
-                let rightRounded = rightValue.rounded()
-                dict["right"] = rightRounded // 정확히.
+                let rightCeil = ceil(rightValue)
+                dict["right"] = rightCeil
                 // dict["right"] = rightValue
                 dict["top"] = rightTop.y
+                dict["visibleStartX"] = ceil(leftValue)
+                dict["visibleEndX"] = floor(rightValue)
+                dict["contentLeft"] = handler.contentLeft
+                dict["contentRight"] = handler.contentRight
+                dict["visibleLeftPixelX"] = barLineChart.getTransformer(forAxis: YAxis.AxisDependency.left)
+                    .pixelForValues(x: ceil(leftValue), y: 0).x
+                dict["visibleRightPixelX"] = barLineChart.getTransformer(forAxis: YAxis.AxisDependency.left)
+                    .pixelForValues(x: rightCeil, y: 0).x
 
-                // 🔧 버그 수정: 일관성을 위해 반올림된 값을 Edge Label에도 전달
-                updateEdgeLabels(left: leftValue, right: rightRounded)
+                updateEdgeLabels(left: leftValue, right: rightCeil)
 
                 if self.group != nil && self.identifier != nil {
                     ChartGroupHolder.sync(group: self.group!, identifier: self.identifier!, scaleX: barLineChart.scaleX, scaleY: barLineChart.scaleY, centerX: center.x, centerY: center.y, performImmediately: true)
@@ -1018,12 +1082,15 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         if hasSentLoadComplete {
             if changedProps.contains("data") || changedProps.contains("xAxis") || changedProps.contains("yAxis") || changedProps.contains("valueFormatter") {
                 DispatchQueue.main.async { [weak self] in
-                    self?.sendEvent("chartLoadComplete")
+                    guard let self = self else { return }
+                    self.updateValueVisibility(self.chart)
+                    self.sendEvent("chartLoadComplete")
                 }
             }
         } else if bounds.width > 0 && bounds.height > 0 {
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
+                self.updateValueVisibility(self.chart)
                 self.sendEvent("chartLoadComplete")
                 self.hasSentLoadComplete = true
             }

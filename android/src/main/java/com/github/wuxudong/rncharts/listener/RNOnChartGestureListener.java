@@ -276,7 +276,7 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
         } else if (explicit != null) {
             desiredEdge = explicit.booleanValue();
         } else {
-            desiredEdge = !showValues;
+            desiredEdge = EdgeLabelHelper.isAtMinScaleX(chart);
         }
 
         boolean showAxis = userDisabledLabels ? false : (desiredEdge ? false : showValues);
@@ -363,12 +363,23 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
             event.putDouble("bottom", leftBottom.y);
             event.putDouble("right", rightValue);
             event.putDouble("top", rightTop.y);
+            event.putDouble("visibleStartX", Math.ceil(leftValue));
+            event.putDouble("visibleEndX", Math.floor(rightValue));
+            event.putDouble("contentLeft", viewPortHandler.contentLeft());
+            event.putDouble("contentRight", viewPortHandler.contentRight());
+            MPPointD leftPixel = ((BarLineChartBase) chart).getTransformer(YAxis.AxisDependency.LEFT)
+                    .getPixelForValues(Math.ceil(leftValue), 0);
+            MPPointD rightPixel = ((BarLineChartBase) chart).getTransformer(YAxis.AxisDependency.LEFT)
+                    .getPixelForValues(Math.floor(rightValue), 0);
+            event.putDouble("visibleLeftPixelX", leftPixel.x);
+            event.putDouble("visibleRightPixelX", rightPixel.x);
+            MPPointD.recycleInstance(leftPixel);
+            MPPointD.recycleInstance(rightPixel);
 
-            com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.update(chart, leftValue, rightValue);
+            EdgeLabelHelper.update((BarLineChartBase) chart, leftValue, rightValue);
 
             if (group != null && identifier != null) {
                 ChartGroupHolder.sync(group, identifier, chart.getScaleX(), chart.getScaleY(), (float) center.x, (float) center.y);
-
             }
         }
         return event;

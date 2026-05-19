@@ -226,6 +226,15 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         }
     }
 
+    @ReactProp(name = "minScale")
+    public void setMinScale(BarLineChartBase chart, ReadableMap propMap) {
+        if (BridgeUtils.validate(propMap, ReadableType.Number, "x")) {
+            EdgeLabelHelper.setMinScaleX(chart, (float) propMap.getDouble("x"));
+        } else {
+            EdgeLabelHelper.setMinScaleX(chart, null);
+        }
+    }
+
     @ReactProp(name = "scaleEnabled")
     public void setScaleEnabled(BarLineChartBase chart, boolean enabled) {
         chart.setScaleEnabled(enabled);

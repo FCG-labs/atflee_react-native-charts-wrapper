@@ -1,6 +1,7 @@
 package com.github.wuxudong.rncharts.charts.helpers;
 
 import android.util.TypedValue;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.View.OnLayoutChangeListener;
@@ -15,6 +16,7 @@ import com.github.mikephil.charting.formatter.ValueFormatter;
 
 /** Helper for fixed edge labels overlayed on the chart. */
 public class EdgeLabelHelper {
+    private static final String TAG = "RNCharts-EdgeLabel";
     private static final float PADDING_DP_LEFT = 8f;
     private static final float PADDING_DP_RIGHT = 32f;
     private static java.util.WeakHashMap<BarLineChartBase, Boolean> enabledMap = new java.util.WeakHashMap<>();
@@ -24,6 +26,8 @@ public class EdgeLabelHelper {
     // remembers user-specified drawLabels flag for xAxis
     private static java.util.WeakHashMap<BarLineChartBase, Boolean> userDrawLabelsMap = new java.util.WeakHashMap<>();
     private static java.util.WeakHashMap<BarLineChartBase, float[]> baseOffsets = new java.util.WeakHashMap<>();
+    private static java.util.WeakHashMap<BarLineChartBase, float[]> edgePixels = new java.util.WeakHashMap<>();
+    private static java.util.WeakHashMap<BarLineChartBase, Float> minScaleXMap = new java.util.WeakHashMap<>();
     private static java.util.WeakHashMap<BarLineChartBase, View.OnLayoutChangeListener> layoutListeners = new java.util.WeakHashMap<>();
     private static String leftTag(Chart chart) {
         return "edgeLabelLeft-" + chart.getId();
@@ -128,8 +132,15 @@ public class EdgeLabelHelper {
         int padRight = px(chart, PADDING_DP_RIGHT);
 
         int overlayH = overlayHeight(chart);
-        left.layout(chartLeft + padLeft, chartBottom - overlayH, chartLeft + padLeft + leftW, chartBottom);
-        right.layout(chartRight - rightW - padRight, chartBottom - overlayH, chartRight - padRight, chartBottom);
+        float[] pixels = edgePixels.get(chart);
+        int leftX = chartLeft + padLeft;
+        int rightX = chartRight - rightW - padRight;
+        if (pixels != null && pixels.length >= 2) {
+            leftX = Math.round(chartLeft + pixels[0] - leftW / 2f);
+            rightX = Math.round(chartLeft + pixels[1] - rightW / 2f);
+        }
+        left.layout(leftX, chartBottom - overlayH, leftX + leftW, chartBottom);
+        right.layout(rightX, chartBottom - overlayH, rightX + rightW, chartBottom);
 
         left.bringToFront();
         right.bringToFront();
@@ -170,8 +181,9 @@ public class EdgeLabelHelper {
         float minIndex = data != null ? data.getXMin() : (float) leftValue;
         float maxIndex = data != null ? data.getXMax() : (float) rightValue;
 
-        int leftIndex = (int) Math.ceil(leftValue);
-        int rightIndex = (int) Math.floor(rightValue);
+        boolean atMinScale = isAtMinScaleX(bar);
+        int leftIndex = (int) Math.ceil(atMinScale ? minIndex : leftValue);
+        int rightIndex = (int) Math.ceil(atMinScale ? maxIndex : rightValue);
 
         if (leftIndex < minIndex) leftIndex = (int) minIndex;
         if (leftIndex > maxIndex) leftIndex = (int) maxIndex;
@@ -180,6 +192,12 @@ public class EdgeLabelHelper {
 
         left.setVisibility(View.VISIBLE);
         right.setVisibility(View.VISIBLE);
+        edgePixels.put(bar, new float[]{
+                (float) bar.getTransformer(com.github.mikephil.charting.components.YAxis.AxisDependency.LEFT)
+                        .getPixelForValues(leftIndex, 0).x,
+                (float) bar.getTransformer(com.github.mikephil.charting.components.YAxis.AxisDependency.LEFT)
+                        .getPixelForValues(rightIndex, 0).x
+        });
 
         left.setText(vf.getFormattedValue(leftIndex));
         if (rightIndex <= leftIndex) {
@@ -188,11 +206,70 @@ public class EdgeLabelHelper {
             right.setText(vf.getFormattedValue(rightIndex));
         }
 
+        Log.i(TAG, "update"
+                + " chartId=" + bar.getId()
+                + " enabled=" + Boolean.TRUE.equals(enabledMap.get(bar))
+                + " atMinScale=" + atMinScale
+                + " scaleX=" + bar.getScaleX()
+                + " minScaleX=" + minScaleXMap.get(bar)
+                + " lowestVisibleX=" + bar.getLowestVisibleX()
+                + " highestVisibleX=" + bar.getHighestVisibleX()
+                + " inputLeft=" + leftValue
+                + " inputRight=" + rightValue
+                + " dataMin=" + minIndex
+                + " dataMax=" + maxIndex
+                + " leftIndex=" + leftIndex
+                + " rightIndex=" + rightIndex
+                + " leftLabel=" + left.getText()
+                + " rightLabel=" + right.getText());
+
         reposition(bar);
     }
 
     public static void saveBaseOffsets(BarLineChartBase chart, float left, float top, float right, float bottom) {
         baseOffsets.put(chart, new float[]{left, top, right, bottom});
+    }
+
+    public static void setMinScaleX(BarLineChartBase chart, java.lang.Float minScaleX) {
+        if (minScaleX == null) {
+            minScaleXMap.remove(chart);
+        } else {
+            minScaleXMap.put(chart, minScaleX);
+        }
+    }
+
+    public static boolean isAtMinScaleX(BarLineChartBase chart) {
+        Float minScaleX = minScaleXMap.get(chart);
+        ChartData data = chart.getData();
+        boolean isEntireDataVisible = false;
+        if (data != null) {
+            float left = chart.getLowestVisibleX();
+            float right = chart.getHighestVisibleX();
+            isEntireDataVisible = left <= data.getXMin() + 0.51f && right >= data.getXMax() - 0.51f;
+            if (isEntireDataVisible) {
+                Log.i(TAG, "isAtMinScale=true"
+                        + " chartId=" + chart.getId()
+                        + " reason=entireDataVisible"
+                        + " scaleX=" + chart.getScaleX()
+                        + " minScaleX=" + minScaleX
+                        + " lowestVisibleX=" + left
+                        + " highestVisibleX=" + right
+                        + " dataMin=" + data.getXMin()
+                        + " dataMax=" + data.getXMax());
+                return true;
+            }
+        }
+        boolean result = minScaleX != null && minScaleX > 0f && chart.getScaleX() <= minScaleX + 0.05f;
+        Log.i(TAG, "isAtMinScale=" + result
+                + " chartId=" + chart.getId()
+                + " reason=scale"
+                + " scaleX=" + chart.getScaleX()
+                + " minScaleX=" + minScaleX
+                + " entireDataVisible=" + isEntireDataVisible
+                + " lowestVisibleX=" + chart.getLowestVisibleX()
+                + " highestVisibleX=" + chart.getHighestVisibleX()
+                + (data != null ? " dataMin=" + data.getXMin() + " dataMax=" + data.getXMax() : ""));
+        return result;
     }
 
     private static float[] base(BarLineChartBase chart) {
