@@ -1,5 +1,7 @@
 package com.github.wuxudong.rncharts.listener;
 
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import androidx.annotation.NonNull;
 import android.view.MotionEvent;
@@ -11,6 +13,7 @@ import com.facebook.react.uimanager.events.RCTEventEmitter;
 import com.github.mikephil.charting.charts.BarLineChartBase;
 import com.github.mikephil.charting.charts.Chart;
 import com.github.mikephil.charting.components.YAxis;
+import com.github.mikephil.charting.listener.BarLineChartTouchListener;
 import com.github.mikephil.charting.listener.ChartTouchListener;
 import com.github.mikephil.charting.listener.OnChartGestureListener;
 import com.github.mikephil.charting.utils.MPPointD;
@@ -50,6 +53,12 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
     private long eventThrottleMs = 100; // 기본값 100ms
     private long lastTranslateEventTime = 0;
     private long lastScaleEventTime = 0;
+
+    // 스크롤/제스처 종료 감지용 debounce - chart deceleration이 종료된 후
+    // 마지막 chartTranslated가 보낸 값과 실제 settle 위치 사이 어긋남 보정
+    private final Handler scrollSettleHandler = new Handler(Looper.getMainLooper());
+    private static final long SCROLL_SETTLE_DELAY_MS = 200;
+    private Runnable scrollSettleRunnable;
 
     public RNOnChartGestureListener(Chart chart) {
         this.mWeakChart = new WeakReference<>(chart);
@@ -133,12 +142,71 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
 
     @Override
     public void onChartTranslate(MotionEvent me, float dX, float dY) {
+        // Deceleration이 limitTransAndScale 클램핑을 우회하여 raw mTransX가 data 경계 밖으로
+        // 밀려나가는 문제를 막기 위해, raw viewport가 경계 넘으면 즉시 정지 + 경계로 보정.
+        // 관성 스크롤 자체는 유지되고, boundary 도달 시점에만 자연스럽게 멈춤.
+        clampDecelerationToBounds();
+
         adjustValueAndEdgeLabels();
         
         long now = System.currentTimeMillis();
         if (eventThrottleMs == 0 || (now - lastTranslateEventTime) >= eventThrottleMs) {
             sendEvent("chartTranslated", me);
             lastTranslateEventTime = now;
+        }
+
+        // 마지막 chartTranslated 후 200ms 동안 추가 이벤트 없으면 chartScrollStop 발송
+        // → moveViewToX가 비동기로 settle된 후 정확한 viewport 값을 JS에 전달
+        scheduleScrollSettleEvent(me);
+    }
+
+    private void scheduleScrollSettleEvent(final MotionEvent me) {
+        if (scrollSettleRunnable != null) {
+            scrollSettleHandler.removeCallbacks(scrollSettleRunnable);
+        }
+        scrollSettleRunnable = new Runnable() {
+            @Override
+            public void run() {
+                scrollSettleRunnable = null;
+                sendEvent("chartScrollStop", me);
+            }
+        };
+        scrollSettleHandler.postDelayed(scrollSettleRunnable, SCROLL_SETTLE_DELAY_MS);
+    }
+
+    private void clampDecelerationToBounds() {
+        Chart base = mWeakChart.get();
+        if (!(base instanceof BarLineChartBase)) return;
+        BarLineChartBase chart = (BarLineChartBase) base;
+        ChartData data = chart.getData();
+        if (data == null) return;
+
+        ViewPortHandler vph = chart.getViewPortHandler();
+        MPPointD lb = chart.getValuesByTouchPoint(vph.contentLeft(), vph.contentBottom(), YAxis.AxisDependency.LEFT);
+        MPPointD rt = chart.getValuesByTouchPoint(vph.contentRight(), vph.contentTop(), YAxis.AxisDependency.LEFT);
+        double rawLeft = lb.x;
+        double rawRight = rt.x;
+        double visibleWidth = rawRight - rawLeft;
+        if (visibleWidth <= 0) return;
+
+        float spaceMin = chart.getXAxis().getSpaceMin();
+        float spaceMax = chart.getXAxis().getSpaceMax();
+        double allowedMin = (double) data.getXMin() - spaceMin;
+        double allowedMax = (double) data.getXMax() + spaceMax;
+
+        if (rawRight > allowedMax) {
+            stopDecelerationOnTouchListener(chart);
+            chart.moveViewToX((float) (allowedMax - visibleWidth));
+        } else if (rawLeft < allowedMin) {
+            stopDecelerationOnTouchListener(chart);
+            chart.moveViewToX((float) allowedMin);
+        }
+    }
+
+    private void stopDecelerationOnTouchListener(BarLineChartBase chart) {
+        ChartTouchListener listener = chart.getOnTouchListener();
+        if (listener instanceof BarLineChartTouchListener) {
+            ((BarLineChartTouchListener) listener).stopDeceleration();
         }
     }
 
@@ -147,26 +215,19 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
         if (!(base instanceof BarLineChartBase)) return;
         BarLineChartBase chart = (BarLineChartBase) base;
 
-        // approximate number of x-entries currently visible (inclusive)
-        float leftX = chart.getLowestVisibleX();
-        float rightX = chart.getHighestVisibleX();
-
-        // If user pans past the data range, clamp so that we don't count the 'blank' region
-        ChartData dataForClamp = chart.getData();
-        if (dataForClamp != null) {
-            float minX = dataForClamp.getXMin();
-            float maxX = dataForClamp.getXMax();
-            if (leftX < minX) leftX = minX;
-            if (rightX > maxX) rightX = maxX;
-        }
-
+        // scaleX 기반 visibleCount 계산 — drag/deceleration 중에는 scaleX가 변하지 않으므로
+        // boundary 도달 시 lowestVisibleX/highestVisibleX의 fluctuation에 영향받지 않고 안정적.
         int visibleCount;
         ChartData _d = chart.getData();
         if (_d != null) {
             int totalEntries = (int) (_d.getXMax() - _d.getXMin() + 1);
-            float scale = chart.getScaleX();
-            if (scale < 1f) scale = 1f; // safety guard
-            visibleCount = (int) Math.ceil(totalEntries / scale);
+            float scaleX = chart.getScaleX();
+            float axisRange = chart.getXAxis().getAxisMaximum() - chart.getXAxis().getAxisMinimum();
+            if (scaleX > 0 && axisRange > 0) {
+                visibleCount = (int) Math.round(axisRange / scaleX);
+            } else {
+                visibleCount = totalEntries;
+            }
             if (visibleCount < 1) visibleCount = 1;
             if (visibleCount > totalEntries) visibleCount = totalEntries;
         } else {
@@ -174,10 +235,8 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
         }
         Boolean landscapeOverride = EdgeLabelHelper.getLandscapeOverride(chart);
         boolean isLandscape = (landscapeOverride != null) ? landscapeOverride.booleanValue() : (chart.getWidth() > chart.getHeight());
-        Log.d("RNChartDebug", "[adjust] landscapeOverride=" + landscapeOverride + ", isLandscape=" + isLandscape);
         int threshold = isLandscape ? 15 : 8;
         boolean showValues = visibleCount <= threshold;
-        Log.d("RNChartDebug", "[adjust] visibleCount=" + visibleCount + ", threshold=" + threshold + ", showValues=" + showValues);
 
         ChartData data = chart.getData();
         if (data != null) {
@@ -199,7 +258,6 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
                     }
 
                     boolean desired = showValues;
-                    Log.d("RNChartDebug", "[adjust] DataSet=" + set.getLabel() + ", baseDraw=" + baseDraw + ", desired=" + desired + ", current=" + set.isDrawValuesEnabled());
                     if (set.isDrawValuesEnabled() != desired) {
                         set.setDrawValues(desired);
                     }
@@ -237,11 +295,6 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
 
             WritableMap event = getEvent(action, me, chart);
             try {
-                // 1. 이벤트 객체 생성 직후 상태
-                Log.d("RNChartEvent", "[sendEvent] event created: " + event);
-                Log.d("RNChartEvent", "[sendEvent] action: " + action + ", chartId: " + chart.getId());
-                Log.d("RNChartEvent", "[sendEvent] motionEvent: x=" + me.getX() + ", y=" + me.getY());
-
                 ReactContext reactContext = (ReactContext) chart.getContext();
 
                 reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(

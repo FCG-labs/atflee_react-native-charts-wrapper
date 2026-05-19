@@ -178,16 +178,25 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                         float effectiveXMax = Math.max(rawDataXMax, chart.getXChartMax());
                         float totalRange = effectiveXMax - effectiveXMin;
                         if (totalRange > 0) {
-                            float relativeScale;
-                            if (totalRange > visibleMin) {
-                                relativeScale = totalRange / visibleMin;
-                            } else {
-                                relativeScale = visibleMin / totalRange;
+                            // Ensure axis bounds match effective range so setVisibleXRange uses correct mAxisRange
+                            chart.getXAxis().setAxisMinimum(effectiveXMin);
+                            chart.getXAxis().setAxisMaximum(effectiveXMax);
+                            // Re-apply visible range constraints with corrected axis range
+                            chart.setVisibleXRangeMinimum(visibleMin);
+                            if (BridgeUtils.validate(xRange, ReadableType.Number, "max")) {
+                                chart.setVisibleXRangeMaximum((float) xRange.getDouble("max"));
                             }
-                            float centerX = effectiveXMax;
+                            float targetScale = totalRange > visibleMin
+                                    ? totalRange / visibleMin
+                                    : visibleMin / totalRange;
+                            float currentScale = chart.getScaleX();
+                            float relativeScale = currentScale > 0 ? targetScale / currentScale : targetScale;
+                            float centerX = effectiveXMax - visibleMin / 2f;
                             YAxis.AxisDependency axis = chart.getAxisLeft().isEnabled() ?
                                     YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
                             chart.zoom(relativeScale, 1f, centerX, 0f, axis);
+                            // Explicitly position so last data point is at the right edge
+                            chart.moveViewToX(effectiveXMax - visibleMin);
                         }
                     }
                 }

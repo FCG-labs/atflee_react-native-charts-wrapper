@@ -80,6 +80,21 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     private var lastTranslateEventTime: TimeInterval = 0
     private var lastScaleEventTime: TimeInterval = 0
 
+    // 스크롤/제스처 종료 감지용 debounce 타이머
+    // chartTranslated/chartScaled 이벤트 후 일정 시간 추가 이벤트가 없으면
+    // 'chartScrollStop' 이벤트를 현재 viewport 상태로 emit하여 헤더 등 JS 측 보정을 보장
+    private var scrollSettleTimer: Timer?
+    private let scrollSettleDelay: TimeInterval = 0.2
+
+    private func scheduleScrollSettleEvent() {
+        scrollSettleTimer?.invalidate()
+        scrollSettleTimer = Timer.scheduledTimer(withTimeInterval: scrollSettleDelay, repeats: false) { [weak self] _ in
+            guard let self = self else { return }
+            self.scrollSettleTimer = nil
+            self.sendEvent("chartScrollStop")
+        }
+    }
+
     override open func layoutSubviews() {
         super.layoutSubviews()
 
@@ -645,6 +660,9 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             sendEvent("chartScaled")
             lastScaleEventTime = now
         }
+
+        // 빠른 zoom 종료 후 throttle로 누락된 최종 viewport 상태 보정
+        scheduleScrollSettleEvent()
         
         chartView.subviews
             .filter { $0.tag == 999 }
@@ -661,6 +679,9 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             sendEvent("chartTranslated")
             lastTranslateEventTime = now
         }
+
+        // 빠른 스크롤/deceleration 종료 후 throttle로 누락된 최종 viewport 상태 보정
+        scheduleScrollSettleEvent()
         
         chartView.subviews
             .filter { $0.tag == 999 }
