@@ -953,6 +953,12 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 dict["right"] = rightRounded // 정확히.
                 // dict["right"] = rightValue
                 dict["top"] = rightTop.y
+                dict["contentLeft"] = handler.contentLeft
+                dict["contentRight"] = handler.contentRight
+                dict["visibleLeftPixelX"] = barLineChart.getTransformer(forAxis: YAxis.AxisDependency.left)
+                    .pixelForValues(x: ceil(leftValue), y: 0).x
+                dict["visibleRightPixelX"] = barLineChart.getTransformer(forAxis: YAxis.AxisDependency.left)
+                    .pixelForValues(x: floor(rightValue), y: 0).x
 
                 // 🔧 버그 수정: 일관성을 위해 반올림된 값을 Edge Label에도 전달
                 updateEdgeLabels(left: leftValue, right: rightRounded)
