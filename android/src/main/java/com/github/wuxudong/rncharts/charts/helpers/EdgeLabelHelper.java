@@ -180,7 +180,7 @@ public class EdgeLabelHelper {
         float maxIndex = data != null ? data.getXMax() : (float) rightValue;
 
         int leftIndex = (int) Math.ceil(leftValue);
-        int rightIndex = (int) Math.floor(rightValue);
+        int rightIndex = (int) Math.ceil(rightValue);
 
         if (leftIndex < minIndex) leftIndex = (int) minIndex;
         if (leftIndex > maxIndex) leftIndex = (int) maxIndex;
@@ -221,7 +221,7 @@ public class EdgeLabelHelper {
     public static boolean isAtMinScaleX(BarLineChartBase chart) {
         Float minScaleX = minScaleXMap.get(chart);
         if (minScaleX == null || minScaleX <= 0f) return false;
-        return chart.getScaleX() <= minScaleX + 0.01f;
+        return chart.getScaleX() <= minScaleX + 0.05f;
     }
 
     private static float[] base(BarLineChartBase chart) {

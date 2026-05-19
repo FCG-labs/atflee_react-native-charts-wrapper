@@ -183,7 +183,9 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
         // Fire after one run-loop so viewPortHandler has updated with new visible range.
         DispatchQueue.main.async { [weak self] in
-            self?.sendEvent("visibleRangeChanged")
+            guard let self = self else { return }
+            self.updateValueVisibility(self.chart)
+            self.sendEvent("visibleRangeChanged")
         }
     }
 

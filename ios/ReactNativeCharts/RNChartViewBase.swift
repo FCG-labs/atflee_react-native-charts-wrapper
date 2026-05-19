@@ -697,7 +697,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     }
 
     // MARK: - Value text / Edge label visibility based on zoom
-    private func updateValueVisibility(_ chartView: ChartViewBase) {
+    func updateValueVisibility(_ chartView: ChartViewBase) {
         guard let barLine = chartView as? BarLineChartViewBase else { return }
 
         let isLandscape = landscapeOrientationOverride ?? (barLine.bounds.width > barLine.bounds.height)
@@ -749,7 +749,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             desiredEdge = userDisabledLabels ? true : explicit
         } else {
             let minScaleX = (self as? RNBarLineChartViewBase)?.minScaleX
-            let isAtMinScale = minScaleX != nil && barLine.scaleX <= minScaleX! + 0.01
+            let isAtMinScale = minScaleX != nil && barLine.scaleX <= minScaleX! + 0.05
             desiredEdge = userDisabledLabels ? true : isAtMinScale
         }
 
@@ -879,7 +879,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             let safeMaxIdx = min(axisMaxIdx, labelMax)
 
             let leftIdx  = max(Int(ceil(left)), 0)
-            let rightIdx = min(Int(right.rounded()), safeMaxIdx)
+            let rightIdx = min(Int(ceil(right)), safeMaxIdx)
 
             leftEdgeLabel?.isHidden  = false
             rightEdgeLabel?.isHidden = rightIdx <= leftIdx
@@ -903,7 +903,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             maxX = min(maxX, axis.axisMaximum)
 
             var leftVal  = max(ceil(left), minX)
-            var rightVal = min(right.rounded(), maxX)
+            var rightVal = min(ceil(right), maxX)
 
             leftEdgeLabel?.isHidden  = false
             rightEdgeLabel?.isHidden = rightVal <= leftVal
@@ -927,13 +927,13 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             let labelMax = indexFormatter.values.count > 0 ? (indexFormatter.values.count - 1) : 0
             let safeMaxIdx = min(axisMaxIdx, labelMax)
             let leftIdx = max(Int(ceil(left)), 0)
-            let rightIdx = min(Int(right.rounded()), safeMaxIdx)
+            let rightIdx = min(Int(ceil(right)), safeMaxIdx)
             updateEdgeLabelPositions(leftX: Double(leftIdx), rightX: Double(rightIdx))
         } else {
             let minX = max(barLine.chartXMin, axis.axisMinimum)
             let maxX = min(barLine.chartXMax, axis.axisMaximum)
             let leftVal = max(ceil(left), minX)
-            let rightVal = min(right.rounded(), maxX)
+            let rightVal = min(ceil(right), maxX)
             updateEdgeLabelPositions(leftX: leftVal, rightX: rightVal)
         }
         (self as? RNBarLineChartViewBase)?.applyExtraOffsets()
