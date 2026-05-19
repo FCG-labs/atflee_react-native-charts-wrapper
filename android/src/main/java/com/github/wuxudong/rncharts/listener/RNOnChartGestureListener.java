@@ -368,9 +368,9 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
             event.putDouble("contentLeft", viewPortHandler.contentLeft());
             event.putDouble("contentRight", viewPortHandler.contentRight());
             MPPointD leftPixel = ((BarLineChartBase) chart).getTransformer(YAxis.AxisDependency.LEFT)
-                    .getPixelForValues(Math.ceil(leftValue), 0);
+                    .getPixelForValues((float) Math.ceil(leftValue), 0);
             MPPointD rightPixel = ((BarLineChartBase) chart).getTransformer(YAxis.AxisDependency.LEFT)
-                    .getPixelForValues(Math.floor(rightValue), 0);
+                    .getPixelForValues((float) Math.floor(rightValue), 0);
             event.putDouble("visibleLeftPixelX", leftPixel.x);
             event.putDouble("visibleRightPixelX", rightPixel.x);
             MPPointD.recycleInstance(leftPixel);
