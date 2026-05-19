@@ -133,12 +133,8 @@ public class EdgeLabelHelper {
         int leftX = chartLeft + padLeft;
         int rightX = chartRight - rightW - padRight;
         if (pixels != null && pixels.length >= 2) {
-            int minLeft = chartLeft;
-            int maxLeft = chartRight - leftW;
-            int minRight = chartLeft;
-            int maxRight = chartRight - rightW;
-            leftX = Math.max(minLeft, Math.min(Math.round(chartLeft + pixels[0] - leftW / 2f), maxLeft));
-            rightX = Math.max(minRight, Math.min(Math.round(chartLeft + pixels[1] - rightW / 2f), maxRight));
+            leftX = Math.round(chartLeft + pixels[0] - leftW / 2f);
+            rightX = Math.round(chartLeft + pixels[1] - rightW / 2f);
         }
         left.layout(leftX, chartBottom - overlayH, leftX + leftW, chartBottom);
         right.layout(rightX, chartBottom - overlayH, rightX + rightW, chartBottom);

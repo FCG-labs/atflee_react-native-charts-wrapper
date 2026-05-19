@@ -947,11 +947,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         let leftPixel = transformer.pixelForValues(x: leftX, y: 0).x
         let rightPixel = transformer.pixelForValues(x: rightX, y: 0).x
 
-        let leftHalf = max((leftEdgeLabel?.bounds.width ?? leftEdgeLabel?.intrinsicContentSize.width ?? 0) / 2, 0)
-        let rightHalf = max((rightEdgeLabel?.bounds.width ?? rightEdgeLabel?.intrinsicContentSize.width ?? 0) / 2, 0)
-
-        leftEdgeCenterConstraint?.constant = min(max(leftPixel, leftHalf), bounds.width - leftHalf)
-        rightEdgeCenterConstraint?.constant = min(max(rightPixel, rightHalf), bounds.width - rightHalf)
+        leftEdgeCenterConstraint?.constant = leftPixel
+        rightEdgeCenterConstraint?.constant = rightPixel
     }
 
     func sendEvent(_ action:String) {
