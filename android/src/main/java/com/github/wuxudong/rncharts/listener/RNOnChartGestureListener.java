@@ -363,6 +363,8 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
             event.putDouble("bottom", leftBottom.y);
             event.putDouble("right", rightValue);
             event.putDouble("top", rightTop.y);
+            event.putDouble("visibleStartX", Math.ceil(leftValue));
+            event.putDouble("visibleEndX", Math.floor(rightValue));
             event.putDouble("contentLeft", viewPortHandler.contentLeft());
             event.putDouble("contentRight", viewPortHandler.contentRight());
             MPPointD leftPixel = ((BarLineChartBase) chart).getTransformer(YAxis.AxisDependency.LEFT)

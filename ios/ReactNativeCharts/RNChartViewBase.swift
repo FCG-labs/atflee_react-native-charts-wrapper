@@ -1031,6 +1031,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 dict["right"] = rightCeil
                 // dict["right"] = rightValue
                 dict["top"] = rightTop.y
+                dict["visibleStartX"] = ceil(leftValue)
+                dict["visibleEndX"] = floor(rightValue)
                 dict["contentLeft"] = handler.contentLeft
                 dict["contentRight"] = handler.contentRight
                 dict["visibleLeftPixelX"] = barLineChart.getTransformer(forAxis: YAxis.AxisDependency.left)

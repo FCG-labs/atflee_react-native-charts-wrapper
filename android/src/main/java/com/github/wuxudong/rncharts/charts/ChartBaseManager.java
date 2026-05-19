@@ -91,6 +91,8 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
                 event.putDouble("bottom", leftBottom.y);
                 event.putDouble("right", rightValue);
                 event.putDouble("top", rightTop.y);
+                event.putDouble("visibleStartX", Math.ceil(leftValue));
+                event.putDouble("visibleEndX", Math.floor(rightValue));
 
                 if (EdgeLabelHelper.getExplicitFlag(barLineChart) == null) {
                     boolean desiredEdge = EdgeLabelHelper.isAtMinScaleX(barLineChart);
