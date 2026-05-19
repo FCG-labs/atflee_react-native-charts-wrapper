@@ -24,7 +24,6 @@ open class NoClipLineChartRenderer: LineChartRenderer {
     // ensuring the line never produces miter spikes at sharp angles.
     open override func drawDataSet(context: CGContext, dataSet: LineChartDataSetProtocol) {
         context.saveGState()
-        context.clip(to: viewPortHandler.contentRect)
         context.setLineJoin(.round)
         context.setLineCap(.round)
         context.setMiterLimit(1)

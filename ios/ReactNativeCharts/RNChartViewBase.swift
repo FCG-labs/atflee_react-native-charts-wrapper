@@ -749,7 +749,10 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             desiredEdge = userDisabledLabels ? true : explicit
         } else {
             let minScaleX = (self as? RNBarLineChartViewBase)?.minScaleX
-            let isAtMinScale = minScaleX != nil && barLine.scaleX <= minScaleX! + 0.05
+            let dataMinX = barLine.data?.xMin ?? barLine.chartXMin
+            let dataMaxX = barLine.data?.xMax ?? barLine.chartXMax
+            let isEntireDataVisible = barLine.lowestVisibleX <= dataMinX + 0.51 && barLine.highestVisibleX >= dataMaxX - 0.51
+            let isAtMinScale = isEntireDataVisible || (minScaleX != nil && barLine.scaleX <= minScaleX! + 0.05)
             desiredEdge = userDisabledLabels ? true : isAtMinScale
         }
 
@@ -873,13 +876,16 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         let formatter = axis.valueFormatter
 
         // If the axis uses index-based labels, compute integer indices; otherwise use continuous values
+        let dataMinX = barLine.data?.xMin ?? barLine.chartXMin
+        let dataMaxX = barLine.data?.xMax ?? barLine.chartXMax
+        let isEntireDataVisible = barLine.lowestVisibleX <= dataMinX + 0.51 && barLine.highestVisibleX >= dataMaxX - 0.51
         if let indexFormatter = formatter as? IndexAxisValueFormatter {
             let axisMaxIdx = Int(floor(barLine.chartXMax))
             let labelMax   = indexFormatter.values.count > 0 ? (indexFormatter.values.count - 1) : 0
             let safeMaxIdx = min(axisMaxIdx, labelMax)
 
-            let leftIdx  = max(Int(ceil(left)), 0)
-            let rightIdx = min(Int(ceil(right)), safeMaxIdx)
+            let leftIdx  = max(Int(ceil(isEntireDataVisible ? dataMinX : left)), 0)
+            let rightIdx = min(Int(ceil(isEntireDataVisible ? dataMaxX : right)), safeMaxIdx)
 
             leftEdgeLabel?.isHidden  = false
             rightEdgeLabel?.isHidden = rightIdx <= leftIdx
@@ -902,8 +908,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             minX = max(minX, axis.axisMinimum)
             maxX = min(maxX, axis.axisMaximum)
 
-            var leftVal  = max(ceil(left), minX)
-            var rightVal = min(ceil(right), maxX)
+            let leftVal  = max(ceil(isEntireDataVisible ? dataMinX : left), minX)
+            let rightVal = min(ceil(isEntireDataVisible ? dataMaxX : right), maxX)
 
             leftEdgeLabel?.isHidden  = false
             rightEdgeLabel?.isHidden = rightVal <= leftVal
@@ -926,14 +932,14 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             let axisMaxIdx = Int(floor(barLine.chartXMax))
             let labelMax = indexFormatter.values.count > 0 ? (indexFormatter.values.count - 1) : 0
             let safeMaxIdx = min(axisMaxIdx, labelMax)
-            let leftIdx = max(Int(ceil(left)), 0)
-            let rightIdx = min(Int(ceil(right)), safeMaxIdx)
+            let leftIdx = max(Int(ceil(isEntireDataVisible ? dataMinX : left)), 0)
+            let rightIdx = min(Int(ceil(isEntireDataVisible ? dataMaxX : right)), safeMaxIdx)
             updateEdgeLabelPositions(leftX: Double(leftIdx), rightX: Double(rightIdx))
         } else {
             let minX = max(barLine.chartXMin, axis.axisMinimum)
             let maxX = min(barLine.chartXMax, axis.axisMaximum)
-            let leftVal = max(ceil(left), minX)
-            let rightVal = min(ceil(right), maxX)
+            let leftVal = max(ceil(isEntireDataVisible ? dataMinX : left), minX)
+            let rightVal = min(ceil(isEntireDataVisible ? dataMaxX : right), maxX)
             updateEdgeLabelPositions(leftX: leftVal, rightX: rightVal)
         }
         (self as? RNBarLineChartViewBase)?.applyExtraOffsets()
@@ -1006,8 +1012,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 
                 dict["left"] = leftValue
                 dict["bottom"] = leftBottom.y
-                let rightRounded = rightValue.rounded()
-                dict["right"] = rightRounded // 정확히.
+                let rightCeil = ceil(rightValue)
+                dict["right"] = rightCeil
                 // dict["right"] = rightValue
                 dict["top"] = rightTop.y
                 dict["contentLeft"] = handler.contentLeft
@@ -1015,10 +1021,9 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 dict["visibleLeftPixelX"] = barLineChart.getTransformer(forAxis: YAxis.AxisDependency.left)
                     .pixelForValues(x: ceil(leftValue), y: 0).x
                 dict["visibleRightPixelX"] = barLineChart.getTransformer(forAxis: YAxis.AxisDependency.left)
-                    .pixelForValues(x: floor(rightValue), y: 0).x
+                    .pixelForValues(x: rightCeil, y: 0).x
 
-                // 🔧 버그 수정: 일관성을 위해 반올림된 값을 Edge Label에도 전달
-                updateEdgeLabels(left: leftValue, right: rightRounded)
+                updateEdgeLabels(left: leftValue, right: rightCeil)
 
                 if self.group != nil && self.identifier != nil {
                     ChartGroupHolder.sync(group: self.group!, identifier: self.identifier!, scaleX: barLineChart.scaleX, scaleY: barLineChart.scaleY, centerX: center.x, centerY: center.y, performImmediately: true)
