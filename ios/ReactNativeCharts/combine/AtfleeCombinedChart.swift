@@ -41,8 +41,12 @@ class AtfleeCombinedChart: CombinedChartView {
     override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         if let panGesture = gestureRecognizer as? UIPanGestureRecognizer {
             let velocity = panGesture.velocity(in: self)
+            let translation = panGesture.translation(in: self)
+            // velocity+translation 합산: 초기 zero 벡터 엣지케이스 보완
+            let vx = abs(velocity.x) + abs(translation.x)
+            let vy = abs(velocity.y) + abs(translation.y)
             // 수직 우세 → ScrollView에 위임, 차트 제스처 시작 안 함
-            if abs(velocity.y) > abs(velocity.x) {
+            if vy > vx {
                 return false
             }
             return true
@@ -50,11 +54,15 @@ class AtfleeCombinedChart: CombinedChartView {
         return super.gestureRecognizerShouldBegin(gestureRecognizer)
     }
     
-    // 방향 분기는 gestureRecognizerShouldBegin에서 처리되므로 동시 인식 불필요
+    // pan+pan 동시 허용: 차트가 수평 pan을 처리할 때 부모 ScrollView도 함께 작동
+    // (수직 제스처는 gestureRecognizerShouldBegin에서 차단되므로 중복 동작 없음)
     override func gestureRecognizer(
         _ gestureRecognizer: UIGestureRecognizer,
         shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
     ) -> Bool {
+        if gestureRecognizer is UIPanGestureRecognizer && otherGestureRecognizer is UIPanGestureRecognizer {
+            return true
+        }
         return super.gestureRecognizer(gestureRecognizer, shouldRecognizeSimultaneouslyWith: otherGestureRecognizer)
     }
 }
