@@ -46,13 +46,17 @@ private final class ChartPanGatekeeper: UIPanGestureRecognizer {
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent) {
         super.touchesMoved(touches, with: event)
         guard !directionLocked, state == .began || state == .changed else { return }
-        let v = velocity(in: view)
         let t = translation(in: view)
-        let vx = abs(v.x) + abs(t.x)
-        let vy = abs(v.y) + abs(t.y)
-        guard vx + vy > 5 else { return }
+        let tx = abs(t.x)
+        let ty = abs(t.y)
+        // UIScrollView nested pattern:
+        //  - 최소 10pt 이동 후에만 방향 판단 (자연스러운 손가락 움직임의 noise 하한)
+        //  - 명백한 horizontal 우세 (압도적 2배 이상) 시에만 chart pan 허용
+        //  - 그 외 모든 경우(vertical, diagonal, ambiguous) → gatekeeper 유지 → parent scroll 승
+        guard tx + ty > 10 else { return }
         directionLocked = true
-        if vx > vy {
+        // 명백한 horizontal일 때만 release. 그 외에는 stay alive하여 DGCharts pan 영구 차단.
+        if tx > ty * 2.0 {
             state = .failed
         }
     }

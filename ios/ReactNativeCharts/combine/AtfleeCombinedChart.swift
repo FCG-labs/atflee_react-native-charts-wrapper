@@ -28,13 +28,13 @@ private final class CombinedChartPanGatekeeper: UIPanGestureRecognizer {
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent) {
         super.touchesMoved(touches, with: event)
         guard !directionLocked, state == .began || state == .changed else { return }
-        let v = velocity(in: view)
         let t = translation(in: view)
-        let vx = abs(v.x) + abs(t.x)
-        let vy = abs(v.y) + abs(t.y)
-        guard vx + vy > 5 else { return }
+        let tx = abs(t.x)
+        let ty = abs(t.y)
+        // UIScrollView nested pattern: 10pt 이동 후 명백한 horizontal(2x 우세)일 때만 release.
+        guard tx + ty > 10 else { return }
         directionLocked = true
-        if vx > vy {
+        if tx > ty * 2.0 {
             state = .failed
         }
     }
