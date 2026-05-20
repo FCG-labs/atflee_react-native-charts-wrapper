@@ -39,9 +39,10 @@ open class AtfleeMarker: MarkerView {
     open var fixedOnTop: Bool = false
 
     
-    // Figma: padding 2px 8px
-    fileprivate var insets = UIEdgeInsets(top: 2.0,left: 8.0,bottom: 2.0,right: 8.0)
-    fileprivate var topInsets = UIEdgeInsets(top: 2.0,left: 8.0,bottom: 2.0,right: 8.0)
+    // padding 8px (vertical) / 8px (horizontal)
+    // 세로 padding을 2 → 8로 증가시켜 툴팁이 너무 얇아 보이지 않도록 함.
+    fileprivate var insets = UIEdgeInsets(top: 8.0,left: 8.0,bottom: 8.0,right: 8.0)
+    fileprivate var topInsets = UIEdgeInsets(top: 8.0,left: 8.0,bottom: 8.0,right: 8.0)
 
     fileprivate var labelTitle: NSString?
     fileprivate var _drawTitleAttributes = [NSAttributedString.Key: Any]()
