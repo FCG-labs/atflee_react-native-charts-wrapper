@@ -131,9 +131,14 @@ open class AtfleeMarker: MarkerView {
         )
 
         if let chart = chartView {
-            if pt.x < 8 { pt.x = 8 }
-            if pt.x + _size.width > chart.bounds.size.width {
-                pt.x = chart.bounds.size.width - _size.width - 8
+            // y\ucd95 \ub808\uc774\ube14\uc740 viewPortHandler.contentRect \ubc16(\ub9c8\uc9c4 \uc601\uc5ed)\uc5d0 \uadf8\ub824\uc9c0\ubbc0\ub85c
+            // \ub9c8\ucee4 rect\ub294 contentRect \uc548\uc73c\ub85c clamp\ud574\uc57c y\uac12 \ub808\uc774\ube14\uc744 \uac00\ub9ac\uc9c0 \uc54a\uc74c.
+            let cr = chart.viewPortHandler.contentRect
+            let leftBound = cr.minX
+            let rightBound = cr.maxX
+            if pt.x < leftBound { pt.x = leftBound }
+            if pt.x + _size.width > rightBound {
+                pt.x = rightBound - _size.width
             }
             if pt.y < 8 { pt.y = 8 }
         }
@@ -154,12 +159,17 @@ open class AtfleeMarker: MarkerView {
                          y: point.y - height - 10)
         
         // ② 엣지 보정: 좌/우/상 경계 안으로
+        // y축 레이블은 viewPortHandler.contentRect 바깥(마진)에 그려지므로
+        // contentRect 안으로 clamp하여 y값 레이블을 가리지 않도록 함.
         if let chart = chartView {
-            if pt.x < 8 {
-                pt.x = 8
+            let cr = chart.viewPortHandler.contentRect
+            let leftBound = cr.minX
+            let rightBound = cr.maxX
+            if pt.x < leftBound {
+                pt.x = leftBound
             }
-            if pt.x + width > chart.bounds.size.width {
-                pt.x = chart.bounds.size.width - width - 8
+            if pt.x + width > rightBound {
+                pt.x = rightBound - width
             }
             if pt.y < 8 {
                 pt.y = 8
