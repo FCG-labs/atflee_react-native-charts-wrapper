@@ -4,11 +4,10 @@
 //
 //  Created by Cascade on 2025/01/07.
 //
-//  Nested scrolling strategy:
-//  - ChartPanGatekeeper: gesture 전 구간에서 방향 감시
-//    · 수평 확정 → gatekeeper.fail() → DGCharts pan 허용
-//    · 수직 확정 → gatekeeper 유지(recognized) → DGCharts pan 영구 차단(require toFail)
-//  - dragYEnabled=false: 혹시 pan이 시작돼도 수직 chart 이동 차단
+//  Nested scrolling strategy (RN ScrollView 안 chart) — AtfleeBarChart와 동일 패턴.
+//  Root causes:
+//    #1 dragYEnabled bridge 누락 → dragEnabled setter override로 Y는 영구히 false
+//    #2 deceleration display link 우회 → gatekeeper.touchesBegan에서 stopDeceleration
 //
 
 import UIKit
@@ -18,7 +17,13 @@ import SwiftyJSON
 // MARK: - Gatekeeper
 
 private final class CombinedChartPanGatekeeper: UIPanGestureRecognizer {
+    weak var chart: BarLineChartViewBase?
     private var directionLocked = false
+
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
+        super.touchesBegan(touches, with: event)
+        chart?.stopDeceleration()
+    }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent) {
         super.touchesMoved(touches, with: event)
@@ -43,7 +48,16 @@ private final class CombinedChartPanGatekeeper: UIPanGestureRecognizer {
 // MARK: - AtfleeCombinedChart
 
 class AtfleeCombinedChart: CombinedChartView {
-    
+
+    // Root cause #1 fix: dragEnabled setter는 _dragXEnabled만 제어, _dragYEnabled는 영구히 false.
+    override var dragEnabled: Bool {
+        get { return super.dragXEnabled }
+        set {
+            super.dragXEnabled = newValue
+            super.dragYEnabled = false
+        }
+    }
+
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupForNestedScrolling()
@@ -64,6 +78,7 @@ class AtfleeCombinedChart: CombinedChartView {
         )
 
         let gatekeeper = CombinedChartPanGatekeeper()
+        gatekeeper.chart = self
         gatekeeper.cancelsTouchesInView = false
         gatekeeper.delegate = self
         addGestureRecognizer(gatekeeper)
