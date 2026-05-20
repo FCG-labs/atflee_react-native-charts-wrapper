@@ -188,8 +188,11 @@ open class AtfleeMarker: MarkerView {
     }
     func drawCenterRect(context: CGContext, rect: CGRect) {
         context.saveGState()
+        // 코너 반경을 height/2로 잡아 항상 양 끝이 완전 둥근 stadium 형태가 되도록 함.
+        // 고정 8pt를 쓰면 padding 증가 시 코너가 상대적으로 작아 보여 직사각으로 인식됨.
+        let cornerR = min(rect.width, rect.height) / 2
         let roundRect = UIBezierPath(roundedRect: rect, byRoundingCorners:.allCorners,
-                                     cornerRadii: CGSize(width: 8, height: 8))
+                                     cornerRadii: CGSize(width: cornerR, height: cornerR))
         // markerColor prop 사용 (JS에서 markerColor로 전달)
         // 메인: #FFFFFF, 전체변화: #FAFAFA
         let bgColor = self.color ?? UIColor(red: 0.98, green: 0.98, blue: 0.98, alpha: 1.0)
