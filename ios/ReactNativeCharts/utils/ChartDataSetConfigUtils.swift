@@ -90,6 +90,24 @@ class ChartDataSetConfigUtils: NSObject {
         if config["highlightColor"].int != nil {
             dataSet.highlightColor = RCTConvert.uiColor(config["highlightColor"].intValue);
         }
+
+        // highlightLineWidth / dashedHighlightLine are properties on
+        // BarLineScatterCandleBubbleChartDataSet, so they apply to Bar/Scatter/Candle/Bubble too.
+        // Previously these were only handled in commonLineScatterCandleRadarConfig,
+        // which is never called for BarChart -> bar's highlight line was always solid + 0.5pt.
+        if config["highlightLineWidth"].float != nil {
+            dataSet.highlightLineWidth = CGFloat(config["highlightLineWidth"].floatValue);
+        }
+
+        if let dash = config["dashedHighlightLine"].dictionary {
+            let lineLen = dash["lineLength"]?.float ?? 0
+            let spaceLen = dash["spaceLength"]?.float ?? 0
+            let phase = dash["phase"]?.float ?? 0
+            if lineLen > 0 && spaceLen > 0 {
+                dataSet.highlightLineDashLengths = [CGFloat(lineLen), CGFloat(spaceLen)]
+                dataSet.highlightLineDashPhase = CGFloat(phase)
+            }
+        }
     }
 
 
@@ -105,20 +123,8 @@ class ChartDataSetConfigUtils: NSObject {
         if config["drawHorizontalHighlightIndicator"].bool != nil {
             dataSet.drawHorizontalHighlightIndicatorEnabled = config["drawHorizontalHighlightIndicator"].boolValue;
         }
-
-        if config["highlightLineWidth"].float != nil {
-            dataSet.highlightLineWidth = CGFloat(config["highlightLineWidth"].floatValue);
-        }
-
-        if let dash = config["dashedHighlightLine"].dictionary {
-            let lineLen = dash["lineLength"]?.float ?? 0
-            let spaceLen = dash["spaceLength"]?.float ?? 0
-            let phase = dash["phase"]?.float ?? 0
-            if lineLen > 0 && spaceLen > 0 {
-                dataSet.highlightLineDashLengths = [CGFloat(lineLen), CGFloat(spaceLen)]
-                dataSet.highlightLineDashPhase = CGFloat(phase)
-            }
-        }
+        // highlightLineWidth / dashedHighlightLine moved to commonBarLineScatterCandleBubbleConfig
+        // (which is called before this) so they apply to bar charts as well.
     }
 
     static func commonLineRadarConfig( _ dataSet:LineRadarChartDataSet,  config:JSON) {
