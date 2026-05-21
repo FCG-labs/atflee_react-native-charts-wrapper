@@ -50,7 +50,10 @@ public class AtfleeBarChartRenderer extends BarChartRenderer {
             IBarDataSet raw = data.getDataSetByIndex(h.getDataSetIndex());
             if (raw == null || !raw.isHighlightEnabled()) continue;
 
-            // 색상
+            // 색상 — highlightColor 의 alpha 채널을 SSOT 로 사용 (LineChart 동작과 일치).
+            // 과거 코드에서 getHighlightAlpha 를 reflection 으로 읽어 setAlpha(...) 로 덮어썼는데,
+            // 실제 메서드명은 getHighLightAlpha (대문자 L) 라서 reflection 이 항상 실패 → alpha=255 로
+            // 덮어쓰여 JS 가 rgba(..., 0.4) 로 인코딩한 alpha 가 무효화되는 버그가 있었다.
             crossPaint.setColor(raw.getHighLightColor());
 
             // 굵기
@@ -60,14 +63,6 @@ public class AtfleeBarChartRenderer extends BarChartRenderer {
                 strokeDp = (Float) m.invoke(raw);
             } catch (Exception ignored) { /* ≤3.0.x */ }
             crossPaint.setStrokeWidth(Utils.convertDpToPixel(strokeDp));
-
-            // α(투명도)
-            int alpha = 255;
-            try {
-                Method mAlpha = raw.getClass().getMethod("getHighlightAlpha");
-                alpha = (Integer) mAlpha.invoke(raw);
-            } catch (Exception ignored) { /* fallback 255 */ }
-            crossPaint.setAlpha(alpha);
 
             // dash
             try {
