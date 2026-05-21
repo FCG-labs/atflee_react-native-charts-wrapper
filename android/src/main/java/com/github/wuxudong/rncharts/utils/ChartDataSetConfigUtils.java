@@ -138,10 +138,16 @@ public class ChartDataSetConfigUtils {
             float spaceLen = dash.hasKey("spaceLength") ? (float) dash.getDouble("spaceLength") : 0f;
             float phase = dash.hasKey("phase") ? (float) dash.getDouble("phase") : 0f;
             if (lineLen > 0f && spaceLen > 0f) {
+                // DashPathEffect 의 lengths 는 픽셀 단위. JS 가 보내는 값은 dp 의도이므로
+                // 여기서 dp->px 변환해야 iOS(point) 와 시각적으로 동일한 dash 간격이 됨.
+                // (변환 없으면 3x 밀도 기기에서 6px=2dp / 4px=1.3dp 로 보여 점에 가깝게 촘촘해짐.)
+                float lineLenPx = com.github.mikephil.charting.utils.Utils.convertDpToPixel(lineLen);
+                float spaceLenPx = com.github.mikephil.charting.utils.Utils.convertDpToPixel(spaceLen);
+                float phasePx = com.github.mikephil.charting.utils.Utils.convertDpToPixel(phase);
                 try {
                     java.lang.reflect.Method m = dataSet.getClass().getMethod(
                             "enableDashedHighlightLine", float.class, float.class, float.class);
-                    m.invoke(dataSet, lineLen, spaceLen, phase);
+                    m.invoke(dataSet, lineLenPx, spaceLenPx, phasePx);
                 } catch (Exception ignored) {}
             }
         }

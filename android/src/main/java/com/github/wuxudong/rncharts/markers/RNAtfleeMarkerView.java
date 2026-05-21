@@ -216,8 +216,10 @@ public class RNAtfleeMarkerView extends MarkerView {
         float width = getWidth();
         // y축 레이블은 viewPortHandler.contentRect 바깥(마진)에 그려지므로
         // 마커 rect 는 contentLeft~contentRight 안으로 clamp 해야 y값 레이블을 가리지 않음.
-        float leftBound = getChartView().getViewPortHandler().contentLeft();
-        float rightBound = getChartView().getViewPortHandler().contentRight();
+        // contentRight 에 정확히 맞추면 y축 레이블과 시각적으로 붙어보이므로 8dp 여유를 둠.
+        float clampPadPx = 8f * getResources().getDisplayMetrics().density;
+        float leftBound = getChartView().getViewPortHandler().contentLeft() + clampPadPx;
+        float rightBound = getChartView().getViewPortHandler().contentRight() - clampPadPx;
         float offsetX = -(width / 2f);
         float offsetY;
 
