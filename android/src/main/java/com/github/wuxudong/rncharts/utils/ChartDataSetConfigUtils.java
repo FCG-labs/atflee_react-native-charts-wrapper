@@ -119,6 +119,32 @@ public class ChartDataSetConfigUtils {
         if (BridgeUtils.validate(config, ReadableType.Number, "highlightColor")) {
             dataSet.setHighLightColor(config.getInt("highlightColor"));
         }
+
+        // highlightLineWidth / dashedHighlightLine 은 LineScatterCandleRadarDataSet 에만
+        // 본래 정의되어 있지만, Atflee 에서 BarDataSet 의 서브클래스(AtfleeBarDataSet) 에도
+        // 동일 시그니처를 추가했다. compile-time 으로는 BarLineScatter... 가 갖지 않아
+        // 직접 호출 불가 → reflection 으로 호출. 메서드가 없는 데이터셋(BubbleDataSet 등)
+        // 에서는 silently no-op.
+        if (BridgeUtils.validate(config, ReadableType.Number, "highlightLineWidth")) {
+            float widthDp = (float) config.getDouble("highlightLineWidth");
+            try {
+                java.lang.reflect.Method m = dataSet.getClass().getMethod("setHighlightLineWidth", float.class);
+                m.invoke(dataSet, widthDp);
+            } catch (Exception ignored) {}
+        }
+        if (BridgeUtils.validate(config, ReadableType.Map, "dashedHighlightLine")) {
+            ReadableMap dash = config.getMap("dashedHighlightLine");
+            float lineLen = dash.hasKey("lineLength") ? (float) dash.getDouble("lineLength") : 0f;
+            float spaceLen = dash.hasKey("spaceLength") ? (float) dash.getDouble("spaceLength") : 0f;
+            float phase = dash.hasKey("phase") ? (float) dash.getDouble("phase") : 0f;
+            if (lineLen > 0f && spaceLen > 0f) {
+                try {
+                    java.lang.reflect.Method m = dataSet.getClass().getMethod(
+                            "enableDashedHighlightLine", float.class, float.class, float.class);
+                    m.invoke(dataSet, lineLen, spaceLen, phase);
+                } catch (Exception ignored) {}
+            }
+        }
     }
 
     public static void commonLineScatterCandleRadarConfig(LineScatterCandleRadarDataSet dataSet, ReadableMap config) {
@@ -131,18 +157,8 @@ public class ChartDataSetConfigUtils {
         if (BridgeUtils.validate(config, ReadableType.Boolean, "drawHorizontalHighlightIndicator")) {
             dataSet.setDrawHorizontalHighlightIndicator(config.getBoolean("drawHorizontalHighlightIndicator"));
         }
-        if (BridgeUtils.validate(config, ReadableType.Number, "highlightLineWidth")) {
-            dataSet.setHighlightLineWidth((float) config.getDouble("highlightLineWidth"));
-        }
-        if (BridgeUtils.validate(config, ReadableType.Map, "dashedHighlightLine")) {
-            ReadableMap dash = config.getMap("dashedHighlightLine");
-            float lineLen = dash.hasKey("lineLength") ? (float) dash.getDouble("lineLength") : 0f;
-            float spaceLen = dash.hasKey("spaceLength") ? (float) dash.getDouble("spaceLength") : 0f;
-            float phase = dash.hasKey("phase") ? (float) dash.getDouble("phase") : 0f;
-            if (lineLen > 0f && spaceLen > 0f) {
-                dataSet.enableDashedHighlightLine(lineLen, spaceLen, phase);
-            }
-        }
+        // highlightLineWidth / dashedHighlightLine 은 commonBarLineScatterCandleBubbleConfig 로 이동.
+        // Line/Scatter/Candle/Radar 모두 부모 호출(commonBarLine...) 을 거치므로 회귀 없음.
     }
 
     public static void commonLineRadarConfig(LineRadarDataSet dataSet, ReadableMap config) {

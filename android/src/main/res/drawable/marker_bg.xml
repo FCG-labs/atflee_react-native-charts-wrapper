@@ -2,5 +2,6 @@
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
     <solid android:color="#FAFAFA"/>
-    <corners android:radius="8dp"/>
+    <!-- 매우 큰 radius -> 인접 코너 호가 만나 양 끝이 항상 fully rounded (pill) 형태로 그려짐 -->
+    <corners android:radius="1000dp"/>
 </shape>

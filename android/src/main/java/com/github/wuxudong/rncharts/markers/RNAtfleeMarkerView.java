@@ -214,7 +214,10 @@ public class RNAtfleeMarkerView extends MarkerView {
         boolean showAbove = fixedOnTop ? true : posY > chartHeight * 0.35f;
 
         float width = getWidth();
-        float chartWidth = getChartView().getWidth();
+        // y축 레이블은 viewPortHandler.contentRect 바깥(마진)에 그려지므로
+        // 마커 rect 는 contentLeft~contentRight 안으로 clamp 해야 y값 레이블을 가리지 않음.
+        float leftBound = getChartView().getViewPortHandler().contentLeft();
+        float rightBound = getChartView().getViewPortHandler().contentRight();
         float offsetX = -(width / 2f);
         float offsetY;
 
@@ -230,13 +233,13 @@ public class RNAtfleeMarkerView extends MarkerView {
             }
         }
 
-        // 왼쪽 끝에서 잘림 방지
-        if (posX + offsetX < 0) {
-            offsetX = -posX;
+        // 왼쪽 끝(데이터 영역) 잘림 방지
+        if (posX + offsetX < leftBound) {
+            offsetX = leftBound - posX;
         }
-        // 오른쪽 끝에서 잘림 방지
-        else if (posX + width + offsetX > chartWidth) {
-            offsetX = chartWidth - posX - width;
+        // 오른쪽 끝(데이터 영역) 잘림 방지 — y축 레이블 영역 침범 방지
+        else if (posX + width + offsetX > rightBound) {
+            offsetX = rightBound - posX - width;
         }
 
         return new MPPointF(offsetX, offsetY);
@@ -538,9 +541,10 @@ public class RNAtfleeMarkerView extends MarkerView {
     public void setMarkerBgColor(int color) {
         this.markerColor = color;
         if (mMarkerContent != null) {
-            // Use GradientDrawable to preserve cornerRadius 8dp from marker_bg.xml
+            // 매우 큰 cornerRadius(1000dp) 를 사용하면 GradientDrawable 이 양 끝을 fully rounded
+            // pill 형태로 그린다 (인접 코너 호가 만나도록). padding 변경에 영향 없이 항상 둥글게 유지.
             android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
-            bg.setCornerRadius(8f * mMarkerContent.getResources().getDisplayMetrics().density);
+            bg.setCornerRadius(1000f * mMarkerContent.getResources().getDisplayMetrics().density);
             bg.setColor(color | 0xFF000000);
             mMarkerContent.setBackground(bg);
         }

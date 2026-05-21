@@ -7,6 +7,7 @@ import com.github.mikephil.charting.charts.Chart;
 import com.github.mikephil.charting.data.BarData;
 import com.github.mikephil.charting.data.BarDataSet;
 import com.github.mikephil.charting.data.BarEntry;
+import com.github.wuxudong.rncharts.data.AtfleeBarDataSet;
 import com.github.mikephil.charting.interfaces.datasets.IDataSet;
 import com.github.wuxudong.rncharts.utils.BridgeUtils;
 import com.github.wuxudong.rncharts.utils.ChartDataSetConfigUtils;
@@ -25,7 +26,8 @@ public class BarDataExtract extends DataExtract<BarData, BarEntry> {
 
     @Override
     IDataSet<BarEntry> createDataSet(ArrayList<BarEntry> entries, String label) {
-        return new BarDataSet(entries, label);
+        // AtfleeBarDataSet: BarDataSet + highlightLineWidth/dashedHighlightLine support (reflection-friendly)
+        return new AtfleeBarDataSet(entries, label);
     }
 
     @Override
