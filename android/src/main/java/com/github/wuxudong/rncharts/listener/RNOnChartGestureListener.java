@@ -53,6 +53,8 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
     private long eventThrottleMs = 100; // 기본값 100ms
     private long lastTranslateEventTime = 0;
     private long lastScaleEventTime = 0;
+    private static final long CHART_GROUP_SYNC_THROTTLE_MS = 64;
+    private long lastChartGroupSyncTime = 0;
 
     // 스크롤/제스처 종료 감지용 debounce - chart deceleration이 종료된 후
     // 마지막 chartTranslated가 보낸 값과 실제 settle 위치 사이 어긋남 보정
@@ -77,9 +79,23 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
     }
 
     private boolean shouldSyncChartGroup(String action) {
-        return "chartScrollStop".equals(action)
+        if ("chartScrollStop".equals(action)
                 || "chartGestureEnd".equals(action)
-                || "chartPanEnd".equals(action);
+                || "chartPanEnd".equals(action)) {
+            return true;
+        }
+
+        if (!"chartTranslated".equals(action) && !"chartScaled".equals(action)) {
+            return false;
+        }
+
+        long now = System.currentTimeMillis();
+        if (now - lastChartGroupSyncTime < CHART_GROUP_SYNC_THROTTLE_MS) {
+            return false;
+        }
+
+        lastChartGroupSyncTime = now;
+        return true;
     }
 
     @Override

@@ -79,6 +79,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     @objc var eventThrottle: Int = 100 // 기본값 100ms
     private var lastTranslateEventTime: TimeInterval = 0
     private var lastScaleEventTime: TimeInterval = 0
+    private let chartGroupSyncThrottle: TimeInterval = 0.064
+    private var lastChartGroupSyncTime: TimeInterval = 0
 
     // 스크롤/제스처 종료 감지용 debounce 타이머
     // chartTranslated/chartScaled 이벤트 후 일정 시간 추가 이벤트가 없으면
@@ -96,7 +98,21 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     }
 
     private func shouldSyncChartGroup(_ action: String) -> Bool {
-        return action == "chartScrollStop" || action == "chartGestureEnd" || action == "chartPanEnd"
+        if action == "chartScrollStop" || action == "chartGestureEnd" || action == "chartPanEnd" {
+            return true
+        }
+
+        if action != "chartTranslated" && action != "chartScaled" {
+            return false
+        }
+
+        let now = Date().timeIntervalSince1970
+        if now - lastChartGroupSyncTime < chartGroupSyncThrottle {
+            return false
+        }
+
+        lastChartGroupSyncTime = now
+        return true
     }
 
     override open func layoutSubviews() {
