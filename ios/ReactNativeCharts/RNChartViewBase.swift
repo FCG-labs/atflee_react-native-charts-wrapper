@@ -79,7 +79,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     @objc var eventThrottle: Int = 100 // 기본값 100ms
     private var lastTranslateEventTime: TimeInterval = 0
     private var lastScaleEventTime: TimeInterval = 0
-    private let chartGroupSyncThrottle: TimeInterval = 0.032
+    private let chartGroupSyncThrottle: TimeInterval = 0.024
     private var lastChartGroupSyncTime: TimeInterval = 0
 
     // 스크롤/제스처 종료 감지용 debounce 타이머
