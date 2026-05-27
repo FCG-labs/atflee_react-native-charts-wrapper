@@ -79,7 +79,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     @objc var eventThrottle: Int = 100 // 기본값 100ms
     private var lastTranslateEventTime: TimeInterval = 0
     private var lastScaleEventTime: TimeInterval = 0
-    private let chartGroupSyncThrottle: TimeInterval = 0.064
+    private let chartGroupSyncThrottle: TimeInterval = 0.032
     private var lastChartGroupSyncTime: TimeInterval = 0
 
     // 스크롤/제스처 종료 감지용 debounce 타이머
@@ -93,6 +93,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         scrollSettleTimer = Timer.scheduledTimer(withTimeInterval: scrollSettleDelay, repeats: false) { [weak self] _ in
             guard let self = self else { return }
             self.scrollSettleTimer = nil
+            self.syncChartGroup("chartScrollStop")
             self.sendEvent("chartScrollStop")
         }
     }
@@ -113,6 +114,18 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
         lastChartGroupSyncTime = now
         return true
+    }
+
+    private func syncChartGroup(_ action: String) {
+        guard let group = self.group,
+              let identifier = self.identifier,
+              shouldSyncChartGroup(action),
+              let barLineChart = chart as? BarLineChartViewBase else {
+            return
+        }
+
+        let center = barLineChart.valueForTouchPoint(point: barLineChart.viewPortHandler.contentCenter, axis: YAxis.AxisDependency.left)
+        ChartGroupHolder.sync(group: group, identifier: identifier, scaleX: barLineChart.scaleX, scaleY: barLineChart.scaleY, centerX: center.x, centerY: center.y, performImmediately: true)
     }
 
     override open func layoutSubviews() {
@@ -672,6 +685,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     
     @objc public func chartScaled(_ chartView: ChartViewBase, scaleX: CoreGraphics.CGFloat, scaleY: CoreGraphics.CGFloat) {
         updateValueVisibility(chartView)
+        syncChartGroup("chartScaled")
         
         let now = Date().timeIntervalSince1970
         let throttleSeconds = Double(eventThrottle) / 1000.0
@@ -691,6 +705,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
     @objc public func chartTranslated(_ chartView: ChartViewBase, dX: CoreGraphics.CGFloat, dY: CoreGraphics.CGFloat) {
         updateValueVisibility(chartView)
+        syncChartGroup("chartTranslated")
         
         let now = Date().timeIntervalSince1970
         let throttleSeconds = Double(eventThrottle) / 1000.0
@@ -709,6 +724,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     }
 
     @objc public func chartViewDidEndPanning(_ chartView: ChartViewBase) {
+        syncChartGroup("chartPanEnd")
         sendEvent("chartPanEnd")
         // 이건 좌우스크롤 highlightPerDragEnabled과 연관있으므로, 오버레이 터치 삭제하면 안됨
     }
@@ -998,9 +1014,6 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 // 🔧 버그 수정: 일관성을 위해 반올림된 값을 Edge Label에도 전달
                 updateEdgeLabels(left: leftValue, right: rightRounded)
 
-                if self.group != nil && self.identifier != nil && shouldSyncChartGroup(action) {
-                    ChartGroupHolder.sync(group: self.group!, identifier: self.identifier!, scaleX: barLineChart.scaleX, scaleY: barLineChart.scaleY, centerX: center.x, centerY: center.y, performImmediately: true)
-                }
             }
         }
 

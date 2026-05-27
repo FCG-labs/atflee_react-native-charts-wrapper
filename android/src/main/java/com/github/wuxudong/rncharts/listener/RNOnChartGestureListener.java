@@ -53,7 +53,7 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
     private long eventThrottleMs = 100; // 기본값 100ms
     private long lastTranslateEventTime = 0;
     private long lastScaleEventTime = 0;
-    private static final long CHART_GROUP_SYNC_THROTTLE_MS = 64;
+    private static final long CHART_GROUP_SYNC_THROTTLE_MS = 24;
     private long lastChartGroupSyncTime = 0;
 
     // 스크롤/제스처 종료 감지용 debounce - chart deceleration이 종료된 후
@@ -98,6 +98,19 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
         return true;
     }
 
+    private void syncChartGroup(String action) {
+        if (group == null || identifier == null || !shouldSyncChartGroup(action)) return;
+        Chart base = mWeakChart.get();
+        if (!(base instanceof BarLineChartBase)) return;
+        BarLineChartBase chart = (BarLineChartBase) base;
+        ViewPortHandler viewPortHandler = chart.getViewPortHandler();
+        MPPointD center = chart.getValuesByTouchPoint(
+                viewPortHandler.getContentCenter().getX(),
+                viewPortHandler.getContentCenter().getY(),
+                YAxis.AxisDependency.LEFT);
+        ChartGroupHolder.sync(group, identifier, chart.getScaleX(), chart.getScaleY(), (float) center.x, (float) center.y);
+    }
+
     @Override
     public void onChartGestureStart(MotionEvent me, ChartTouchListener.ChartGesture lastPerformedGesture) {
         sendEvent("chartGestureStart", me);
@@ -106,6 +119,7 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
     @Override
     public void onChartGestureEnd(MotionEvent me, ChartTouchListener.ChartGesture lastPerformedGesture) {
         adjustValueAndEdgeLabels();
+        syncChartGroup("chartGestureEnd");
         sendEvent("chartGestureEnd", me);
     }
 
@@ -154,6 +168,7 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
     @Override
     public void onChartScale(MotionEvent me, float scaleX, float scaleY) {
         adjustValueAndEdgeLabels();
+        syncChartGroup("chartScaled");
         
         long now = System.currentTimeMillis();
         if (eventThrottleMs == 0 || (now - lastScaleEventTime) >= eventThrottleMs) {
@@ -170,6 +185,7 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
         clampDecelerationToBounds();
 
         adjustValueAndEdgeLabels();
+        syncChartGroup("chartTranslated");
         
         long now = System.currentTimeMillis();
         if (eventThrottleMs == 0 || (now - lastTranslateEventTime) >= eventThrottleMs) {
@@ -190,6 +206,7 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
             @Override
             public void run() {
                 scrollSettleRunnable = null;
+                syncChartGroup("chartScrollStop");
                 sendEvent("chartScrollStop", me);
             }
         };
@@ -388,10 +405,6 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
 
             com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.update(chart, leftValue, rightValue);
 
-            if (group != null && identifier != null && shouldSyncChartGroup(action)) {
-                ChartGroupHolder.sync(group, identifier, chart.getScaleX(), chart.getScaleY(), (float) center.x, (float) center.y);
-
-            }
         }
         return event;
     }
