@@ -95,6 +95,10 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         }
     }
 
+    private func shouldSyncChartGroup(_ action: String) -> Bool {
+        return action == "chartScrollStop" || action == "chartGestureEnd" || action == "chartPanEnd"
+    }
+
     override open func layoutSubviews() {
         super.layoutSubviews()
 
@@ -978,7 +982,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 // 🔧 버그 수정: 일관성을 위해 반올림된 값을 Edge Label에도 전달
                 updateEdgeLabels(left: leftValue, right: rightRounded)
 
-                if self.group != nil && self.identifier != nil {
+                if self.group != nil && self.identifier != nil && shouldSyncChartGroup(action) {
                     ChartGroupHolder.sync(group: self.group!, identifier: self.identifier!, scaleX: barLineChart.scaleX, scaleY: barLineChart.scaleY, centerX: center.x, centerY: center.y, performImmediately: true)
                 }
             }

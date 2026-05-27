@@ -76,6 +76,12 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
         this.identifier = identifier;
     }
 
+    private boolean shouldSyncChartGroup(String action) {
+        return "chartScrollStop".equals(action)
+                || "chartGestureEnd".equals(action)
+                || "chartPanEnd".equals(action);
+    }
+
     @Override
     public void onChartGestureStart(MotionEvent me, ChartTouchListener.ChartGesture lastPerformedGesture) {
         sendEvent("chartGestureStart", me);
@@ -366,7 +372,7 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
 
             com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.update(chart, leftValue, rightValue);
 
-            if (group != null && identifier != null) {
+            if (group != null && identifier != null && shouldSyncChartGroup(action)) {
                 ChartGroupHolder.sync(group, identifier, chart.getScaleX(), chart.getScaleY(), (float) center.x, (float) center.y);
 
             }
