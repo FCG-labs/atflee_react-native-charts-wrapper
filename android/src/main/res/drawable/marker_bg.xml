@@ -2,6 +2,6 @@
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
     <solid android:color="#FAFAFA"/>
-    <!-- 매우 큰 radius -> 인접 코너 호가 만나 양 끝이 항상 fully rounded (pill) 형태로 그려짐 -->
-    <corners android:radius="1000dp"/>
+    <!-- 4코너 모두 동일한 8dp — 디자인 결정(알약 형태 X). iOS cornerRadii 8pt와 페어링. -->
+    <corners android:radius="8dp"/>
 </shape>

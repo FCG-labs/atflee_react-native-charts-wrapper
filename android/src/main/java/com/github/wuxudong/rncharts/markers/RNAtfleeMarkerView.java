@@ -543,10 +543,9 @@ public class RNAtfleeMarkerView extends MarkerView {
     public void setMarkerBgColor(int color) {
         this.markerColor = color;
         if (mMarkerContent != null) {
-            // 매우 큰 cornerRadius(1000dp) 를 사용하면 GradientDrawable 이 양 끝을 fully rounded
-            // pill 형태로 그린다 (인접 코너 호가 만나도록). padding 변경에 영향 없이 항상 둥글게 유지.
+            // 4코너 모두 동일한 8dp — 디자인 결정(알약 형태 X). iOS cornerRadii 8pt와 페어링.
             android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
-            bg.setCornerRadius(1000f * mMarkerContent.getResources().getDisplayMetrics().density);
+            bg.setCornerRadius(8f * mMarkerContent.getResources().getDisplayMetrics().density);
             bg.setColor(color | 0xFF000000);
             mMarkerContent.setBackground(bg);
         }
