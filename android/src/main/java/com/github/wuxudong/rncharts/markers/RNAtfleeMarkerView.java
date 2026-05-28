@@ -275,6 +275,14 @@ public class RNAtfleeMarkerView extends MarkerView {
         return fixedTopPx / density + getMeasuredHeight() / density + gapDp;
     }
 
+    public float getFixedTopBottomPx() {
+        if (!fixedOnTop) return 0f;
+        int widthSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+        int heightSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+        measure(widthSpec, heightSpec);
+        return 8f + getMeasuredHeight();
+    }
+
     private void handleClick() {
         Chart chart = getChartView();
         if (chart == null) {

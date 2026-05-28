@@ -22,7 +22,6 @@ import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.charts.CombinedChart;
 import com.github.mikephil.charting.charts.BarLineChartBase;
-import com.github.mikephil.charting.components.IMarker;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.interfaces.datasets.ILineScatterCandleRadarDataSet;
 import com.github.mikephil.charting.utils.MPPointD;
@@ -185,7 +184,6 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
 
                 // skip outside current viewport X range
                 if (e.getX() < lowestVisibleX || e.getX() > highestVisibleX) continue;
-                if (isHighlightedByFixedTopMarker(provider, i, e)) continue;
 
                 MPPointD pt = provider.getTransformer(dataSet.getAxisDependency())
                         .getPixelForValues(e.getX(), e.getY() * phaseY);
@@ -210,7 +208,7 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
                 // Prefer drawing above the point, then keep the full text below contentTop.
                 float yAbove = (float) pt.y - (valOffset * LABEL_OFFSET_SCALE_ABOVE) - fm.descent;
 
-                float contentTop = mViewPortHandler.contentTop();
+                float contentTop = fixedTopLabelMinTop(provider);
                 float contentBottom = mViewPortHandler.contentBottom();
                 float minBaseline = contentTop + Utils.convertDpToPixel(LABEL_CONTENT_TOP_GAP_DP) - fm.ascent;
                 float y = Math.max(yAbove, minBaseline);
@@ -261,21 +259,15 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
         requestAnotherFrameIfFading();
     }
 
-    private boolean isHighlightedByFixedTopMarker(LineDataProvider provider, int dataSetIndex, Entry entry) {
-        if (!(provider instanceof BarLineChartBase)) return false;
+    private float fixedTopLabelMinTop(LineDataProvider provider) {
+        float contentTop = mViewPortHandler.contentTop();
+        if (!(provider instanceof BarLineChartBase)) return contentTop;
         BarLineChartBase<?> chart = (BarLineChartBase<?>) provider;
-        if (!chart.isDrawMarkersEnabled()) return false;
-        IMarker marker = chart.getMarker();
-        if (!(marker instanceof RNAtfleeMarkerView)) return false;
-        if (!((RNAtfleeMarkerView) marker).isFixedOnTop()) return false;
-        Highlight[] highlights = chart.getHighlighted();
-        if (highlights == null || highlights.length == 0) return false;
-        for (Highlight high : highlights) {
-            if (high == null) continue;
-            if (high.getDataSetIndex() != dataSetIndex) continue;
-            if (Math.abs(high.getX() - entry.getX()) <= 1e-4f) return true;
-        }
-        return false;
+        if (!chart.isDrawMarkersEnabled()) return contentTop;
+        if (!(chart.getMarker() instanceof RNAtfleeMarkerView)) return contentTop;
+        RNAtfleeMarkerView marker = (RNAtfleeMarkerView) chart.getMarker();
+        if (!marker.isFixedOnTop()) return contentTop;
+        return marker.getFixedTopBottomPx();
     }
 
     /** Draw pending top-edge labels after all renderers have drawn, with no outline. */

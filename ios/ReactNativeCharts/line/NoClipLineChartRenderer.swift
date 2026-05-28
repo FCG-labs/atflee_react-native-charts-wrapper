@@ -74,7 +74,6 @@ open class NoClipLineChartRenderer: LineChartRenderer {
 
                 // Skip entries outside current visible range
                 if e.x < lowestVisibleX || e.x > highestVisibleX { continue }
-                if isHighlightedByFixedTopMarker(dataProvider: dataProvider, dataSetIndex: i, entry: e) { continue }
 
                 // Translate entry position to pixels
                 pt.x = CGFloat(e.x)
@@ -98,7 +97,7 @@ open class NoClipLineChartRenderer: LineChartRenderer {
                 let offsetY    = CGFloat(valOffset)
                 var drawPoint  = pt
 
-                let chartTop = viewPortHandler.contentTop
+                let chartTop = fixedTopLabelMinTop(dataProvider: dataProvider)
                 let aboveY   = pt.y - offsetY - textHeight * 1
 
                 drawPoint.y = max(aboveY, chartTop + labelContentTopGap)
@@ -137,17 +136,15 @@ open class NoClipLineChartRenderer: LineChartRenderer {
         context.restoreGState()
     }
 
-    private func isHighlightedByFixedTopMarker(dataProvider: LineChartDataProvider, dataSetIndex: Int, entry: ChartDataEntry) -> Bool {
+    private func fixedTopLabelMinTop(dataProvider: LineChartDataProvider) -> CGFloat {
         guard
             let chart = dataProvider as? ChartViewBase,
             chart.isDrawMarkersEnabled,
             let marker = chart.marker as? AtfleeMarker,
             marker.fixedOnTop
-        else { return false }
+        else { return viewPortHandler.contentTop }
 
-        return chart.highlighted.contains { high in
-            high.dataSetIndex == dataSetIndex && abs(high.x - entry.x) <= 1e-4
-        }
+        return marker.fixedTopBottom
     }
 
     /// Returns true if the given entry lies within the dataset's current

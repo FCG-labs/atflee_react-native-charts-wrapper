@@ -12,6 +12,7 @@ import com.github.mikephil.charting.charts.BarLineChartBase;
 import com.github.mikephil.charting.charts.Chart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.IMarker;
+import com.github.mikephil.charting.interfaces.datasets.IDataSet;
 import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.wuxudong.rncharts.markers.RNAtfleeMarkerView;
 
@@ -251,7 +252,22 @@ public class EdgeLabelHelper {
         if (!(marker instanceof RNAtfleeMarkerView)) return 0f;
         RNAtfleeMarkerView atfleeMarker = (RNAtfleeMarkerView) marker;
         if (!atfleeMarker.isFixedOnTop()) return 0f;
-        return atfleeMarker.getFixedTopReservedOffsetDp();
+        return atfleeMarker.getFixedTopReservedOffsetDp() + fixedTopValueLabelBandDp(chart);
+    }
+
+    private static float fixedTopValueLabelBandDp(BarLineChartBase chart) {
+        ChartData data = chart.getData();
+        if (data == null) return 0f;
+        float valueTextSizeDp = 0f;
+        for (int i = 0; i < data.getDataSetCount(); i++) {
+            IDataSet set = data.getDataSetByIndex(i);
+            if (set == null || !set.isVisible() || !set.isDrawValuesEnabled()) continue;
+            valueTextSizeDp = Math.max(valueTextSizeDp, set.getValueTextSize());
+        }
+        if (valueTextSizeDp <= 0f) return 0f;
+        float labelOffsetDp = 12f;
+        float gapDp = 4f;
+        return valueTextSizeDp + labelOffsetDp + gapDp;
     }
 
     /** Saves explicit edgeLabelEnabled flag coming from JS. */

@@ -46,6 +46,14 @@ open class AtfleeMarker: MarkerView {
         return 8.0 + markerHeight + 4.0
     }
 
+    open var fixedTopBottom: CGFloat {
+        if !fixedOnTop { return 0 }
+        let fallbackTextHeight = max(max(titleFont?.lineHeight ?? 12.0, font?.lineHeight ?? 12.0), 18.0)
+        let fallbackHeight = fallbackTextHeight + insets.top + insets.bottom
+        let markerHeight = _size.height > 0 ? _size.height : fallbackHeight
+        return 8.0 + markerHeight
+    }
+
     
     // padding 8px (vertical) / 8px (horizontal)
     // 세로 padding을 2 → 8로 증가시켜 툴팁이 너무 얇아 보이지 않도록 함.

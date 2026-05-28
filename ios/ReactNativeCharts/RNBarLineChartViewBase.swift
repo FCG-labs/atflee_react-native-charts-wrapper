@@ -312,11 +312,23 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             bottom += axisHeight + edgeLabelHeight() / 2
         }
         if let marker = barLineChart.marker as? AtfleeMarker {
-            top = max(top, marker.fixedTopReservedOffset)
+            top = max(top, marker.fixedTopReservedOffset + fixedTopValueLabelBand())
         }
         
         barLineChart.setExtraOffsets(left: left, top: top, right: right, bottom: bottom)
         barLineChart.notifyDataSetChanged()
+    }
+
+    private func fixedTopValueLabelBand() -> CGFloat {
+        guard let data = barLineChart.data else { return 0 }
+        var labelHeight: CGFloat = 0
+        data.dataSets.forEach { set in
+            if set.isVisible && set.isDrawValuesEnabled {
+                labelHeight = max(labelHeight, set.valueFont.lineHeight)
+            }
+        }
+        if labelHeight <= 0 { return 0 }
+        return labelHeight + 12.0 + 4.0
     }
 
     private func xAxisContainsNewline() -> Bool {
