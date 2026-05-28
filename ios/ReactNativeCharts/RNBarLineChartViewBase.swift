@@ -25,6 +25,8 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
     private var revealPending = false
     private var alphaBeforeReveal: CGFloat = 1.0
+    private var revealGeneration = 0
+    private let viewportRevealDelay: TimeInterval = 0.08
 
     var _onYaxisMinMaxChange : RCTBubblingEventBlock?
     var timer : Timer?
@@ -34,16 +36,20 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             alphaBeforeReveal = barLineChart.alpha
         }
         revealPending = true
+        revealGeneration += 1
         barLineChart.alpha = 0
     }
 
     private func revealAfterViewportSettled() {
         if !revealPending { return }
-        DispatchQueue.main.async { [weak self] in
+        let generation = revealGeneration
+        DispatchQueue.main.asyncAfter(deadline: .now() + viewportRevealDelay) { [weak self] in
             DispatchQueue.main.async { [weak self] in
-                guard let self = self, self.revealPending else { return }
-                self.barLineChart.alpha = self.alphaBeforeReveal
-                self.revealPending = false
+                DispatchQueue.main.async { [weak self] in
+                    guard let self = self, self.revealPending, self.revealGeneration == generation else { return }
+                    self.barLineChart.alpha = self.alphaBeforeReveal
+                    self.revealPending = false
+                }
             }
         }
     }
@@ -369,6 +375,11 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         return false
     }
 
+    override func onBeforeDataSetChanged(_ data: NSDictionary) {
+        super.onBeforeDataSetChanged(data)
+        hideUntilViewportSettled()
+    }
+
     override func onAfterDataSetChanged() {
         super.onAfterDataSetChanged()
 
@@ -384,6 +395,8 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             hideUntilViewportSettled()
             updateZoom(zoom)
             savedZoom = nil
+        } else if savedVisibleRange == nil {
+            revealAfterViewportSettled()
         }
     }
 

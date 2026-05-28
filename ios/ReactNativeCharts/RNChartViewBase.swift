@@ -179,6 +179,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         let extractedChartData: ChartData? = dataExtract.extract(json)
 
         guard let chartData = extractedChartData else { return }
+        onBeforeDataSetChanged(data)
 
         // https://github.com/danielgindi/Charts/issues/4690
         let originValueFormatters = chartData.map {$0.valueFormatter}
@@ -188,6 +189,9 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         for (set, valueFormatter) in zip(chartData, originValueFormatters) {
             set.valueFormatter = valueFormatter
         }
+    }
+
+    func onBeforeDataSetChanged(_ data: NSDictionary) {
     }
 
     func setLegend(_ config: NSDictionary) {

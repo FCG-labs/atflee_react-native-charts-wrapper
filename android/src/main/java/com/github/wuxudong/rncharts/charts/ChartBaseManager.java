@@ -715,7 +715,12 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
      */
     @ReactProp(name = "data")
     public void setData(T chart, ReadableMap propMap) {
+        onBeforeDataSetChanged(chart, propMap);
         chart.setData(getDataExtract().extract(chart, propMap));
+    }
+
+    protected void onBeforeDataSetChanged(T chart, ReadableMap propMap) {
+
     }
 
     @ReactProp(name = "highlights")

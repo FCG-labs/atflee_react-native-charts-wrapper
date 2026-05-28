@@ -37,6 +37,7 @@ class ChartExtraProperties {
     public Float zoomScaleX = null;
     public boolean revealPending = false;
     public float alphaBeforeReveal = 1f;
+    public int revealGeneration = 0;
 }
 
 class ExtraPropertiesHolder {
@@ -55,6 +56,7 @@ class ExtraPropertiesHolder {
 
 public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U extends Entry> extends YAxisChartBase<T, U> {
 
+    private static final long VIEWPORT_REVEAL_DELAY_MS = 80L;
     private ExtraPropertiesHolder extraPropertiesHolder = new ExtraPropertiesHolder();
 
     private void hideUntilViewportSettled(BarLineChartBase chart) {
@@ -63,26 +65,33 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
             extra.alphaBeforeReveal = chart.getAlpha();
         }
         extra.revealPending = true;
+        extra.revealGeneration++;
         chart.setAlpha(0f);
     }
 
     private void revealAfterViewportSettled(BarLineChartBase chart) {
         ChartExtraProperties extra = extraPropertiesHolder.getExtraProperties(chart);
         if (!extra.revealPending) return;
-        chart.postOnAnimation(new Runnable() {
+        final int generation = extra.revealGeneration;
+        chart.postDelayed(new Runnable() {
             @Override
             public void run() {
                 chart.postOnAnimation(new Runnable() {
                     @Override
                     public void run() {
-                        ChartExtraProperties latest = extraPropertiesHolder.getExtraProperties(chart);
-                        if (!latest.revealPending) return;
-                        chart.setAlpha(latest.alphaBeforeReveal);
-                        latest.revealPending = false;
+                        chart.postOnAnimation(new Runnable() {
+                            @Override
+                            public void run() {
+                                ChartExtraProperties latest = extraPropertiesHolder.getExtraProperties(chart);
+                                if (!latest.revealPending || latest.revealGeneration != generation) return;
+                                chart.setAlpha(latest.alphaBeforeReveal);
+                                latest.revealPending = false;
+                            }
+                        });
                     }
                 });
             }
-        });
+        }, VIEWPORT_REVEAL_DELAY_MS);
     }
 
     @Override
@@ -530,6 +539,12 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
     }
 
     @Override
+    protected void onBeforeDataSetChanged(T chart, ReadableMap propMap) {
+        super.onBeforeDataSetChanged(chart, propMap);
+        hideUntilViewportSettled(chart);
+    }
+
+    @Override
     protected void onAfterDataSetChanged(T chart) {
         super.onAfterDataSetChanged(chart);
 
@@ -539,6 +554,8 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
             hideUntilViewportSettled(chart);
             extraProperties.autoZoomPending = true;
             updateVisibleRange(chart, extraProperties.savedVisibleRange);
+        } else {
+            revealAfterViewportSettled(chart);
         }
 
 
