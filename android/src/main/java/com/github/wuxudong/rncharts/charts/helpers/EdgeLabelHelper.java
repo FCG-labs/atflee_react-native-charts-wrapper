@@ -73,6 +73,21 @@ public class EdgeLabelHelper {
             left.setFocusable(false);
             parent.addView(left);
             left.setTag(leftTag(chart));
+
+            // Clean up edge labels when chart is detached (React key change / unmount).
+            // Registered once per chart lifecycle alongside the first TextView creation.
+            chart.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
+                @Override public void onViewAttachedToWindow(View view) {}
+                @Override public void onViewDetachedFromWindow(View view) {
+                    view.removeOnAttachStateChangeListener(this);
+                    ViewGroup p = (ViewGroup) view.getParent();
+                    if (p == null) return;
+                    View l = p.findViewWithTag(leftTag((BarLineChartBase) view));
+                    View r = p.findViewWithTag(rightTag((BarLineChartBase) view));
+                    if (l != null) p.removeView(l);
+                    if (r != null) p.removeView(r);
+                }
+            });
         }
         if (right == null) {
             right = new TextView(chart.getContext());
@@ -81,20 +96,6 @@ public class EdgeLabelHelper {
             parent.addView(right);
             right.setTag(rightTag(chart));
         }
-
-        // Clean up edge labels when chart is detached (React key change / unmount)
-        chart.addOnAttachStateChangeListener(new View.OnAttachStateChangeListener() {
-            @Override public void onViewAttachedToWindow(View view) {}
-            @Override public void onViewDetachedFromWindow(View view) {
-                view.removeOnAttachStateChangeListener(this);
-                ViewGroup p = (ViewGroup) view.getParent();
-                if (p == null) return;
-                View l = p.findViewWithTag(leftTag((BarLineChartBase) view));
-                View r = p.findViewWithTag(rightTag((BarLineChartBase) view));
-                if (l != null) p.removeView(l);
-                if (r != null) p.removeView(r);
-            }
-        });
 
         if (listener == null) {
             final BarLineChartBase c = chart;
