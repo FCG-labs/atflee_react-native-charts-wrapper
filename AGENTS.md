@@ -36,7 +36,7 @@ git push origin v2.5.<N+1>
 cd ../../app
 # package.json의 react-native-charts-wrapper 버전을 새 태그로 변경
 # "react-native-charts-wrapper": "github:FCG-labs/atflee_react-native-charts-wrapper#v2.5.<N+1>"
-yarn install
+npm install
 ```
 
 ### 4. 앱 네이티브 재빌드
