@@ -165,6 +165,8 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                 chart.zoom(relativeScale, 1f, centerX, 0f, axis);
             }
             extra.zoomScaleX = null;
+            com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.setEnabled(chart, false);
+            extra.autoZoomPending = false;
         } else if (extra.autoZoomPending) {
             // Auto-zoom based on visibleRange.x.min (mirrors iOS behavior)
             if (BridgeUtils.validate(propMap, ReadableType.Map, "x")) {

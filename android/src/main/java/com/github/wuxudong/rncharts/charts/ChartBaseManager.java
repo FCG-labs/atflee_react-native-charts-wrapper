@@ -713,8 +713,13 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
     }
 
     @ReactProp(name = "highlights")
-    public void setHighlights(T chart, ReadableArray array) {
+    public void setHighlights(T chart, @Nullable ReadableArray array) {
         List<Highlight> highlights = new ArrayList<>();
+
+        if (array == null) {
+            chart.highlightValues(highlights.toArray(new Highlight[highlights.size()]));
+            return;
+        }
 
         for (int i = 0; i < array.size(); i++) {
             if (!ReadableType.Map.equals(array.getType(i))) {
