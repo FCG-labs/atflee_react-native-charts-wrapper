@@ -184,6 +184,7 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
 
                 // skip outside current viewport X range
                 if (e.getX() < lowestVisibleX || e.getX() > highestVisibleX) continue;
+                if (!isEntryYWithinAxisBounds(provider, dataSet, e)) continue;
 
                 MPPointD pt = provider.getTransformer(dataSet.getAxisDependency())
                         .getPixelForValues(e.getX(), e.getY() * phaseY);
@@ -270,6 +271,31 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
         return marker.getFixedTopBottomPx();
     }
 
+    private boolean isEntryYWithinAxisBounds(LineDataProvider provider, ILineDataSet dataSet, Entry entry) {
+        float axisMin = Float.NaN;
+        float axisMax = Float.NaN;
+        if (provider instanceof BarLineChartBase) {
+            BarLineChartBase<?> chart = (BarLineChartBase<?>) provider;
+            axisMin = (dataSet.getAxisDependency() == YAxis.AxisDependency.LEFT)
+                    ? chart.getAxisLeft().getAxisMinimum()
+                    : chart.getAxisRight().getAxisMinimum();
+            axisMax = (dataSet.getAxisDependency() == YAxis.AxisDependency.LEFT)
+                    ? chart.getAxisLeft().getAxisMaximum()
+                    : chart.getAxisRight().getAxisMaximum();
+        } else if (provider instanceof LineChart) {
+            LineChart chart = (LineChart) provider;
+            axisMin = (dataSet.getAxisDependency() == YAxis.AxisDependency.LEFT)
+                    ? chart.getAxisLeft().getAxisMinimum()
+                    : chart.getAxisRight().getAxisMinimum();
+            axisMax = (dataSet.getAxisDependency() == YAxis.AxisDependency.LEFT)
+                    ? chart.getAxisLeft().getAxisMaximum()
+                    : chart.getAxisRight().getAxisMaximum();
+        }
+        if (Float.isNaN(axisMin) || Float.isNaN(axisMax)) return true;
+        float y = entry.getY();
+        return y >= axisMin - 1e-4f && y <= axisMax + 1e-4f;
+    }
+
     /** Draw pending top-edge labels after all renderers have drawn, with no outline. */
     public void drawTopLabelsOverlay(Canvas c) {
         if (pendingTopLabels.isEmpty()) return;
@@ -351,6 +377,7 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
             for (int j = 0; j < entryCount; j++) {
                 Entry e = dataSet.getEntryForIndex(j);
                 if (e == null) continue;
+                if (!isEntryYWithinAxisBounds(provider, dataSet, e)) continue;
                 MPPointD pt = provider.getTransformer(dataSet.getAxisDependency())
                         .getPixelForValues(e.getX(), e.getY());
 

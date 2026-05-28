@@ -74,6 +74,7 @@ open class NoClipLineChartRenderer: LineChartRenderer {
 
                 // Skip entries outside current visible range
                 if e.x < lowestVisibleX || e.x > highestVisibleX { continue }
+                if !isEntryYWithinAxisBounds(e, dataSet: dataSet, dataProvider: dataProvider) { continue }
 
                 // Translate entry position to pixels
                 pt.x = CGFloat(e.x)
@@ -145,6 +146,13 @@ open class NoClipLineChartRenderer: LineChartRenderer {
         else { return viewPortHandler.contentTop }
 
         return marker.fixedTopBottom
+    }
+
+    private func isEntryYWithinAxisBounds(_ entry: ChartDataEntry, dataSet: LineChartDataSetProtocol, dataProvider: LineChartDataProvider) -> Bool {
+        guard let chart = dataProvider as? BarLineChartViewBase else { return true }
+        let axis = chart.getAxis(dataSet.axisDependency)
+        let y = entry.y
+        return y >= axis.axisMinimum - 1e-4 && y <= axis.axisMaximum + 1e-4
     }
 
     /// Returns true if the given entry lies within the dataset's current
@@ -251,6 +259,7 @@ open class NoClipLineChartRenderer: LineChartRenderer {
 
             for j in 0..<entryCount {
                 guard let e = dataSet.entryForIndex(j) else { continue }
+                if !isEntryYWithinAxisBounds(e, dataSet: dataSet, dataProvider: dataProvider) { continue }
 
                 pt.x = CGFloat(e.x)
                 pt.y = CGFloat(e.y)
