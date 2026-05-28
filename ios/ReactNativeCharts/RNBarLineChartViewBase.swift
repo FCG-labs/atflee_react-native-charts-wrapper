@@ -23,8 +23,30 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
     var savedExtraOffsets: NSDictionary?
 
+    private var revealPending = false
+    private var alphaBeforeReveal: CGFloat = 1.0
+
     var _onYaxisMinMaxChange : RCTBubblingEventBlock?
     var timer : Timer?
+
+    private func hideUntilViewportSettled() {
+        if !revealPending {
+            alphaBeforeReveal = barLineChart.alpha
+        }
+        revealPending = true
+        barLineChart.alpha = 0
+    }
+
+    private func revealAfterViewportSettled() {
+        if !revealPending { return }
+        DispatchQueue.main.async { [weak self] in
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self, self.revealPending else { return }
+                self.barLineChart.alpha = self.alphaBeforeReveal
+                self.revealPending = false
+            }
+        }
+    }
 
     override func setYAxis(_ config: NSDictionary) {
         let json = BridgeUtils.toJson(config)
@@ -112,6 +134,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
     func setVisibleRange(_ config: NSDictionary) {
         // delay visibleRange handling until chart data is set
         savedVisibleRange = config
+        hideUntilViewportSettled()
         // execute on next run-loop to ensure layout is finished
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
@@ -182,6 +205,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         // Fire after one run-loop so viewPortHandler has updated with new visible range.
         DispatchQueue.main.async { [weak self] in
             self?.sendEvent("visibleRangeChanged")
+            self?.revealAfterViewportSettled()
         }
     }
 
@@ -244,6 +268,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             return
         }
         self.savedZoom = config
+        hideUntilViewportSettled()
         let json = BridgeUtils.toJson(config)
         if json["scaleX"].float != nil {
             self.zoomScaleX = CGFloat(json["scaleX"].floatValue)
@@ -269,6 +294,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             // Dispatch asynchronously to ensure matrix is updated before we read values.
             DispatchQueue.main.async { [weak self] in
                 self?.sendEvent("zoomChanged")
+                self?.revealAfterViewportSettled()
             }
         }
     }
@@ -350,10 +376,12 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
         // clear zoom after applied, but keep visibleRange
         if let visibleRange = savedVisibleRange {
+            hideUntilViewportSettled()
             updateVisibleRange(visibleRange)
         }
 
         if let zoom = savedZoom {
+            hideUntilViewportSettled()
             updateZoom(zoom)
             savedZoom = nil
         }
