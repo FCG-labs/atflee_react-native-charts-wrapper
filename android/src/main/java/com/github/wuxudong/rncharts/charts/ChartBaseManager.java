@@ -352,9 +352,12 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
     @ReactProp(name = "marker")
     public void setMarker(Chart chart, ReadableMap propMap) {
         if (!BridgeUtils.validate(propMap, ReadableType.Boolean, "enabled") || !propMap.getBoolean("enabled")) {
-            chart.setMarker(null);
             if (chart.getMarker() instanceof RNAtfleeMarkerView) {
                 ((RNAtfleeMarkerView) chart.getMarker()).resetState();
+            }
+            chart.setMarker(null);
+            if (chart instanceof BarLineChartBase) {
+                EdgeLabelHelper.applyPadding((BarLineChartBase) chart);
             }
             return;
         }
@@ -379,6 +382,9 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
 
         markerView.setChartView(chart);
         chart.setMarker(markerView);
+        if (chart instanceof BarLineChartBase) {
+            EdgeLabelHelper.applyPadding((BarLineChartBase) chart);
+        }
     }
 
     private RNRectangleMarkerView rectangleMarker(Chart chart, ReadableMap propMap) {

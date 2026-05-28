@@ -19,6 +19,8 @@ open class NoClipLineChartRenderer: LineChartRenderer {
         super.init(dataProvider: dataProvider, animator: animator, viewPortHandler: viewPortHandler)
     }
 
+    private let labelContentTopGap: CGFloat = 4.0
+
     // Override drawDataSet to enforce round line joins/caps on each dataset stroke.
     // DGCharts' internal saveGState/restoreGState preserves our settings,
     // ensuring the line never produces miter spikes at sharp angles.
@@ -96,12 +98,9 @@ open class NoClipLineChartRenderer: LineChartRenderer {
                 var drawPoint  = pt
 
                 let chartTop = viewPortHandler.contentTop
-                // Position baseline so that text sits fully above the marker: offset + half text height
                 let aboveY   = pt.y - offsetY - textHeight * 1
 
-                // Draw exactly at the calculated aboveY (no vertical clamp) so labels can use
-                // the extra top offset space provided by RN side.
-                drawPoint.y = aboveY
+                drawPoint.y = max(aboveY, chartTop + labelContentTopGap)
 
                 // 좌·우 경계 안쪽으로만 조정해 잘림 방지
                 let halfW = textWidth / 2.0

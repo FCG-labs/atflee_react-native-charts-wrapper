@@ -601,6 +601,9 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
         if json["enabled"].exists() && !json["enabled"].boolValue {
             chart.marker = nil
+            if let bar = self as? RNBarLineChartViewBase {
+                bar.applyExtraOffsets()
+            }
             return
         }
 
@@ -622,6 +625,9 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             )
             chart.marker = marker
             marker.chartView = chart
+            if let bar = self as? RNBarLineChartViewBase {
+                bar.applyExtraOffsets()
+            }
         case "atflee":
             var titleFont = UIFont.systemFont(ofSize: 12.0)
             if json["titleSize"].float != nil {
@@ -646,6 +652,9 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
             chart.marker = marker
             marker.chartView = chart
+            if let bar = self as? RNBarLineChartViewBase {
+                bar.applyExtraOffsets()
+            }
         default:
             let marker = BalloonMarker(
                 color: RCTConvert.uiColor(json["markerColor"].intValue),
@@ -655,6 +664,9 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             )
             chart.marker = marker
             marker.chartView = chart
+            if let bar = self as? RNBarLineChartViewBase {
+                bar.applyExtraOffsets()
+            }
         }
     }
 

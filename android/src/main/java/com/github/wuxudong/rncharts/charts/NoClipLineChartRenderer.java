@@ -42,6 +42,7 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
     // Extra vertical gap above the point when drawing label ABOVE.
     // Default 0f: rely only on font metrics (descent) for snug placement.
     private static final float LABEL_OFFSET_SCALE_ABOVE = 0.5f;
+    private static final float LABEL_CONTENT_TOP_GAP_DP = 4f;
 
     private static class PendingLabel {
         final String text; final float x; final float y; final int color; final long key;
@@ -203,12 +204,13 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
                 float textHeight = fm.descent - fm.ascent;
 
                 float x = (float) pt.x;
-                // Always draw label ABOVE the point. Use baseline so text hugs the point.
+                // Prefer drawing above the point, then keep the full text below contentTop.
                 float yAbove = (float) pt.y - (valOffset * LABEL_OFFSET_SCALE_ABOVE) - fm.descent;
-                float y = yAbove;
 
                 float contentTop = mViewPortHandler.contentTop();
                 float contentBottom = mViewPortHandler.contentBottom();
+                float minBaseline = contentTop + Utils.convertDpToPixel(LABEL_CONTENT_TOP_GAP_DP) - fm.ascent;
+                float y = Math.max(yAbove, minBaseline);
 
                 // keep text horizontally within content rect to avoid clipping by view bounds
                 float half = textWidth / 2f;

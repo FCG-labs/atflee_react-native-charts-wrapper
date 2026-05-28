@@ -311,6 +311,9 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             }
             bottom += axisHeight + edgeLabelHeight() / 2
         }
+        if let marker = barLineChart.marker as? AtfleeMarker {
+            top = max(top, marker.fixedTopReservedOffset)
+        }
         
         barLineChart.setExtraOffsets(left: left, top: top, right: right, bottom: bottom)
         barLineChart.notifyDataSetChanged()

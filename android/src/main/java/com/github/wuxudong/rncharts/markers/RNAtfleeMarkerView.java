@@ -259,6 +259,22 @@ public class RNAtfleeMarkerView extends MarkerView {
         this.suppressOnTouch = suppress;
     }
 
+    public boolean isFixedOnTop() {
+        return fixedOnTop;
+    }
+
+    public float getFixedTopReservedOffsetDp() {
+        if (!fixedOnTop) return 0f;
+        int widthSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+        int heightSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+        measure(widthSpec, heightSpec);
+        float density = getResources().getDisplayMetrics().density;
+        if (density <= 0f) return 0f;
+        float fixedTopPx = 8f;
+        float gapDp = 4f;
+        return fixedTopPx / density + getMeasuredHeight() / density + gapDp;
+    }
+
     private void handleClick() {
         Chart chart = getChartView();
         if (chart == null) {

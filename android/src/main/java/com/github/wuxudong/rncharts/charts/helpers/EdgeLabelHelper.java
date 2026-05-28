@@ -11,7 +11,9 @@ import com.github.mikephil.charting.data.ChartData;
 import com.github.mikephil.charting.charts.BarLineChartBase;
 import com.github.mikephil.charting.charts.Chart;
 import com.github.mikephil.charting.components.XAxis;
+import com.github.mikephil.charting.components.IMarker;
 import com.github.mikephil.charting.formatter.ValueFormatter;
+import com.github.wuxudong.rncharts.markers.RNAtfleeMarkerView;
 
 /** Helper for fixed edge labels overlayed on the chart. */
 public class EdgeLabelHelper {
@@ -236,11 +238,20 @@ public class EdgeLabelHelper {
 
     public static void applyPadding(BarLineChartBase chart) {
         float[] b = base(chart);
+        float top = Math.max(b[1], fixedTopMarkerOffset(chart));
         float bottom = b[3];
         if (isEnabled(chart)) {
             bottom = b[3] + (float) overlayHeight(chart) / 2f;
         }
-        chart.setExtraOffsets(b[0], b[1], b[2], bottom);
+        chart.setExtraOffsets(b[0], top, b[2], bottom);
+    }
+
+    private static float fixedTopMarkerOffset(BarLineChartBase chart) {
+        IMarker marker = chart.getMarker();
+        if (!(marker instanceof RNAtfleeMarkerView)) return 0f;
+        RNAtfleeMarkerView atfleeMarker = (RNAtfleeMarkerView) marker;
+        if (!atfleeMarker.isFixedOnTop()) return 0f;
+        return atfleeMarker.getFixedTopReservedOffsetDp();
     }
 
     /** Saves explicit edgeLabelEnabled flag coming from JS. */
