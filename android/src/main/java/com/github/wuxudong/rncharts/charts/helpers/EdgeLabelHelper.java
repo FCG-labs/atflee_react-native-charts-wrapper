@@ -6,6 +6,7 @@ import android.view.ViewGroup;
 import android.view.View.OnLayoutChangeListener;
 import android.widget.TextView;
 
+import com.github.mikephil.charting.data.ChartData;
 import com.github.mikephil.charting.charts.BarLineChartBase;
 import com.github.mikephil.charting.charts.Chart;
 import com.github.mikephil.charting.components.XAxis;
