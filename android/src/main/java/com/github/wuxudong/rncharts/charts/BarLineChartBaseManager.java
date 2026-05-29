@@ -32,8 +32,12 @@ class ChartExtraProperties {
     public String identifier = null;
     public boolean syncX = true;
     public boolean syncY = false;
-    // when true, apply one-time auto zoom based on savedVisibleRange after data update
+    // when true, apply auto zoom based on savedVisibleRange.x.min after data update.
+    // Legacy fallback: used ONLY when no explicit zoom prop (zoomScaleX == null) is set.
     public boolean autoZoomPending = false;
+    // Explicit zoom prop scaleX = SSOT for the initial display scale. Persisted across data
+    // changes so the auto-zoom path can never override an explicit zoom. Cleared only when the
+    // zoom prop is removed (setZoom(null)). Charts that pass no scaleX keep this null → auto-zoom.
     public Float zoomScaleX = null;
     public boolean revealPending = false;
     public float alphaBeforeReveal = 1f;
@@ -204,6 +208,11 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         ChartExtraProperties extra = extraPropertiesHolder.getExtraProperties(chart);
 
         if (extra.zoomScaleX != null) {
+            // 명시적 zoom prop(scaleX)이 있으면 그 값이 초기 표시 배율의 SSOT 다.
+            // 과거에는 여기서 zoomScaleX 를 null 로 소비했는데, 그러면 다음 데이터 변경 때
+            // onAfterDataSetChanged 가 autoZoomPending 경로(최근 N칸 우측앵커)로 빠져 zoom prop 을
+            // 덮어썼다(전체탭 fit-all 회귀의 근본 원인). zoomScaleX 를 유지(persist)해 매 데이터
+            // 변경마다 동일 배율을 재적용한다 — getScaleX()==targetScale 가드로 idempotent.
             float targetScale = extra.zoomScaleX;
             if (targetScale > 0 && chart.getScaleX() != targetScale) {
                 float relativeScale = targetScale / chart.getScaleX();
@@ -212,7 +221,6 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                         YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
                 chart.zoom(relativeScale, 1f, centerX, 0f, axis);
             }
-            extra.zoomScaleX = null;
             com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.setEnabled(chart, false);
             extra.autoZoomPending = false;
             revealAfterViewportSettled(chart);
