@@ -175,6 +175,10 @@ open class NoClipLineChartRenderer: LineChartRenderer {
         else { return }
 
         let phaseY = animator.phaseY
+        // 알약 마커가 우측(좌측) 경계로 clamp 되면 점선도 같은 X(마커 중심)로 맞춰
+        // 알약과 점선이 분리돼 보이지 않게 한다. 마커가 없거나 clamp 가 일어나지
+        // 않는 경우 clampedCenterX 는 point.x 를 그대로 돌려주므로 회귀 없음.
+        let marker = (dataProvider as? ChartViewBase)?.marker as? AtfleeMarker
 
         for high in indices {
             guard
@@ -186,9 +190,10 @@ open class NoClipLineChartRenderer: LineChartRenderer {
             if !entryInBoundsX(e, dataSet: set) { continue }
 
             let trans = dataProvider.getTransformer(forAxis: set.axisDependency)
-            var pt    = trans.pixelForValues(x: e.x, y: e.y * phaseY)
+            let pt    = trans.pixelForValues(x: e.x, y: e.y * phaseY)
+            let lineX = marker?.clampedCenterX(forPoint: pt) ?? pt.x
 
-            high.setDraw(x: pt.x, y: pt.y)
+            high.setDraw(x: lineX, y: pt.y)
         }
 
         // Use default DGCharts highlight rendering after draw positions are corrected.
@@ -205,6 +210,7 @@ open class NoClipLineChartRenderer: LineChartRenderer {
 
             let trans = dataProvider.getTransformer(forAxis: set.axisDependency)
             let pt    = trans.pixelForValues(x: e.x, y: e.y * phaseY)
+            let lineX = marker?.clampedCenterX(forPoint: pt) ?? pt.x
 
             context.saveGState()
             context.setStrokeColor(set.highlightColor.cgColor)
@@ -213,7 +219,7 @@ open class NoClipLineChartRenderer: LineChartRenderer {
                 context.setLineDash(phase: 0, lengths: dash)
             }
 
-            drawHighlightLines(context: context, point: pt, set: set)
+            drawHighlightLines(context: context, point: CGPoint(x: lineX, y: pt.y), set: set)
             context.restoreGState()
         }
 

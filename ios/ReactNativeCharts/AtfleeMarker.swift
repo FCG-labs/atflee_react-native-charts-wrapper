@@ -165,6 +165,21 @@ open class AtfleeMarker: MarkerView {
         return CGPoint(x: offsetX, y: offsetY)
     }
 
+    /// 알약 배경이 `drawRect`/`offsetForDrawing` 과 동일한 규칙으로 contentRect 안으로
+    /// clamp 된 뒤의 "중심 X" 를 돌려준다. 하이라이트 점선이 우측 경계에서 알약과 어긋나
+    /// 분리돼 보이는 문제를 막기 위해, 렌더러가 점선 X 를 이 값으로 맞춘다.
+    /// _size 가 아직 계산되지 않은 첫 프레임(width 0)에는 point.x 를 contentRect 로만 clamp.
+    open func clampedCenterX(forPoint point: CGPoint) -> CGFloat {
+        let width = _size.width
+        var x = point.x - width / 2
+        if let chart = chartView {
+            let cr = chart.viewPortHandler.contentRect
+            if x < cr.minX { x = cr.minX }
+            if x + width > cr.maxX { x = cr.maxX - width }
+        }
+        return x + width / 2
+    }
+
     
     // ───────────────── drawRect / drawCenterRect 그대로 ─────────────────
     func drawRect(context: CGContext, point: CGPoint) -> CGRect {
