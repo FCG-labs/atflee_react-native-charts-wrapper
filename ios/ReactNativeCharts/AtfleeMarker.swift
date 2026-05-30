@@ -144,6 +144,15 @@ open class AtfleeMarker: MarkerView {
         return CGPoint(x: pt.x - point.x, y: pt.y - point.y)
     }
 
+    /// 알약(마커) 바닥의 Y 좌표를 draw() 와 동일한 SSOT 로직으로 계산한다.
+    /// 하이라이트 점선을 알약 바닥까지 위로 연장해 마커와 연결할 때 렌더러가 사용한다.
+    open func markerBottomY(forPoint point: CGPoint) -> CGFloat {
+        let chartHeight = chartView?.bounds.height ?? 0
+        let markerPt = adjustedMarkerPoint(for: point, chartHeight: chartHeight)
+        let origin = pillOrigin(forMarkerPoint: markerPt, clampBottom: true)
+        return origin.y + _size.height
+    }
+
     
     // ───────────────── drawRect / drawCenterRect 그대로 ─────────────────
     func drawRect(context: CGContext, point: CGPoint) -> CGRect {

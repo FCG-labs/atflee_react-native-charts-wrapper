@@ -165,9 +165,10 @@ open class NoClipLineChartRenderer: LineChartRenderer {
 
     // MARK: - Highlight & Marker
     open override func drawHighlighted(context: CGContext, indices: [Highlight]) {
-        // Disable clipping so highlight lines & markers can draw into extra offset area
+        // resetClip 으로 하이라이트 라인이 extra offset(마커 영역)까지 그려지게 한다.
         context.saveGState()
         context.resetClip()
+        defer { context.restoreGState() }
 
         guard
             let dataProvider = dataProvider,
@@ -175,36 +176,23 @@ open class NoClipLineChartRenderer: LineChartRenderer {
         else { return }
 
         let phaseY = animator.phaseY
+        let marker = (dataProvider as? ChartViewBase)?.marker as? AtfleeMarker
+        let contentTop    = viewPortHandler.contentTop
+        let contentBottom = viewPortHandler.contentBottom
 
         for high in indices {
             guard
                 let set = lineData.dataSets[high.dataSetIndex] as? LineChartDataSetProtocol,
                 set.isHighlightEnabled,
-                let e   = set.entryForXValue(high.x, closestToY: high.y)
+                let e   = set.entryForXValue(high.x, closestToY: high.y),
+                entryInBoundsX(e, dataSet: set)
             else { continue }
-
-            if !entryInBoundsX(e, dataSet: set) { continue }
-
-            let trans = dataProvider.getTransformer(forAxis: set.axisDependency)
-            var pt    = trans.pixelForValues(x: e.x, y: e.y * phaseY)
-
-            high.setDraw(x: pt.x, y: pt.y)
-        }
-
-        // Use default DGCharts highlight rendering after draw positions are corrected.
-        super.drawHighlighted(context: context, indices: indices)
-
-        for high in indices {
-            guard
-                let set = lineData.dataSets[high.dataSetIndex] as? LineChartDataSetProtocol,
-                set.isHighlightEnabled,
-                let e   = set.entryForXValue(high.x, closestToY: high.y)
-            else { continue }
-
-            if !entryInBoundsX(e, dataSet: set) { continue }
 
             let trans = dataProvider.getTransformer(forAxis: set.axisDependency)
             let pt    = trans.pixelForValues(x: e.x, y: e.y * phaseY)
+
+            // 마커 위치 계산용으로 draw 위치를 데이터 점에 고정 (drawMarkers 가 이 값을 사용).
+            high.setDraw(x: pt.x, y: pt.y)
 
             context.saveGState()
             context.setStrokeColor(set.highlightColor.cgColor)
@@ -213,13 +201,26 @@ open class NoClipLineChartRenderer: LineChartRenderer {
                 context.setLineDash(phase: 0, lengths: dash)
             }
 
-            drawHighlightLines(context: context, point: pt, set: set)
+            // 수직 점선: 마커(상단 고정 시 contentTop 위)부터 contentBottom 까지 하나의 연속선.
+            // 마커가 위에 떠 있으면 그 바닥까지 올려 점선과 알약을 자연스럽게 연결한다.
+            if set.isVerticalHighlightIndicatorEnabled {
+                let lineTop = min(contentTop, marker?.markerBottomY(forPoint: pt) ?? contentTop)
+                context.move(to: CGPoint(x: pt.x, y: lineTop))
+                context.addLine(to: CGPoint(x: pt.x, y: contentBottom))
+                context.strokePath()
+            }
+
+            // 수평 점선 (사용하는 차트에 한해).
+            if set.isHorizontalHighlightIndicatorEnabled {
+                context.move(to: CGPoint(x: viewPortHandler.contentLeft, y: pt.y))
+                context.addLine(to: CGPoint(x: viewPortHandler.contentRight, y: pt.y))
+                context.strokePath()
+            }
+
             context.restoreGState()
         }
 
         drawCirclesOverlay(context: context)
-
-        context.restoreGState()
     }
 
     // MARK: - Circles
