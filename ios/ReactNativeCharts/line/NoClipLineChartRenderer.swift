@@ -175,14 +175,25 @@ open class NoClipLineChartRenderer: LineChartRenderer {
         else { return }
 
         let phaseY = animator.phaseY
-        // 알약 마커가 우측(좌측) 경계로 clamp 되면 점선도 같은 X(마커 중심)로 맞춰
-        // 알약과 점선이 분리돼 보이지 않게 한다. 마커가 없거나 clamp 가 일어나지
-        // 않는 경우 clampedCenterX 는 point.x 를 그대로 돌려주므로 회귀 없음.
-        let marker = (dataProvider as? ChartViewBase)?.marker as? AtfleeMarker
 
-        // super.drawHighlighted(=DGCharts LineChartRenderer)는 언클램프 pt 에 점선을
-        // 다시 그리고 high.setDraw(pt:) 로 덮어써, 마커 중심에 맞춘 점선과 어긋난
-        // '두 줄'이 생긴다. 따라서 super 를 호출하지 않고 여기서 직접 1회만 그린다.
+        for high in indices {
+            guard
+                let set = lineData.dataSets[high.dataSetIndex] as? LineChartDataSetProtocol,
+                set.isHighlightEnabled,
+                let e   = set.entryForXValue(high.x, closestToY: high.y)
+            else { continue }
+
+            if !entryInBoundsX(e, dataSet: set) { continue }
+
+            let trans = dataProvider.getTransformer(forAxis: set.axisDependency)
+            var pt    = trans.pixelForValues(x: e.x, y: e.y * phaseY)
+
+            high.setDraw(x: pt.x, y: pt.y)
+        }
+
+        // Use default DGCharts highlight rendering after draw positions are corrected.
+        super.drawHighlighted(context: context, indices: indices)
+
         for high in indices {
             guard
                 let set = lineData.dataSets[high.dataSetIndex] as? LineChartDataSetProtocol,
@@ -195,18 +206,14 @@ open class NoClipLineChartRenderer: LineChartRenderer {
             let trans = dataProvider.getTransformer(forAxis: set.axisDependency)
             let pt    = trans.pixelForValues(x: e.x, y: e.y * phaseY)
 
-            // 마커 draw 위치는 원래대로(언클램프) — 마커가 draw() 에서 스스로 clamp 한다.
-            high.setDraw(x: pt.x, y: pt.y)
-
-            // 점선만 마커 중심(clamp된 X)에 맞춘다.
-            let lineX = marker?.clampedCenterX(forPoint: pt) ?? pt.x
             context.saveGState()
             context.setStrokeColor(set.highlightColor.cgColor)
             context.setLineWidth(max(set.highlightLineWidth, 1))
             if let dash = set.highlightLineDashLengths {
                 context.setLineDash(phase: 0, lengths: dash)
             }
-            drawHighlightLines(context: context, point: CGPoint(x: lineX, y: pt.y), set: set)
+
+            drawHighlightLines(context: context, point: pt, set: set)
             context.restoreGState()
         }
 
