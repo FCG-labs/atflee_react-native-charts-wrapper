@@ -112,6 +112,24 @@ open class AtfleeMarker: MarkerView {
         }
         return markerPt
     }
+
+    /// 보정된 기준점(markerPt)에서 알약 배경 rect 의 원점을 계산하고 경계 안으로 clamp 한다.
+    /// y축 레이블은 contentRect 밖(마진)에 그려지므로 x 는 contentRect 안으로 clamp 해
+    /// 레이블을 가리지 않게 한다. clampBottom 은 drawRect 만 적용하던 기존 하단 clamp 보존용.
+    private func pillOrigin(forMarkerPoint markerPt: CGPoint, clampBottom: Bool) -> CGPoint {
+        var pt = CGPoint(x: markerPt.x - _size.width / 2,
+                         y: markerPt.y - _size.height - 10)
+        if let chart = chartView {
+            let cr = chart.viewPortHandler.contentRect
+            if pt.x < cr.minX { pt.x = cr.minX }
+            if pt.x + _size.width > cr.maxX { pt.x = cr.maxX - _size.width }
+            if pt.y < 8 { pt.y = 8 }
+            if clampBottom, pt.y + _size.height > chart.bounds.size.height {
+                pt.y = chart.bounds.size.height - _size.height
+            }
+        }
+        return pt
+    }
     
     // draw() 에서 마커 위치를 직접 계산하기 때문에 기본 offset 로직과
     // RoundedBarChartRenderer 의 하이라이트 라인이 맞지 않는 문제가 있었다.
@@ -119,87 +137,21 @@ open class AtfleeMarker: MarkerView {
     // 수직 라인의 시작점을 계산하므로, draw() 와 동일한 위치 계산을 여기서도
     // 수행하여 일관된 오프셋을 돌려준다.
     open override func offsetForDrawing(atPoint point: CGPoint) -> CGPoint {
-        var markerPt = point
-        let markerHeight = _size.height
         let chartHeight = chartView?.bounds.height ?? 0
-        let iconExists = imageEmotion != nil
-
-        let showMarkerAbove = fixedOnTop ? true : point.y > chartHeight * showAboveThreshold
-
-        if fixedOnTop {
-            markerPt.y = markerHeight
-        } else if showMarkerAbove {
-            if iconExists {
-                markerPt.y = markerHeight
-            } else {
-                markerPt.y = point.y - markerHeight * 0.8
-            }
-        } else {
-            if iconExists {
-                markerPt.y = point.y - markerHeight * 0.8
-            } else {
-                markerPt.y = point.y + markerHeight * 1.35
-            }
-        }
-
-        var pt = CGPoint(
-            x: markerPt.x - _size.width / 2,
-            y: markerPt.y - _size.height - 10
-        )
-
-        if let chart = chartView {
-            // y\ucd95 \ub808\uc774\ube14\uc740 viewPortHandler.contentRect \ubc16(\ub9c8\uc9c4 \uc601\uc5ed)\uc5d0 \uadf8\ub824\uc9c0\ubbc0\ub85c
-            // \ub9c8\ucee4 rect\ub294 contentRect \uc548\uc73c\ub85c clamp\ud574\uc57c y\uac12 \ub808\uc774\ube14\uc744 \uac00\ub9ac\uc9c0 \uc54a\uc74c.
-            let cr = chart.viewPortHandler.contentRect
-            let leftBound = cr.minX
-            let rightBound = cr.maxX
-            if pt.x < leftBound { pt.x = leftBound }
-            if pt.x + _size.width > rightBound {
-                pt.x = rightBound - _size.width
-            }
-            if pt.y < 8 { pt.y = 8 }
-        }
-
-        let offsetX = pt.x - point.x
-        let offsetY = pt.y - point.y
-        return CGPoint(x: offsetX, y: offsetY)
+        let markerPt = adjustedMarkerPoint(for: point, chartHeight: chartHeight)
+        // offsetForDrawing 은 기존 동작상 하단 clamp 를 적용하지 않는다.
+        let pt = pillOrigin(forMarkerPoint: markerPt, clampBottom: false)
+        return CGPoint(x: pt.x - point.x, y: pt.y - point.y)
     }
 
     
     // ───────────────── drawRect / drawCenterRect 그대로 ─────────────────
     func drawRect(context: CGContext, point: CGPoint) -> CGRect {
-        let width = _size.width
-        let height = _size.height
-        
-        // 포인트 위 중앙에 표시될 원래 pt
-        var pt = CGPoint(x: point.x - width/2,
-                         y: point.y - height - 10)
-        
-        // ② 엣지 보정: 좌/우/상 경계 안으로
-        // y축 레이블은 viewPortHandler.contentRect 바깥(마진)에 그려지므로
-        // contentRect 안으로 clamp하여 y값 레이블을 가리지 않도록 함.
-        if let chart = chartView {
-            let cr = chart.viewPortHandler.contentRect
-            let leftBound = cr.minX
-            let rightBound = cr.maxX
-            if pt.x < leftBound {
-                pt.x = leftBound
-            }
-            if pt.x + width > rightBound {
-                pt.x = rightBound - width
-            }
-            if pt.y < 8 {
-                pt.y = 8
-            }
-            if pt.y + height > chart.bounds.size.height {
-                pt.y = chart.bounds.size.height - height
-            }
-        }
-        
-        let bgRect = CGRect(origin: pt, size: _size)
+        // point 는 draw() 에서 보정된 markerPt. 원점 계산 + 경계 clamp 는 pillOrigin(SSOT) 사용.
+        // drawRect 는 기존대로 하단 경계까지 clamp 한다.
+        let bgRect = CGRect(origin: pillOrigin(forMarkerPoint: point, clampBottom: true),
+                            size: _size)
         drawCenterRect(context: context, rect: bgRect)
-        
-        // ③ 자식(draw) 로직은 bgRect 그대로 씁니다
         return bgRect
     }
     func drawCenterRect(context: CGContext, rect: CGRect) {
