@@ -344,7 +344,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             bottom = json["bottom"].double != nil ? CGFloat(json["bottom"].doubleValue) : 0
         }
         if edgeLabelEnabled {
-            bottom += max(edgeLabelHeight() / 2, barLineChart.xAxis.labelFont.lineHeight / 2)
+            bottom += max(edgeLabelHeight(), barLineChart.xAxis.labelFont.lineHeight) + barLineChart.xAxis.yOffset
         }
         if let marker = barLineChart.marker as? AtfleeMarker {
             top = max(top, marker.fixedTopReservedOffset)
