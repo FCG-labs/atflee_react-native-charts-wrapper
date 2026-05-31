@@ -52,9 +52,11 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     var edgeLabelEnabled: Bool = false
     // whether edgeLabelEnabled was explicitly provided from JS; nil means auto
     private var edgeLabelExplicit: Bool? = nil
+    private var edgeValueFormatter: AxisValueFormatter? = nil
     // remembers initial xAxis.drawLabelsEnabled when provided via JS
     private var userXAxisDrawLabels: Bool? = nil
     let edgeLabelTopPadding: CGFloat = 0
+    let edgeLabelHorizontalInset: CGFloat = 12
     // optional override from JS. nil means auto.
     @objc var landscapeOrientation: Bool = false {
         didSet {
@@ -396,6 +398,12 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
         if json["position"].string != nil {
             xAxis.labelPosition = BridgeUtils.parseXAxisLabelPosition(json["position"].stringValue)
+        }
+
+        if json["edgeValueFormatter"].array != nil {
+            edgeValueFormatter = IndexAxisValueFormatter(values: json["edgeValueFormatter"].arrayValue.map({ $0.stringValue }))
+        } else {
+            edgeValueFormatter = nil
         }
 
         let provided = json["edgeLabelEnabled"].bool
@@ -746,7 +754,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     }
 
     // MARK: - Value text / Edge label visibility based on zoom
-    private func updateValueVisibility(_ chartView: ChartViewBase) {
+    func updateValueVisibility(_ chartView: ChartViewBase) {
         guard let barLine = chartView as? BarLineChartViewBase else { return }
 
         let isLandscape = landscapeOrientationOverride ?? (barLine.bounds.width > barLine.bounds.height)
@@ -791,20 +799,25 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
         // 2. Determine desired edge-label state following USER rules
         let userDisabledLabels = (userXAxisDrawLabels == false)
-        var desiredEdge: Bool
+        let usesAutoEdgeLabels = edgeValueFormatter != nil
+        let desiredEdge: Bool
+        let showAxis: Bool
 
-        if let explicit = edgeLabelExplicit {
-            // explicit flag from JS wins unless labels disabled by user
-            desiredEdge = userDisabledLabels ? true : explicit
+        if userDisabledLabels {
+            desiredEdge = false
+            showAxis = false
+        } else if let explicit = edgeLabelExplicit {
+            desiredEdge = explicit
+            showAxis = desiredEdge ? false : showValues
+        } else if usesAutoEdgeLabels {
+            desiredEdge = !showValues
+            showAxis = !desiredEdge
         } else {
-            // automatic: if labels disabled show edge label, else toggle with zoom
-            desiredEdge = userDisabledLabels ? true : !showValues
+            desiredEdge = !showValues
+            showAxis = showValues
         }
 
-        // 3. Choose axis label visibility based on edge label state
-        let showAxis = desiredEdge ? false : showValues
-        // Update xAxis label visibility unless the user explicitly disabled labels (drawLabels: false)
-        if edgeLabelExplicit == nil && !userDisabledLabels {
+        if barLine.xAxis.drawLabelsEnabled != showAxis {
             barLine.xAxis.drawLabelsEnabled = showAxis
         }
 
@@ -814,6 +827,10 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         }
 
         barLine.setNeedsDisplay()
+    }
+
+    func shouldApplyInitialEdgeLabelMode() -> Bool {
+        return edgeLabelExplicit == nil && edgeValueFormatter != nil
     }
 
     /// Returns true if any xAxis valueFormatter label contains a newline.
@@ -844,7 +861,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 addSubview(label)
                 leftEdgeConstraint = label.topAnchor.constraint(equalTo: bottomAnchor, constant: -edgeLabelTopPadding)
                 leftEdgeConstraint?.isActive = true
-                label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12).isActive = true
+                label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: edgeLabelHorizontalInset).isActive = true
                 leftEdgeLabel = label
             }
             if rightEdgeLabel == nil {
@@ -855,7 +872,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 addSubview(label)
                 rightEdgeConstraint = label.topAnchor.constraint(equalTo: bottomAnchor, constant: -edgeLabelTopPadding)
                 rightEdgeConstraint?.isActive = true
-                label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -32).isActive = true
+                label.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -edgeLabelHorizontalInset).isActive = true
                 rightEdgeLabel = label
             }
             applyEdgeLabelStyle()
@@ -914,7 +931,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         guard edgeLabelEnabled, let barLine = chart as? BarLineChartViewBase else { return }
 
         let axis = barLine.xAxis
-        let formatter = axis.valueFormatter
+        let formatter = edgeValueFormatter ?? axis.valueFormatter
 
         // If the axis uses index-based labels, compute integer indices; otherwise use continuous values
         if let indexFormatter = formatter as? IndexAxisValueFormatter {

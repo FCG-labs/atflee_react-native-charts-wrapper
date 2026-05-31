@@ -34,11 +34,11 @@ import com.github.mikephil.charting.components.MarkerView;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.XAxis.XAxisPosition;
 import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper;
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
 import com.github.mikephil.charting.formatter.LargeValueFormatter;
 import com.github.mikephil.charting.formatter.PercentFormatter;
-import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.wuxudong.rncharts.data.DataExtract;
 import com.github.wuxudong.rncharts.markers.RNAtfleeMarkerView;
@@ -315,6 +315,16 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
         }
         if (BridgeUtils.validate(propMap, ReadableType.String, "position")) {
             axis.setPosition(XAxisPosition.valueOf(propMap.getString("position")));
+        }
+
+        ValueFormatter edgeValueFormatter = null;
+        if (BridgeUtils.validate(propMap, ReadableType.Array, "edgeValueFormatter")) {
+            edgeValueFormatter = new IndexAxisValueFormatter(
+                    BridgeUtils.convertToStringArray(propMap.getArray("edgeValueFormatter"))
+            );
+        }
+        if (chart instanceof BarLineChartBase) {
+            EdgeLabelHelper.setEdgeValueFormatter((BarLineChartBase) chart, edgeValueFormatter);
         }
 
         Boolean explicitFlag = null;

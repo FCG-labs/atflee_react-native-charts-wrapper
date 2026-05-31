@@ -254,28 +254,7 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
         if (!(base instanceof BarLineChartBase)) return;
         BarLineChartBase chart = (BarLineChartBase) base;
 
-        // scaleX 기반 visibleCount 계산 — drag/deceleration 중에는 scaleX가 변하지 않으므로
-        // boundary 도달 시 lowestVisibleX/highestVisibleX의 fluctuation에 영향받지 않고 안정적.
-        int visibleCount;
-        ChartData _d = chart.getData();
-        if (_d != null) {
-            int totalEntries = (int) (_d.getXMax() - _d.getXMin() + 1);
-            float scaleX = chart.getScaleX();
-            float axisRange = chart.getXAxis().getAxisMaximum() - chart.getXAxis().getAxisMinimum();
-            if (scaleX > 0 && axisRange > 0) {
-                visibleCount = (int) Math.round(axisRange / scaleX);
-            } else {
-                visibleCount = totalEntries;
-            }
-            if (visibleCount < 1) visibleCount = 1;
-            if (visibleCount > totalEntries) visibleCount = totalEntries;
-        } else {
-            visibleCount = 0;
-        }
-        Boolean landscapeOverride = EdgeLabelHelper.getLandscapeOverride(chart);
-        boolean isLandscape = (landscapeOverride != null) ? landscapeOverride.booleanValue() : (chart.getWidth() > chart.getHeight());
-        int threshold = isLandscape ? 15 : 8;
-        boolean showValues = visibleCount <= threshold;
+        boolean showValues = EdgeLabelHelper.shouldShowValues(chart);
 
         ChartData data = chart.getData();
         if (data != null) {
@@ -309,16 +288,23 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
         boolean userDisabledLabels = userDraw != null && !userDraw.booleanValue();
 
         Boolean explicit = EdgeLabelHelper.getExplicitFlag(chart);
+        boolean usesAutoEdgeLabels = EdgeLabelHelper.hasEdgeValueFormatter(chart);
         boolean desiredEdge;
+        boolean showAxis;
         if (userDisabledLabels) {
             desiredEdge = false;
+            showAxis = false;
         } else if (explicit != null) {
             desiredEdge = explicit.booleanValue();
+            showAxis = desiredEdge ? false : showValues;
+        } else if (usesAutoEdgeLabels) {
+            desiredEdge = !showValues;
+            showAxis = !desiredEdge;
         } else {
             desiredEdge = !showValues;
+            showAxis = showValues;
         }
 
-        boolean showAxis = userDisabledLabels ? false : (desiredEdge ? false : showValues);
         axis.setDrawLabels(showAxis);
 
         EdgeLabelHelper.setEnabled(chart, desiredEdge);

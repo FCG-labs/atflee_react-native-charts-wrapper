@@ -210,8 +210,12 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
         // Fire after one run-loop so viewPortHandler has updated with new visible range.
         DispatchQueue.main.async { [weak self] in
-            self?.sendEvent("visibleRangeChanged")
-            self?.revealAfterViewportSettled()
+            guard let self = self else { return }
+            if self.shouldApplyInitialEdgeLabelMode() {
+                self.updateValueVisibility(self.barLineChart)
+            }
+            self.sendEvent("visibleRangeChanged")
+            self.revealAfterViewportSettled()
         }
     }
 
@@ -299,8 +303,12 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
             // Dispatch asynchronously to ensure matrix is updated before we read values.
             DispatchQueue.main.async { [weak self] in
-                self?.sendEvent("zoomChanged")
-                self?.revealAfterViewportSettled()
+                guard let self = self else { return }
+                if self.shouldApplyInitialEdgeLabelMode() {
+                    self.updateValueVisibility(self.barLineChart)
+                }
+                self.sendEvent("zoomChanged")
+                self.revealAfterViewportSettled()
             }
         }
     }
@@ -335,13 +343,8 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             right = json["right"].double != nil ? CGFloat(json["right"].doubleValue) : 0
             bottom = json["bottom"].double != nil ? CGFloat(json["bottom"].doubleValue) : 0
         }
-        let beforeBottomOffset = barLineChart.viewPortHandler.offsetBottom
         if edgeLabelEnabled {
-            var axisHeight = barLineChart.xAxis.labelFont.lineHeight / 2
-            if xAxisContainsNewline() {
-                axisHeight = barLineChart.xAxis.labelFont.lineHeight
-            }
-            bottom += axisHeight + edgeLabelHeight() / 2
+            bottom += max(edgeLabelHeight() / 2, barLineChart.xAxis.labelFont.lineHeight / 2)
         }
         if let marker = barLineChart.marker as? AtfleeMarker {
             top = max(top, marker.fixedTopReservedOffset)
@@ -349,18 +352,6 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         
         barLineChart.setExtraOffsets(left: left, top: top, right: right, bottom: bottom)
         barLineChart.notifyDataSetChanged()
-    }
-
-    private func xAxisContainsNewline() -> Bool {
-        let axis = barLineChart.xAxis
-        guard let formatter = axis.valueFormatter else { return false }
-        let maxIdx = Int(axis.axisMaximum)
-        for i in 0..<maxIdx {
-            if formatter.stringForValue(Double(i), axis: axis).contains("\n") {
-                return true
-            }
-        }
-        return false
     }
 
     override func onBeforeDataSetChanged(_ data: NSDictionary) {
@@ -384,6 +375,9 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             updateZoom(zoom)
             savedZoom = nil
         } else if savedVisibleRange == nil {
+            if shouldApplyInitialEdgeLabelMode() {
+                updateValueVisibility(barLineChart)
+            }
             revealAfterViewportSettled()
         }
     }

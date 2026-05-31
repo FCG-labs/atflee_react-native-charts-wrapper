@@ -17,9 +17,10 @@ import com.github.wuxudong.rncharts.markers.RNAtfleeMarkerView;
 /** Helper for fixed edge labels overlayed on the chart. */
 public class EdgeLabelHelper {
     private static final float PADDING_DP_LEFT = 8f;
-    private static final float PADDING_DP_RIGHT = 32f;
+    private static final float PADDING_DP_RIGHT = 12f;
     private static java.util.WeakHashMap<BarLineChartBase, Boolean> enabledMap = new java.util.WeakHashMap<>();
     private static java.util.WeakHashMap<BarLineChartBase, Boolean> explicitMap = new java.util.WeakHashMap<>();
+    private static java.util.WeakHashMap<BarLineChartBase, ValueFormatter> edgeFormatterMap = new java.util.WeakHashMap<>();
     // orientation override: null means auto-detect
     private static java.util.WeakHashMap<BarLineChartBase, Boolean> landscapeOverrideMap = new java.util.WeakHashMap<>();
     // remembers user-specified drawLabels flag for xAxis
@@ -180,7 +181,10 @@ public class EdgeLabelHelper {
         TextView right = parent.findViewWithTag(rightTag(bar));
         if (left == null || right == null) return;
 
-        ValueFormatter vf = bar.getXAxis().getValueFormatter();
+        ValueFormatter vf = edgeFormatterMap.get(bar);
+        if (vf == null) {
+            vf = bar.getXAxis().getValueFormatter();
+        }
 
         ChartData data = bar.getData();
         float minIndex = data != null ? data.getXMin() : (float) leftValue;
@@ -240,7 +244,7 @@ public class EdgeLabelHelper {
         float top = Math.max(b[1], fixedTopMarkerOffset(chart));
         float bottom = b[3];
         if (isEnabled(chart)) {
-            bottom = b[3] + (float) overlayHeight(chart) / 2f;
+            bottom = b[3] + Math.max((float) overlayHeight(chart) / 3f, chart.getXAxis().getTextSize() / 2f);
         }
         chart.setExtraOffsets(b[0], top, b[2], bottom);
     }
@@ -265,6 +269,51 @@ public class EdgeLabelHelper {
     /** Returns explicit flag if provided; otherwise null (auto). */
     public static java.lang.Boolean getExplicitFlag(BarLineChartBase chart) {
         return explicitMap.get(chart);
+    }
+
+    public static void setEdgeValueFormatter(BarLineChartBase chart, ValueFormatter formatter) {
+        if (formatter == null) {
+            edgeFormatterMap.remove(chart);
+        } else {
+            edgeFormatterMap.put(chart, formatter);
+        }
+    }
+
+    public static java.lang.Boolean hasEdgeValueFormatter(BarLineChartBase chart) {
+        return edgeFormatterMap.containsKey(chart);
+    }
+
+    public static int getVisibleEntryCount(BarLineChartBase chart) {
+        ChartData data = chart.getData();
+        if (data == null) return 0;
+
+        int totalEntries = (int) (data.getXMax() - data.getXMin() + 1);
+        if (totalEntries < 1) return 0;
+
+        float scaleX = chart.getScaleX();
+        float axisRange = chart.getXAxis().getAxisMaximum() - chart.getXAxis().getAxisMinimum();
+        int visibleCount;
+        if (scaleX > 0 && axisRange > 0) {
+            visibleCount = (int) Math.round(axisRange / scaleX);
+        } else {
+            visibleCount = totalEntries;
+        }
+
+        if (visibleCount < 1) visibleCount = 1;
+        if (visibleCount > totalEntries) visibleCount = totalEntries;
+        return visibleCount;
+    }
+
+    public static boolean shouldShowValues(BarLineChartBase chart) {
+        int visibleCount = getVisibleEntryCount(chart);
+        if (visibleCount <= 0) return false;
+
+        java.lang.Boolean landscapeOverride = getLandscapeOverride(chart);
+        boolean isLandscape = landscapeOverride != null
+                ? landscapeOverride.booleanValue()
+                : (chart.getWidth() > chart.getHeight());
+        int threshold = isLandscape ? 15 : 8;
+        return visibleCount <= threshold;
     }
 
     /** Stores optional landscape override flag from JS. */

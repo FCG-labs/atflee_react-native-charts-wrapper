@@ -221,7 +221,7 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                         YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
                 chart.zoom(relativeScale, 1f, centerX, 0f, axis);
             }
-            com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.setEnabled(chart, false);
+            restoreInitialXAxisLabelMode(chart);
             extra.autoZoomPending = false;
             revealAfterViewportSettled(chart);
         } else if (extra.autoZoomPending) {
@@ -260,9 +260,45 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                     }
                 }
             }
-            com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.setEnabled(chart, false);
+            restoreInitialXAxisLabelMode(chart);
             extra.autoZoomPending = false;
             revealAfterViewportSettled(chart);
+        }
+    }
+
+    private void restoreInitialXAxisLabelMode(BarLineChartBase chart) {
+        Boolean explicitEdge = com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.getExplicitFlag(chart);
+        Boolean userDraw = com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.getUserDrawLabels(chart);
+        boolean userDisabledLabels = userDraw != null && !userDraw.booleanValue();
+        boolean usesAutoEdgeLabels = com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.hasEdgeValueFormatter(chart);
+        boolean showValues = com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.shouldShowValues(chart);
+        boolean edgeEnabled;
+        boolean showAxis;
+
+        if (userDisabledLabels) {
+            edgeEnabled = false;
+            showAxis = false;
+        } else if (explicitEdge != null) {
+            edgeEnabled = explicitEdge.booleanValue();
+            showAxis = edgeEnabled ? false : true;
+        } else if (usesAutoEdgeLabels) {
+            edgeEnabled = !showValues;
+            showAxis = !edgeEnabled;
+        } else {
+            edgeEnabled = false;
+            showAxis = true;
+        }
+
+        chart.getXAxis().setDrawLabels(showAxis);
+        com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.setEnabled(chart, edgeEnabled);
+        com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.applyPadding(chart);
+
+        if (edgeEnabled) {
+            com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.update(
+                    chart,
+                    chart.getLowestVisibleX(),
+                    chart.getHighestVisibleX()
+            );
         }
     }
 
