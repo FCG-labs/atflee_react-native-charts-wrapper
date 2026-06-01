@@ -11,7 +11,10 @@ import com.github.mikephil.charting.charts.BarLineChartBase;
 import com.github.mikephil.charting.charts.Chart;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.IMarker;
+import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.formatter.ValueFormatter;
+import com.github.mikephil.charting.utils.MPPointD;
+import com.github.mikephil.charting.utils.ViewPortHandler;
 import com.github.wuxudong.rncharts.markers.RNAtfleeMarkerView;
 
 /** Helper for fixed edge labels overlayed on the chart. */
@@ -21,6 +24,7 @@ public class EdgeLabelHelper {
     private static java.util.WeakHashMap<BarLineChartBase, Boolean> enabledMap = new java.util.WeakHashMap<>();
     private static java.util.WeakHashMap<BarLineChartBase, Boolean> explicitMap = new java.util.WeakHashMap<>();
     private static java.util.WeakHashMap<BarLineChartBase, ValueFormatter> edgeFormatterMap = new java.util.WeakHashMap<>();
+    private static java.util.WeakHashMap<BarLineChartBase, Float> maxVisibleValueCountMap = new java.util.WeakHashMap<>();
     // orientation override: null means auto-detect
     private static java.util.WeakHashMap<BarLineChartBase, Boolean> landscapeOverrideMap = new java.util.WeakHashMap<>();
     // remembers user-specified drawLabels flag for xAxis
@@ -283,37 +287,69 @@ public class EdgeLabelHelper {
         return edgeFormatterMap.containsKey(chart);
     }
 
-    public static int getVisibleEntryCount(BarLineChartBase chart) {
+    public static float getVisibleXSpan(BarLineChartBase chart) {
         ChartData data = chart.getData();
-        if (data == null) return 0;
+        if (data == null) return 0f;
 
         int totalEntries = (int) (data.getXMax() - data.getXMin() + 1);
-        if (totalEntries < 1) return 0;
+        if (totalEntries < 1) return 0f;
 
-        float scaleX = chart.getScaleX();
-        float axisRange = chart.getXAxis().getAxisMaximum() - chart.getXAxis().getAxisMinimum();
-        int visibleCount;
-        if (scaleX > 0 && axisRange > 0) {
-            visibleCount = (int) Math.round(axisRange / scaleX);
-        } else {
-            visibleCount = totalEntries;
+        float visibleSpan = totalEntries;
+        ViewPortHandler handler = chart.getViewPortHandler();
+        if (handler != null) {
+            MPPointD leftBottom = chart.getValuesByTouchPoint(
+                    handler.contentLeft(),
+                    handler.contentBottom(),
+                    YAxis.AxisDependency.LEFT);
+            MPPointD rightTop = chart.getValuesByTouchPoint(
+                    handler.contentRight(),
+                    handler.contentTop(),
+                    YAxis.AxisDependency.LEFT);
+            double originalWidth = rightTop.x - leftBottom.x;
+            double leftValue = leftBottom.x;
+            double rightValue = rightTop.x;
+            double allowedMin = data.getXMin() - chart.getXAxis().getSpaceMin();
+            double allowedMax = data.getXMax() + chart.getXAxis().getSpaceMax();
+
+            if (leftValue < allowedMin) {
+                leftValue = allowedMin;
+                rightValue = leftValue + originalWidth;
+            }
+            if (rightValue > allowedMax) {
+                rightValue = allowedMax;
+                leftValue = rightValue - originalWidth;
+            }
+            if (leftValue < allowedMin) leftValue = allowedMin;
+            if (rightValue > allowedMax) rightValue = allowedMax;
+            visibleSpan = (float) Math.max(rightValue - leftValue, 0d);
+            MPPointD.recycleInstance(leftBottom);
+            MPPointD.recycleInstance(rightTop);
         }
 
-        if (visibleCount < 1) visibleCount = 1;
-        if (visibleCount > totalEntries) visibleCount = totalEntries;
-        return visibleCount;
+        if (visibleSpan < 1f) visibleSpan = 1f;
+        if (visibleSpan > totalEntries) visibleSpan = totalEntries;
+        return visibleSpan;
     }
 
     public static boolean shouldShowValues(BarLineChartBase chart) {
-        int visibleCount = getVisibleEntryCount(chart);
-        if (visibleCount <= 0) return false;
+        float visibleSpan = getVisibleXSpan(chart);
+        if (visibleSpan <= 0f) return false;
 
         java.lang.Boolean landscapeOverride = getLandscapeOverride(chart);
         boolean isLandscape = landscapeOverride != null
                 ? landscapeOverride.booleanValue()
                 : (chart.getWidth() > chart.getHeight());
-        int threshold = isLandscape ? 15 : 8;
-        return visibleCount <= threshold;
+        Float threshold = maxVisibleValueCountMap.get(chart);
+        float maxVisibleValueCount = threshold != null ? threshold.floatValue() : (isLandscape ? 15f : 8f);
+        return visibleSpan <= maxVisibleValueCount;
+    }
+
+    public static void setMaxVisibleValueCount(BarLineChartBase chart, float count) {
+        if (count > 0f) {
+            maxVisibleValueCountMap.put(chart, count);
+        } else {
+            maxVisibleValueCountMap.remove(chart);
+        }
     }
 
     /** Stores optional landscape override flag from JS. */

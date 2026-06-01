@@ -145,8 +145,10 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
     }
 
     @ReactProp(name = "maxVisibleValueCount")
-    public void setMaxVisibleValueCount(BarLineChartBase chart, int count) {
-        chart.setMaxVisibleValueCount(count);
+    public void setMaxVisibleValueCount(BarLineChartBase chart, float count) {
+        chart.setMaxVisibleValueCount(Math.max((int) Math.ceil(count), 0));
+        com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper.setMaxVisibleValueCount(chart, count);
+        chart.invalidate();
     }
 
     @ReactProp(name = "visibleRange")

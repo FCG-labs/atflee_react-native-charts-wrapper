@@ -55,6 +55,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     private var edgeValueFormatter: AxisValueFormatter? = nil
     // remembers initial xAxis.drawLabelsEnabled when provided via JS
     private var userXAxisDrawLabels: Bool? = nil
+    var maxVisibleValueCountOverride: CGFloat?
     let edgeLabelTopPadding: CGFloat = 0
     let edgeLabelHorizontalInset: CGFloat = 12
     // optional override from JS. nil means auto.
@@ -759,14 +760,11 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
         let isLandscape = landscapeOrientationOverride ?? (barLine.bounds.width > barLine.bounds.height)
 
-        // 1. Decide whether to display value texts based on number of visible entries
-        var leftIdx = Int(ceil(barLine.lowestVisibleX))
-        var rightIdx = Int(floor(barLine.highestVisibleX))
-        var visibleCount = rightIdx - leftIdx + 1
-        if visibleCount < 0 { visibleCount = 0 }
+        // 1. Decide whether to display value texts based on visible X span.
+        let visibleXSpan = max(barLine.highestVisibleX - barLine.lowestVisibleX, 0)
 
-        let threshold = isLandscape ? 15 : 8
-        let showValues = visibleCount <= threshold
+        let threshold = maxVisibleValueCountOverride ?? (isLandscape ? 15 : 8)
+        let showValues = visibleXSpan <= threshold
 
         if let data = barLine.data {
             // Remember each dataset's initial drawValuesEnabled setting and respect it.

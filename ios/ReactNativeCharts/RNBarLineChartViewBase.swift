@@ -133,8 +133,10 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
     }
 
 
-    func setMaxVisibleValueCount(_ count: NSInteger) {
-        barLineChart.maxVisibleCount = count;
+    func setMaxVisibleValueCount(_ count: CGFloat) {
+        maxVisibleValueCountOverride = count > 0 ? count : nil
+        barLineChart.maxVisibleCount = max(Int(ceil(count)), 0);
+        updateValueVisibility(barLineChart)
     }
 
     func setVisibleRange(_ config: NSDictionary) {
