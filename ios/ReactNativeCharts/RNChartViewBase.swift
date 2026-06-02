@@ -37,11 +37,11 @@ final class OverlayMarkerButton: UIButton {
 
 @objcMembers
 open class RNChartViewBase: UIView, ChartViewDelegate {
-    open var onSelect:RCTBubblingEventBlock?
+    open var onSelect:RCTDirectEventBlock?
 
-    open var onChange:RCTBubblingEventBlock?
+    open var onChange:RCTDirectEventBlock?
 
-    open var onMarkerClick: RCTBubblingEventBlock?
+    open var onMarkerClick: RCTDirectEventBlock?
 
     private var leftEdgeLabel: UILabel?
     private var rightEdgeLabel: UILabel?

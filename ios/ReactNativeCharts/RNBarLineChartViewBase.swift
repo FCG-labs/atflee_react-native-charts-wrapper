@@ -28,7 +28,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
     private var revealGeneration = 0
     private let viewportRevealDelay: TimeInterval = 0.08
 
-    var _onYaxisMinMaxChange : RCTBubblingEventBlock?
+    var _onYaxisMinMaxChange : RCTDirectEventBlock?
     var timer : Timer?
 
     private func hideUntilViewportSettled() {
@@ -71,7 +71,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         }
     }
 
-    func setOnYaxisMinMaxChange(_ callback: RCTBubblingEventBlock?) {
+    func setOnYaxisMinMaxChange(_ callback: RCTDirectEventBlock?) {
       self._onYaxisMinMaxChange = callback;
       self.timer?.invalidate();
       if callback == nil {
