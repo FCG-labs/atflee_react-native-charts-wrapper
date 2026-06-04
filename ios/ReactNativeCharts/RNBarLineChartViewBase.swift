@@ -279,9 +279,23 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             self.savedZoom = nil
             return
         }
+
+        let json = BridgeUtils.toJson(config)
+        let hasCompleteZoomConfig =
+            json["scaleX"].float != nil &&
+            json["scaleY"].float != nil &&
+            json["xValue"].double != nil &&
+            json["yValue"].double != nil
+
+        guard hasCompleteZoomConfig else {
+            self.zoomScaleX = nil
+            self.savedZoom = nil
+            return
+        }
+
         self.savedZoom = config
         hideUntilViewportSettled()
-        let json = BridgeUtils.toJson(config)
+
         if json["scaleX"].float != nil {
             self.zoomScaleX = CGFloat(json["scaleX"].floatValue)
         }
