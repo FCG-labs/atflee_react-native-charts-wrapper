@@ -17,6 +17,7 @@ Pod::Spec.new do |s|
 
   s.source       = { :git => "https://github.com/wuxudong/react-native-charts-wrapper.git", :tag => "#{s.version}" }
   s.source_files = "ios/ReactNativeCharts/**/*.{h,m,mm,swift}"
+  s.public_header_files = "ios/ReactNativeCharts/**/*.h"
   s.static_framework = true
 
   # Stable Swift module name regardless of pod dash/underscore rewriting.
