@@ -14,7 +14,6 @@
 #ifdef RCT_NEW_ARCH_ENABLED
 
 #import <React/RCTConversions.h>
-#import <React/RCTFollyConvert.h>
 
 static inline UIView *RNCInstantiateView(NSString *className, CGRect frame)
 {
@@ -38,11 +37,48 @@ static inline UIView *RNCInstantiateView(NSString *className, CGRect frame)
   return view;
 }
 
+static inline id RNCConvertFollyDynamicToId(const folly::dynamic &dyn)
+{
+  switch (dyn.type()) {
+    case folly::dynamic::NULLT:
+      return (id)kCFNull;
+    case folly::dynamic::BOOL:
+      return dyn.getBool() ? @YES : @NO;
+    case folly::dynamic::INT64:
+      return @(dyn.getInt());
+    case folly::dynamic::DOUBLE:
+      return @(dyn.getDouble());
+    case folly::dynamic::STRING:
+      return [[NSString alloc] initWithBytes:dyn.c_str() length:dyn.size() encoding:NSUTF8StringEncoding];
+    case folly::dynamic::ARRAY: {
+      NSMutableArray *array = [[NSMutableArray alloc] initWithCapacity:dyn.size()];
+      for (const auto &elem : dyn) {
+        id value = RNCConvertFollyDynamicToId(elem);
+        if (value) {
+          [array addObject:value];
+        }
+      }
+      return array;
+    }
+    case folly::dynamic::OBJECT: {
+      NSMutableDictionary *dict = [[NSMutableDictionary alloc] initWithCapacity:dyn.size()];
+      for (const auto &elem : dyn.items()) {
+        id key = RNCConvertFollyDynamicToId(elem.first);
+        id value = RNCConvertFollyDynamicToId(elem.second);
+        if (key && value) {
+          dict[key] = value;
+        }
+      }
+      return dict;
+    }
+  }
+}
+
 // folly::dynamic -> id (NSDictionary/NSArray/NSNumber/NSString/NSNull)
 #define RNC_DISPATCH_DYNAMIC(KEY)                                              \
   do {                                                                         \
     if (oldPropsPtr == nullptr || newProps.KEY != oldPropsPtr->KEY) {          \
-      id _val = facebook::react::convertFollyDynamicToId(newProps.KEY);        \
+      id _val = RNCConvertFollyDynamicToId(newProps.KEY);                      \
       [_swiftView setValue:_val forKey:@ #KEY];                                \
     }                                                                          \
   } while (0)
