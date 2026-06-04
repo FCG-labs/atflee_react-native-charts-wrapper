@@ -37,7 +37,6 @@ class RNCombinedChartView: RNBarLineChartViewBase {
 
     func setDrawOrder(_ config: Any?) {
         guard let config = config as? NSArray else {
-            _chart.drawOrder = []
             return
         }
 
