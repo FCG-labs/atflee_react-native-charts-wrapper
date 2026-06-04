@@ -10,7 +10,11 @@ import DGCharts
 import SwiftyJSON
 
 class HighlightUtils {
-  static func getHighlights(_ config: NSArray) -> [Highlight] {
+  static func getHighlights(_ config: Any?) -> [Highlight] {
+    guard let config = config as? NSArray else {
+      return []
+    }
+
     var highlights : [Highlight] = []
     for object in config {
       if let dict = object as? NSDictionary {

@@ -683,7 +683,12 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         }
     }
 
-    func setHighlights(_ config: NSArray) {
+    func setHighlights(_ config: Any?) {
+        guard let config = config as? NSArray else {
+            chart.highlightValues([])
+            return
+        }
+
         chart.highlightValues(HighlightUtils.getHighlights(config))
     }
 

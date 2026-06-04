@@ -35,7 +35,12 @@ class RNCombinedChartView: RNBarLineChartViewBase {
         fatalError("init(coder:) has not been implemented")
     }
 
-    func setDrawOrder(_ config: NSArray) {
+    func setDrawOrder(_ config: Any?) {
+        guard let config = config as? NSArray else {
+            _chart.drawOrder = []
+            return
+        }
+
         var array : [Int] = []
         for object in RCTConvert.nsStringArray(config) {
             array.append(BridgeUtils.parseDrawOrder(object).rawValue)

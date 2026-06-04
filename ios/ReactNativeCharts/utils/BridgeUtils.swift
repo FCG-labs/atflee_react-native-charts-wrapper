@@ -18,11 +18,35 @@ class BridgeUtils {
         }
     }
 
-    static func toJson(_ dict: NSDictionary) -> JSON {
-        return JSON(normalizeJsonObject(dict))
+    static func toJson(_ value: Any?) -> JSON {
+        guard let value else {
+            return JSON.null
+        }
+
+        if value is NSNull {
+            return JSON.null
+        }
+
+        return JSON(normalizeJsonObject(value))
     }
 
     static func normalizeJsonObject(_ value: Any) -> Any {
+        if value is NSNull {
+            return NSNull()
+        }
+
+        if let number = value as? NSNumber {
+            return number
+        }
+
+        if let string = value as? NSString {
+            return string as String
+        }
+
+        if let string = value as? String {
+            return string
+        }
+
         if let dictionary = value as? NSDictionary {
             var normalizedDictionary: [String: Any] = [:]
 
@@ -50,22 +74,6 @@ class BridgeUtils {
 
         if let array = value as? [Any] {
             return array.map(normalizeJsonObject)
-        }
-
-        if let number = value as? NSNumber {
-            return number
-        }
-
-        if let string = value as? NSString {
-            return string as String
-        }
-
-        if let string = value as? String {
-            return string
-        }
-
-        if value is NSNull {
-            return NSNull()
         }
 
         return NSNull()
