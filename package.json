@@ -24,8 +24,10 @@
     "android/gradle.properties",
     "ios/**/*.h",
     "ios/**/*.m",
+    "ios/**/*.mm",
     "ios/**/*.swift",
     "lib",
+    "src",
     "index.js",
     "react-native-charts-wrapper.podspec",
     "ios/ReactNativeCharts/ReactNativeCharts.xcodeproj/project.pbxproj"
@@ -35,6 +37,28 @@
     "prop-types": "^15.8.1"
   },
   "peerDependencies": {
-    "react": ">=16.0.0"
+    "react": ">=16.0.0",
+    "react-native": ">=0.74.0"
+  },
+  "codegenConfig": {
+    "name": "RNChartsWrapperSpec",
+    "type": "components",
+    "jsSrcsDir": "src",
+    "android": {
+      "javaPackageName": "com.github.wuxudong.rncharts"
+    },
+    "ios": {
+      "componentProvider": {
+        "RNCombinedChart": "RNCombinedChartComponentView",
+        "RNBarChart": "RNBarChartComponentView",
+        "RNHorizontalBarChart": "RNHorizontalBarChartComponentView",
+        "RNLineChart": "RNLineChartComponentView",
+        "RNBubbleChart": "RNBubbleChartComponentView",
+        "RNScatterChart": "RNScatterChartComponentView",
+        "RNCandleStickChart": "RNCandleStickChartComponentView",
+        "RNPieChart": "RNPieChartComponentView",
+        "RNRadarChart": "RNRadarChartComponentView"
+      }
+    }
   }
 }
