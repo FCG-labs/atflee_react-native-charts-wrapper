@@ -68,9 +68,9 @@ using namespace facebook::react;
 - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &)oldProps
 {
   const auto &newProps = *std::static_pointer_cast<RNCombinedChartProps const>(props);
-  const auto &oldP = oldProps
-                         ? *std::static_pointer_cast<RNCombinedChartProps const>(oldProps)
-                         : RNCombinedChartProps{};
+  const auto *oldPropsPtr = oldProps
+                                ? std::static_pointer_cast<RNCombinedChartProps const>(oldProps).get()
+                                : nullptr;
 
   // ── ChartBase (dict-driven) ──
   RNC_DISPATCH_DYNAMIC(data);

@@ -14,6 +14,7 @@
 #ifdef RCT_NEW_ARCH_ENABLED
 
 #import <React/RCTConversions.h>
+#import <React/RCTFollyConvert.h>
 
 static inline UIView *RNCInstantiateView(NSString *className, CGRect frame)
 {
@@ -40,7 +41,7 @@ static inline UIView *RNCInstantiateView(NSString *className, CGRect frame)
 // folly::dynamic -> id (NSDictionary/NSArray/NSNumber/NSString/NSNull)
 #define RNC_DISPATCH_DYNAMIC(KEY)                                              \
   do {                                                                         \
-    if (newProps.KEY != oldP.KEY) {                                            \
+    if (oldPropsPtr == nullptr || newProps.KEY != oldPropsPtr->KEY) {          \
       id _val = facebook::react::convertFollyDynamicToId(newProps.KEY);        \
       [_swiftView setValue:_val forKey:@ #KEY];                                \
     }                                                                          \
@@ -49,7 +50,7 @@ static inline UIView *RNCInstantiateView(NSString *className, CGRect frame)
 // bool -> NSNumber
 #define RNC_DISPATCH_BOOL(KEY)                                                 \
   do {                                                                         \
-    if (newProps.KEY != oldP.KEY) {                                            \
+    if (oldPropsPtr == nullptr || newProps.KEY != oldPropsPtr->KEY) {          \
       [_swiftView setValue:@(newProps.KEY) forKey:@ #KEY];                     \
     }                                                                          \
   } while (0)
@@ -57,7 +58,7 @@ static inline UIView *RNCInstantiateView(NSString *className, CGRect frame)
 // Int32 / Double / Float -> NSNumber
 #define RNC_DISPATCH_NUMBER(KEY)                                               \
   do {                                                                         \
-    if (newProps.KEY != oldP.KEY) {                                            \
+    if (oldPropsPtr == nullptr || newProps.KEY != oldPropsPtr->KEY) {          \
       [_swiftView setValue:@(newProps.KEY) forKey:@ #KEY];                     \
     }                                                                          \
   } while (0)
@@ -65,7 +66,7 @@ static inline UIView *RNCInstantiateView(NSString *className, CGRect frame)
 // std::string -> NSString
 #define RNC_DISPATCH_STRING(KEY)                                               \
   do {                                                                         \
-    if (newProps.KEY != oldP.KEY) {                                            \
+    if (oldPropsPtr == nullptr || newProps.KEY != oldPropsPtr->KEY) {          \
       NSString *_val = RCTNSStringFromString(newProps.KEY);                    \
       [_swiftView setValue:_val forKey:@ #KEY];                                \
     }                                                                          \
