@@ -23,7 +23,13 @@
 #import <react/renderer/components/RNChartsWrapperSpec/RCTComponentViewHelpers.h>
 
 #import "RNChartsPropDispatch.h"
+#if __has_include("ReactNativeCharts-Swift.h")
+#import "ReactNativeCharts-Swift.h"
+#elif __has_include("react_native_charts_wrapper-Swift.h")
+#import "react_native_charts_wrapper-Swift.h"
+#else
 #import <ReactNativeCharts/ReactNativeCharts-Swift.h>
+#endif
 
 using namespace facebook::react;
 
