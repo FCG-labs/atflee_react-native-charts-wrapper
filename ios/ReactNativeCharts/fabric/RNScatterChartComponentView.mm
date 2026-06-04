@@ -13,13 +13,6 @@
 #import <react/renderer/components/RNChartsWrapperSpec/RCTComponentViewHelpers.h>
 
 #import "RNChartsPropDispatch.h"
-#if __has_include("ReactNativeCharts-Swift.h")
-#import "ReactNativeCharts-Swift.h"
-#elif __has_include("react_native_charts_wrapper-Swift.h")
-#import "react_native_charts_wrapper-Swift.h"
-#else
-#import <ReactNativeCharts/ReactNativeCharts-Swift.h>
-#endif
 
 using namespace facebook::react;
 
@@ -27,7 +20,7 @@ using namespace facebook::react;
 @end
 
 @implementation RNScatterChartComponentView {
-  RNScatterChartView *_swiftView;
+  UIView *_swiftView;
 }
 
 + (ComponentDescriptorProvider)componentDescriptorProvider
@@ -41,7 +34,7 @@ using namespace facebook::react;
     static const auto defaultProps = std::make_shared<const RNScatterChartProps>();
     _props = defaultProps;
 
-    _swiftView = [[RNScatterChartView alloc] initWithFrame:self.bounds];
+    _swiftView = RNCInstantiateView(@"RNScatterChartView", self.bounds);
     _swiftView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
     [self addSubview:_swiftView];
   }

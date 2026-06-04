@@ -15,6 +15,28 @@
 
 #import <React/RCTConversions.h>
 
+static inline UIView *RNCInstantiateView(NSString *className, CGRect frame)
+{
+  NSArray<NSString *> *candidateClassNames = @[
+    className,
+    [@"ReactNativeCharts." stringByAppendingString:className],
+    [@"react_native_charts_wrapper." stringByAppendingString:className],
+  ];
+
+  Class swiftViewClass = Nil;
+  for (NSString *candidateClassName in candidateClassNames) {
+    swiftViewClass = NSClassFromString(candidateClassName);
+    if (swiftViewClass != Nil) {
+      break;
+    }
+  }
+
+  NSCAssert(swiftViewClass != Nil, @"Unable to resolve chart Swift class: %@", className);
+  UIView *view = [[swiftViewClass alloc] initWithFrame:frame];
+  NSCAssert([view isKindOfClass:[UIView class]], @"Resolved class is not a UIView: %@", className);
+  return view;
+}
+
 // folly::dynamic -> id (NSDictionary/NSArray/NSNumber/NSString/NSNull)
 #define RNC_DISPATCH_DYNAMIC(KEY)                                              \
   do {                                                                         \
