@@ -19,9 +19,56 @@ class BridgeUtils {
     }
 
     static func toJson(_ dict: NSDictionary) -> JSON {
-        let json = try! JSONSerialization.data(withJSONObject: dict);
+        return JSON(normalizeJsonObject(dict))
+    }
 
-        return JSON.init(parseJSON: NSString(data: json, encoding: String.Encoding.utf8.rawValue)! as String);
+    static func normalizeJsonObject(_ value: Any) -> Any {
+        if let dictionary = value as? NSDictionary {
+            var normalizedDictionary: [String: Any] = [:]
+
+            for (key, nestedValue) in dictionary {
+                guard let stringKey = key as? String else { continue }
+                normalizedDictionary[stringKey] = normalizeJsonObject(nestedValue)
+            }
+
+            return normalizedDictionary
+        }
+
+        if let dictionary = value as? [String: Any] {
+            var normalizedDictionary: [String: Any] = [:]
+
+            for (key, nestedValue) in dictionary {
+                normalizedDictionary[key] = normalizeJsonObject(nestedValue)
+            }
+
+            return normalizedDictionary
+        }
+
+        if let array = value as? NSArray {
+            return array.map(normalizeJsonObject)
+        }
+
+        if let array = value as? [Any] {
+            return array.map(normalizeJsonObject)
+        }
+
+        if let number = value as? NSNumber {
+            return number
+        }
+
+        if let string = value as? NSString {
+            return string as String
+        }
+
+        if let string = value as? String {
+            return string
+        }
+
+        if value is NSNull {
+            return NSNull()
+        }
+
+        return NSNull()
     }
 
     static func parseLineChartMode(_ mode: String) -> LineChartDataSet.Mode {
