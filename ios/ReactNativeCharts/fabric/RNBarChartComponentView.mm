@@ -10,7 +10,6 @@
 
 #import <React/RCTViewComponentView.h>
 #import <React/RCTConversions.h>
-#import <React/RCTFollyConvert.h>
 #import <react/renderer/components/RNChartsWrapperSpec/ComponentDescriptors.h>
 #import <react/renderer/components/RNChartsWrapperSpec/EventEmitters.h>
 #import <react/renderer/components/RNChartsWrapperSpec/Props.h>
@@ -37,10 +36,49 @@ static inline double RNCChartEventDouble(NSDictionary *event, NSString *key)
   return [value respondsToSelector:@selector(doubleValue)] ? [value doubleValue] : 0;
 }
 
+static inline folly::dynamic RNCConvertIdToFollyDynamic(id value)
+{
+  if (value == nil || value == (id)kCFNull) {
+    return nullptr;
+  }
+
+  if ([value isKindOfClass:[NSString class]]) {
+    return std::string([(NSString *)value UTF8String]);
+  }
+
+  if ([value isKindOfClass:[NSNumber class]]) {
+    NSNumber *number = (NSNumber *)value;
+    if (CFGetTypeID((__bridge CFTypeRef)number) == CFBooleanGetTypeID()) {
+      return (bool)number.boolValue;
+    }
+
+    return number.doubleValue;
+  }
+
+  if ([value isKindOfClass:[NSArray class]]) {
+    folly::dynamic array = folly::dynamic::array;
+    for (id item in (NSArray *)value) {
+      array.push_back(RNCConvertIdToFollyDynamic(item));
+    }
+    return array;
+  }
+
+  if ([value isKindOfClass:[NSDictionary class]]) {
+    folly::dynamic object = folly::dynamic::object();
+    [(NSDictionary *)value enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+      NSString *stringKey = [key isKindOfClass:[NSString class]] ? (NSString *)key : [key description];
+      object.insert(std::string([stringKey UTF8String]), RNCConvertIdToFollyDynamic(obj));
+    }];
+    return object;
+  }
+
+  return nullptr;
+}
+
 static inline folly::dynamic RNCChartEventDynamic(NSDictionary *event, NSString *key)
 {
   id value = event[key];
-  return convertIdToFollyDynamic(value ?: (id)kCFNull);
+  return RNCConvertIdToFollyDynamic(value ?: (id)kCFNull);
 }
 
 static inline void RNCInvokeSelectorWithObject(UIView *view, SEL selector, id arg)
