@@ -339,6 +339,7 @@ static inline void RNCInvokeSelectorWithoutObject(UIView *view, SEL selector)
   RNC_DISPATCH_NUMBER(barRadius);
 
   [super updateProps:props oldProps:oldProps];
+  RNCInvokeSelectorWithoutObject(_swiftView, @selector(onAfterDataSetChanged));
 }
 
 @end
