@@ -67,7 +67,7 @@ static inline folly::dynamic RNCConvertIdToFollyDynamic(id value)
     folly::dynamic object = folly::dynamic::object();
     [(NSDictionary *)value enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
       NSString *stringKey = [key isKindOfClass:[NSString class]] ? (NSString *)key : [key description];
-      object.insert(std::string([stringKey UTF8String]), RNCConvertIdToFollyDynamic(obj));
+      object[std::string([stringKey UTF8String])] = RNCConvertIdToFollyDynamic(obj);
     }];
     return object;
   }
