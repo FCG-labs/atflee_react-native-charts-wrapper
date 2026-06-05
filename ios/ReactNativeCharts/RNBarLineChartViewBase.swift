@@ -438,6 +438,60 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         sendEvent("chartLoadComplete")
     }
 
+    @objc func fabricMoveViewToX(_ xValue: NSNumber) {
+        barLineChart.moveViewToX(xValue.doubleValue)
+    }
+
+    @objc func fabricMoveViewTo(_ args: NSDictionary) {
+        let json = BridgeUtils.toJson(args)
+        barLineChart.moveViewTo(
+            xValue: json["xValue"].doubleValue,
+            yValue: json["yValue"].doubleValue,
+            axis: BridgeUtils.parseAxisDependency(json["axisDependency"].stringValue)
+        )
+    }
+
+    @objc func fabricMoveViewToAnimated(_ args: NSDictionary) {
+        let json = BridgeUtils.toJson(args)
+        barLineChart.moveViewToAnimated(
+            xValue: json["xValue"].doubleValue,
+            yValue: json["yValue"].doubleValue,
+            axis: BridgeUtils.parseAxisDependency(json["axisDependency"].stringValue),
+            duration: json["duration"].doubleValue / 1000.0
+        )
+    }
+
+    @objc func fabricCenterViewTo(_ args: NSDictionary) {
+        let json = BridgeUtils.toJson(args)
+        barLineChart.centerViewTo(
+            xValue: json["xValue"].doubleValue,
+            yValue: json["yValue"].doubleValue,
+            axis: BridgeUtils.parseAxisDependency(json["axisDependency"].stringValue)
+        )
+    }
+
+    @objc func fabricCenterViewToAnimated(_ args: NSDictionary) {
+        let json = BridgeUtils.toJson(args)
+        barLineChart.centerViewToAnimated(
+            xValue: json["xValue"].doubleValue,
+            yValue: json["yValue"].doubleValue,
+            axis: BridgeUtils.parseAxisDependency(json["axisDependency"].stringValue),
+            duration: json["duration"].doubleValue / 1000.0
+        )
+    }
+
+    @objc func fabricFitScreen() {
+        barLineChart.fitScreen()
+    }
+
+    @objc func fabricHighlights(_ config: Any?) {
+        setHighlights(config)
+    }
+
+    @objc func fabricSetDataAndLockIndex(_ data: NSDictionary) {
+        setDataAndLockIndex(data)
+    }
+
     func getVisibleYRange(_ axis: YAxis.AxisDependency) -> CGFloat {
         let contentRect = barLineChart.contentRect
 

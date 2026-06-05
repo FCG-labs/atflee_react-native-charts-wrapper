@@ -9,16 +9,38 @@ import type {
   DirectEventHandler,
   Int32,
   Double,
+  WithDefault,
   UnsafeMixed,
 } from 'react-native/Libraries/Types/CodegenTypes';
 import codegenNativeComponent from 'react-native/Libraries/Utilities/codegenNativeComponent';
 
-type ChartEvent = Readonly<{
-  action: string;
+type ChartSelectEvent = Readonly<{
   x?: Double;
   y?: Double;
-  entry?: UnsafeMixed;
   data?: UnsafeMixed;
+}>;
+
+type ChartChangeEvent = Readonly<{
+  action: string;
+  left?: Double;
+  right?: Double;
+  top?: Double;
+  bottom?: Double;
+  scaleX?: Double;
+  scaleY?: Double;
+  centerX?: Double;
+  centerY?: Double;
+}>;
+
+type ChartMarkerClickEvent = Readonly<{
+  x?: Double;
+  y?: Double;
+  data?: UnsafeMixed;
+}>;
+
+type ChartYAxisMinMaxChangeEvent = Readonly<{
+  minY?: Double;
+  maxY?: Double;
 }>;
 
 export interface NativeProps extends ViewProps {
@@ -29,7 +51,7 @@ export interface NativeProps extends ViewProps {
   chartDescription?: UnsafeMixed;
   noDataText?: string;
   noDataTextColor?: Int32;
-  touchEnabled?: boolean;
+  touchEnabled?: WithDefault<boolean, true>;
   highlightPerTapEnabled?: boolean;
   dragDecelerationEnabled?: boolean;
   dragDecelerationFrictionCoef?: Double;
@@ -72,10 +94,10 @@ export interface NativeProps extends ViewProps {
   highlightFullBarEnabled?: boolean;
   barRadius?: Double;
 
-  onSelect?: DirectEventHandler<ChartEvent>;
-  onChange?: DirectEventHandler<ChartEvent>;
-  onMarkerClick?: DirectEventHandler<ChartEvent>;
-  onYaxisMinMaxChange?: DirectEventHandler<ChartEvent>;
+  onSelect?: DirectEventHandler<ChartSelectEvent>;
+  onChange?: DirectEventHandler<ChartChangeEvent>;
+  onMarkerClick?: DirectEventHandler<ChartMarkerClickEvent>;
+  onYaxisMinMaxChange?: DirectEventHandler<ChartYAxisMinMaxChangeEvent>;
 }
 
 export default codegenNativeComponent<NativeProps>(

@@ -10,14 +10,52 @@
 
 #import <React/RCTViewComponentView.h>
 #import <React/RCTConversions.h>
+#import <React/RCTFollyConvert.h>
 #import <react/renderer/components/RNChartsWrapperSpec/ComponentDescriptors.h>
 #import <react/renderer/components/RNChartsWrapperSpec/EventEmitters.h>
 #import <react/renderer/components/RNChartsWrapperSpec/Props.h>
 #import <react/renderer/components/RNChartsWrapperSpec/RCTComponentViewHelpers.h>
+#import <objc/message.h>
 
 #import "RNChartsPropDispatch.h"
 
 using namespace facebook::react;
+
+static inline std::string RNCChartEventString(NSDictionary *event, NSString *key)
+{
+  id value = event[key];
+  if (![value isKindOfClass:[NSString class]]) {
+    return "";
+  }
+
+  return std::string([(NSString *)value UTF8String]);
+}
+
+static inline double RNCChartEventDouble(NSDictionary *event, NSString *key)
+{
+  id value = event[key];
+  return [value respondsToSelector:@selector(doubleValue)] ? [value doubleValue] : 0;
+}
+
+static inline folly::dynamic RNCChartEventDynamic(NSDictionary *event, NSString *key)
+{
+  id value = event[key];
+  return convertIdToFollyDynamic(value ?: (id)kCFNull);
+}
+
+static inline void RNCInvokeSelectorWithObject(UIView *view, SEL selector, id arg)
+{
+  if ([view respondsToSelector:selector]) {
+    ((void (*)(id, SEL, id))objc_msgSend)(view, selector, arg);
+  }
+}
+
+static inline void RNCInvokeSelectorWithoutObject(UIView *view, SEL selector)
+{
+  if ([view respondsToSelector:selector]) {
+    ((void (*)(id, SEL))objc_msgSend)(view, selector);
+  }
+}
 
 @interface RNBarChartComponentView : RCTViewComponentView
 @end
@@ -50,6 +88,137 @@ using namespace facebook::react;
   if (!CGRectEqualToRect(_swiftView.frame, self.bounds)) {
     _swiftView.frame = self.bounds;
   }
+}
+
+- (void)updateEventEmitter:(const EventEmitter::Shared &)eventEmitter
+{
+  [super updateEventEmitter:eventEmitter];
+
+  if (!_swiftView) {
+    return;
+  }
+
+  if (!eventEmitter) {
+    [_swiftView setValue:nil forKey:@"onSelect"];
+    [_swiftView setValue:nil forKey:@"onChange"];
+    [_swiftView setValue:nil forKey:@"onMarkerClick"];
+    [_swiftView setValue:nil forKey:@"onYaxisMinMaxChange"];
+    return;
+  }
+
+  auto chartEventEmitter = std::static_pointer_cast<const RNBarChartEventEmitter>(eventEmitter);
+
+  [_swiftView setValue:[^(NSDictionary *event) {
+    NSDictionary *payloadEvent = event ?: @{};
+    RNBarChartEventEmitter::OnSelect payload = {
+      .x = RNCChartEventDouble(payloadEvent, @"x"),
+      .y = RNCChartEventDouble(payloadEvent, @"y"),
+      .data = RNCChartEventDynamic(payloadEvent, @"data"),
+    };
+    chartEventEmitter->onSelect(payload);
+  } copy] forKey:@"onSelect"];
+
+  [_swiftView setValue:[^(NSDictionary *event) {
+    NSDictionary *payloadEvent = event ?: @{};
+    RNBarChartEventEmitter::OnChange payload = {
+      .action = RNCChartEventString(payloadEvent, @"action"),
+      .left = RNCChartEventDouble(payloadEvent, @"left"),
+      .right = RNCChartEventDouble(payloadEvent, @"right"),
+      .top = RNCChartEventDouble(payloadEvent, @"top"),
+      .bottom = RNCChartEventDouble(payloadEvent, @"bottom"),
+      .scaleX = RNCChartEventDouble(payloadEvent, @"scaleX"),
+      .scaleY = RNCChartEventDouble(payloadEvent, @"scaleY"),
+      .centerX = RNCChartEventDouble(payloadEvent, @"centerX"),
+      .centerY = RNCChartEventDouble(payloadEvent, @"centerY"),
+    };
+    chartEventEmitter->onChange(payload);
+  } copy] forKey:@"onChange"];
+
+  [_swiftView setValue:[^(NSDictionary *event) {
+    NSDictionary *payloadEvent = event ?: @{};
+    RNBarChartEventEmitter::OnMarkerClick payload = {
+      .x = RNCChartEventDouble(payloadEvent, @"x"),
+      .y = RNCChartEventDouble(payloadEvent, @"y"),
+      .data = RNCChartEventDynamic(payloadEvent, @"data"),
+    };
+    chartEventEmitter->onMarkerClick(payload);
+  } copy] forKey:@"onMarkerClick"];
+
+  [_swiftView setValue:[^(NSDictionary *event) {
+    NSDictionary *payloadEvent = event ?: @{};
+    RNBarChartEventEmitter::OnYaxisMinMaxChange payload = {
+      .minY = RNCChartEventDouble(payloadEvent, @"minY"),
+      .maxY = RNCChartEventDouble(payloadEvent, @"maxY"),
+    };
+    chartEventEmitter->onYaxisMinMaxChange(payload);
+  } copy] forKey:@"onYaxisMinMaxChange"];
+}
+
+- (void)handleCommand:(const NSString *)commandName args:(const NSArray *)args
+{
+  if ([commandName isEqualToString:@"moveViewToX"] && args.count >= 1) {
+    RNCInvokeSelectorWithObject(_swiftView, @selector(fabricMoveViewToX:), args[0]);
+    return;
+  }
+
+  if ([commandName isEqualToString:@"moveViewTo"] && args.count >= 3) {
+    NSDictionary *commandArgs = @{
+      @"xValue": args[0],
+      @"yValue": args[1],
+      @"axisDependency": args[2],
+    };
+    RNCInvokeSelectorWithObject(_swiftView, @selector(fabricMoveViewTo:), commandArgs);
+    return;
+  }
+
+  if ([commandName isEqualToString:@"moveViewToAnimated"] && args.count >= 4) {
+    NSDictionary *commandArgs = @{
+      @"xValue": args[0],
+      @"yValue": args[1],
+      @"axisDependency": args[2],
+      @"duration": args[3],
+    };
+    RNCInvokeSelectorWithObject(_swiftView, @selector(fabricMoveViewToAnimated:), commandArgs);
+    return;
+  }
+
+  if ([commandName isEqualToString:@"centerViewTo"] && args.count >= 3) {
+    NSDictionary *commandArgs = @{
+      @"xValue": args[0],
+      @"yValue": args[1],
+      @"axisDependency": args[2],
+    };
+    RNCInvokeSelectorWithObject(_swiftView, @selector(fabricCenterViewTo:), commandArgs);
+    return;
+  }
+
+  if ([commandName isEqualToString:@"centerViewToAnimated"] && args.count >= 4) {
+    NSDictionary *commandArgs = @{
+      @"xValue": args[0],
+      @"yValue": args[1],
+      @"axisDependency": args[2],
+      @"duration": args[3],
+    };
+    RNCInvokeSelectorWithObject(_swiftView, @selector(fabricCenterViewToAnimated:), commandArgs);
+    return;
+  }
+
+  if ([commandName isEqualToString:@"fitScreen"]) {
+    RNCInvokeSelectorWithoutObject(_swiftView, @selector(fabricFitScreen));
+    return;
+  }
+
+  if ([commandName isEqualToString:@"highlights"] && args.count >= 1) {
+    RNCInvokeSelectorWithObject(_swiftView, @selector(fabricHighlights:), args[0]);
+    return;
+  }
+
+  if ([commandName isEqualToString:@"setDataAndLockIndex"] && args.count >= 1) {
+    RNCInvokeSelectorWithObject(_swiftView, @selector(fabricSetDataAndLockIndex:), args[0]);
+    return;
+  }
+
+  [super handleCommand:commandName args:args];
 }
 
 - (void)updateProps:(Props::Shared const &)props oldProps:(Props::Shared const &)oldProps
