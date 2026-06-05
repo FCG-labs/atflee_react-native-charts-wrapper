@@ -95,6 +95,16 @@ static inline void RNCInvokeSelectorWithoutObject(UIView *view, SEL selector)
   }
 }
 
+static inline void RNCInvokeReactSetFrame(UIView *view, CGRect frame)
+{
+  SEL selector = @selector(reactSetFrame:);
+  if ([view respondsToSelector:selector]) {
+    ((void (*)(id, SEL, CGRect))objc_msgSend)(view, selector, frame);
+  } else {
+    view.frame = frame;
+  }
+}
+
 @interface RNBarChartComponentView : RCTViewComponentView
 @end
 
@@ -123,9 +133,18 @@ static inline void RNCInvokeSelectorWithoutObject(UIView *view, SEL selector)
 - (void)layoutSubviews
 {
   [super layoutSubviews];
+#if DEBUG
+  NSLog(@"[RNChartsLayoutPoC] Bar componentBounds=%@ swiftFrameBefore=%@",
+        NSStringFromCGRect(self.bounds),
+        NSStringFromCGRect(_swiftView.frame));
+#endif
   if (!CGRectEqualToRect(_swiftView.frame, self.bounds)) {
-    _swiftView.frame = self.bounds;
+    RNCInvokeReactSetFrame(_swiftView, self.bounds);
   }
+#if DEBUG
+  NSLog(@"[RNChartsLayoutPoC] Bar swiftFrameAfter=%@",
+        NSStringFromCGRect(_swiftView.frame));
+#endif
 }
 
 - (void)updateEventEmitter:(const EventEmitter::Shared &)eventEmitter
