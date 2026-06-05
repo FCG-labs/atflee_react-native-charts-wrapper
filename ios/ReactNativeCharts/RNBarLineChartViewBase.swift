@@ -31,6 +31,33 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
     var _onYaxisMinMaxChange : RCTDirectEventBlock?
     var timer : Timer?
 
+    private func debugViewportState(_ phase: String) {
+        #if DEBUG
+        let dataSummary: String
+        if let data = barLineChart.data {
+            dataSummary = "xMin=\(data.xMin) xMax=\(data.xMax)"
+        } else {
+            dataSummary = "nil"
+        }
+        NSLog("[RNChartsViewportPoC] \(phase) alpha=\(barLineChart.alpha) revealPending=\(revealPending) generation=\(revealGeneration) data=\(dataSummary) bounds=\(barLineChart.bounds) visibleXRange=\(barLineChart.visibleXRange) scaleX=\(barLineChart.scaleX)")
+        #endif
+    }
+
+    private func debugForceRevealIfStuck(_ phase: String) {
+        #if DEBUG
+        let generation = revealGeneration
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { [weak self] in
+            guard let self = self else { return }
+            if self.barLineChart.data != nil && self.barLineChart.alpha == 0 && self.revealPending && self.revealGeneration == generation {
+                self.debugViewportState("forceReveal.before \(phase)")
+                self.barLineChart.alpha = self.alphaBeforeReveal
+                self.revealPending = false
+                self.debugViewportState("forceReveal.after \(phase)")
+            }
+        }
+        #endif
+    }
+
     private func hideUntilViewportSettled() {
         if !revealPending {
             alphaBeforeReveal = barLineChart.alpha
@@ -38,17 +65,25 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         revealPending = true
         revealGeneration += 1
         barLineChart.alpha = 0
+        debugViewportState("hide")
     }
 
     private func revealAfterViewportSettled() {
         if !revealPending { return }
         let generation = revealGeneration
+        debugViewportState("reveal.schedule")
         DispatchQueue.main.asyncAfter(deadline: .now() + viewportRevealDelay) { [weak self] in
             DispatchQueue.main.async { [weak self] in
                 DispatchQueue.main.async { [weak self] in
-                    guard let self = self, self.revealPending, self.revealGeneration == generation else { return }
+                    guard let self = self else { return }
+                    if !(self.revealPending && self.revealGeneration == generation) {
+                        self.debugViewportState("reveal.skip scheduledGeneration=\(generation)")
+                        return
+                    }
+                    self.debugViewportState("reveal.before")
                     self.barLineChart.alpha = self.alphaBeforeReveal
                     self.revealPending = false
+                    self.debugViewportState("reveal.after")
                 }
             }
         }
@@ -377,6 +412,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
     override func onAfterDataSetChanged() {
         super.onAfterDataSetChanged()
+        debugViewportState("after.begin")
 
         applyExtraOffsets()
 
@@ -396,6 +432,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             }
             revealAfterViewportSettled()
         }
+        debugForceRevealIfStuck("after")
     }
 
     func setDataAndLockIndex(_ data: NSDictionary) {
