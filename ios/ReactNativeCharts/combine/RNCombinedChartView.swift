@@ -29,7 +29,6 @@ class RNCombinedChartView: RNBarLineChartViewBase {
 
         self._chart.delegate = self
         self.addSubview(_chart)
-        self._chart.alpha = 0
     }
 
     required init?(coder aDecoder: NSCoder) {
