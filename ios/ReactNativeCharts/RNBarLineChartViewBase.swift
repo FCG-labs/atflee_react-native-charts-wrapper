@@ -23,7 +23,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
     var savedExtraOffsets: NSDictionary?
 
-    private var revealPending = false
+    private var revealPending = true
     private var alphaBeforeReveal: CGFloat = 1.0
     private var revealGeneration = 0
     private let viewportRevealDelay: TimeInterval = 0.08
