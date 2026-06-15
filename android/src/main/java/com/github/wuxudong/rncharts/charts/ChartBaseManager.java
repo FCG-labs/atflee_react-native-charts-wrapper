@@ -725,6 +725,9 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
      */
     @ReactProp(name = "data")
     public void setData(T chart, ReadableMap propMap) {
+        // data prop 이 실제로 교체될 때만 loadComplete 재발화를 허용한다(iOS didSetProps 화이트리스트의 "data" 대응).
+        // idle 상태의 zoom-only 트랜잭션에서는 setData 가 호출되지 않으므로 재발화 루프가 닫히지 않는다.
+        loadCompleteMap.put(chart, false);
         onBeforeDataSetChanged(chart, propMap);
         chart.setData(getDataExtract().extract(chart, propMap));
     }
@@ -809,6 +812,10 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
         onAfterDataSetChanged(chart);
         chart.requestLayout();
         chart.postInvalidate();
+        // iOS 정합: loadComplete 는 (1) 최초 1회, (2) data 가 실제로 교체된 직후 1회만 보낸다.
+        // zoom 등 의미 없는 prop 트랜잭션마다 재전송하면 JS 의 zoom 재적용 → 새 트랜잭션 →
+        // onAfterUpdateTransaction 재호출로 idle 무한 루프가 닫힌다. setData() 가 loadCompleteMap 을
+        // 무효화(false)하므로, data 변경 시에만 아래 분기가 다시 발화한다.
         Boolean sent = loadCompleteMap.get(chart);
         if (sent == null || !sent) {
             chart.getViewTreeObserver().addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
@@ -822,8 +829,6 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
                     return true;
                 }
             });
-        } else {
-            chart.post(() -> sendLoadCompleteEvent(chart));
         }
     }
 
