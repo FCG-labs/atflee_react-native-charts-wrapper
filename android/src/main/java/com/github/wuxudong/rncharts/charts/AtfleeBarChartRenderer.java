@@ -30,6 +30,9 @@ public class AtfleeBarChartRenderer extends BarChartRenderer {
     // 수직선 방향 선택: true → 위쪽으로 그리기, false → 아래쪽으로
     private static final boolean VERTICAL_TO_TOP = false;
 
+    // 라인·마커 여백(dp). iOS RoundedBarChartRenderer.markerPadDp(=10.0) 와 동일한 SSOT 값.
+    private static final float MARKER_PAD_DP = 10.0f;
+
     private RectF mBarShadowRectBuffer = new RectF();
     protected Float mRadius = 50.f;
     private final Paint crossPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -76,13 +79,19 @@ public class AtfleeBarChartRenderer extends BarChartRenderer {
             MPPointD p = t.getPixelForValues(h.getX(), h.getY());
 
             // ② markerTop 계산
+            // off.y(보통 음수 → barTop 위)와 마커 여백(pad)을 contentTop 클램프 "이전"에 함께 더한다.
+            // iOS RoundedBarChartRenderer 와 동일: markerY = pt.y + off.y + pad → 그 다음 클램프.
+            // 과거에는 pad 를 클램프 "이후" yStart 에서 더해(fixedOnTop 시 markerTop 이 contentTop 으로
+            // 클램프된 뒤 pad 가 다시 더해짐) 점선이 contentTop + pad 부터 시작 → 상단 고정 알약과
+            // 점선 사이에 pad(10dp)만큼 빈틈이 생기는 AOS 전용 회귀가 있었다. 클램프 전에 더하면
+            // 클램프가 pad 를 흡수해, iOS 처럼 점선이 contentTop 부터 시작하여 알약과 자연스럽게 이어진다.
             float markerTop = (float) p.y;
             if (mChart instanceof BarLineChartBase) {
               if (((BarLineChartBase) mChart).isDrawMarkersEnabled()) {
                     IMarker marker = ((BarLineChartBase) mChart).getMarker();
                     if (marker != null) {
                         MPPointF off = marker.getOffsetForDrawingAtPoint((float) p.x, (float) p.y);
-                        markerTop += off.y;                    // 보통 음수 → barTop보다 위
+                        markerTop += off.y + Utils.convertDpToPixel(MARKER_PAD_DP);
                     }
                 }
             }
@@ -92,15 +101,13 @@ public class AtfleeBarChartRenderer extends BarChartRenderer {
 
             h.setDraw((float) p.x, (float) p.y);
 
-            float padPx = Utils.convertDpToPixel(10.0f);
-
-            // 수직선
+            // 수직선 (pad 는 markerTop 에 이미 포함됨)
             float yStart, yEnd;
             if (VERTICAL_TO_TOP) {          // 위쪽 절반
                 yStart = mViewPortHandler.contentTop();
-                yEnd   = markerTop + padPx;
+                yEnd   = markerTop;
             } else {                        // 아래쪽 절반
-                yStart = markerTop + padPx;
+                yStart = markerTop;
                 yEnd   = mViewPortHandler.contentBottom();
             }
             c.drawLine((float) p.x, yStart, (float) p.x, yEnd, crossPaint);
