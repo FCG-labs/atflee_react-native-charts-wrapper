@@ -3,6 +3,7 @@ package com.github.wuxudong.rncharts.charts;
 import android.content.res.ColorStateList;
 import android.os.Build;
 import android.graphics.Typeface;
+import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewTreeObserver;
@@ -426,13 +427,17 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
             marker.getTvTitle().setTextColor(propMap.getInt("titleColor"));
         }
         if (BridgeUtils.validate(propMap, ReadableType.Number, "titleSize")) {
-            marker.getTvTitle().setTextSize(propMap.getInt("titleSize"));
+            marker.getTvTitle().setTextSize(
+                    TypedValue.COMPLEX_UNIT_DIP,
+                    (float) propMap.getDouble("titleSize"));
         }
         if (BridgeUtils.validate(propMap, ReadableType.Number, "textColor")) {
             marker.getTvContent().setTextColor(propMap.getInt("textColor"));
         }
         if (BridgeUtils.validate(propMap, ReadableType.Number, "textSize")) {
-            marker.getTvContent().setTextSize(propMap.getInt("textSize"));
+            marker.getTvContent().setTextSize(
+                    TypedValue.COMPLEX_UNIT_DIP,
+                    (float) propMap.getDouble("textSize"));
         }
 
         if (BridgeUtils.validate(propMap, ReadableType.String, "textWeight")) {
