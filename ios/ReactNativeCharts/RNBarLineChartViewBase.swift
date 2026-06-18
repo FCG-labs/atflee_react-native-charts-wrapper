@@ -349,7 +349,10 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             savedZoom = nil
         } else if savedVisibleRange == nil {
             updateValueVisibility(barLineChart)
-            emitChartLoadCompleteIfReady()
+        }
+
+        DispatchQueue.main.async { [weak self] in
+            self?.emitChartLoadCompleteIfReady()
         }
     }
 

@@ -815,13 +815,18 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             showAxis = showValues
         }
 
-        if barLine.xAxis.drawLabelsEnabled != showAxis {
+        let axisLabelsChanged = barLine.xAxis.drawLabelsEnabled != showAxis
+        if axisLabelsChanged {
             barLine.xAxis.drawLabelsEnabled = showAxis
         }
 
         // 4. Apply edge label change only if needed
-        if desiredEdge != edgeLabelEnabled {
+        let edgeLabelsChanged = desiredEdge != edgeLabelEnabled
+        if edgeLabelsChanged {
             configureEdgeLabels(desiredEdge)
+        } else if axisLabelsChanged {
+            // xAxis label visibility affects offset calculation; refresh layout once.
+            barLine.notifyDataSetChanged()
         }
 
         barLine.setNeedsDisplay()
@@ -988,6 +993,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     /// Only mark complete when onChange is wired — otherwise a later retry can still deliver the event.
     func emitChartLoadCompleteIfReady(forceResend: Bool = false) {
         guard bounds.width > 0 && bounds.height > 0 else { return }
+        guard chart.data != nil else { return }
         guard onChange != nil else { return }
 
         DispatchQueue.main.async {
