@@ -95,23 +95,6 @@ static inline void RNCInvokeSelectorWithObject(UIView *view, SEL selector, id ar
   }
 }
 
-static inline void RNCInvokeSelectorWithoutObject(UIView *view, SEL selector)
-{
-  if ([view respondsToSelector:selector]) {
-    ((void (*)(id, SEL))objc_msgSend)(view, selector);
-  }
-}
-
-static inline void RNCInvokeReactSetFrame(UIView *view, CGRect frame)
-{
-  SEL selector = @selector(reactSetFrame:);
-  if ([view respondsToSelector:selector]) {
-    ((void (*)(id, SEL, CGRect))objc_msgSend)(view, selector, frame);
-  } else {
-    view.frame = frame;
-  }
-}
-
 @interface RNCombinedChartComponentView : RCTViewComponentView
 @end
 
