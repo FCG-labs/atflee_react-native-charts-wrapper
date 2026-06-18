@@ -70,6 +70,9 @@ class AtfleeCombinedChart: CombinedChartView {
     
     private func setupForNestedScrolling() {
         self.dragYEnabled = false
+        self.highlighter = CombinedHighlighter(chart: self, barDataProvider: self)
+        self.highlightFullBarEnabled = true
+        self.clipDataToContentEnabled = false
         self.renderer = RoundedCombinedChartRenderer(
             chart: self,
             animator: self.chartAnimator,

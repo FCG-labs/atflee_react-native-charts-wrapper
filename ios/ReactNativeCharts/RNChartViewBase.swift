@@ -63,7 +63,11 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         didSet {
             let v = landscapeOrientation
             landscapeOrientationOverride = v
-            updateValueVisibility(chart)
+            if let barLine = chart as? BarLineChartViewBase {
+                restoreInitialXAxisLabelMode(barLine)
+            } else {
+                updateValueVisibility(chart)
+            }
         }
     }
     var landscapeOrientationOverride: Bool? = nil
@@ -424,6 +428,11 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             restoreInitialXAxisLabelMode(barLine)
         }
         markLoadCompleteForResendIfNeeded()
+        if let barLine = chart as? BarLineChartViewBase {
+            barLine.notifyDataSetChanged()
+            (self as? RNBarLineChartViewBase)?.applyExtraOffsets()
+            barLine.setNeedsDisplay()
+        }
     }
 
     func setCommonAxisConfig(_ axis: AxisBase, config: JSON) {
@@ -865,6 +874,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         }
 
         barLine.setNeedsDisplay()
+        (self as? RNBarLineChartViewBase)?.applyExtraOffsets()
     }
 
     /// Paper didSetProps whitelist(data/xAxis/yAxis) + Fabric setter-path parity.

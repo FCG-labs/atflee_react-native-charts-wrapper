@@ -109,7 +109,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
     func setMaxVisibleValueCount(_ count: CGFloat) {
         maxVisibleValueCountOverride = count > 0 ? count : nil
         barLineChart.maxVisibleCount = max(Int(ceil(count)), 0);
-        updateValueVisibility(barLineChart)
+        restoreInitialXAxisLabelMode(barLineChart)
     }
 
     func setVisibleRange(_ config: NSDictionary) {
@@ -360,17 +360,26 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         barLineChart.notifyDataSetChanged()
     }
 
+    private var lastAppliedDataEntryCount: Int = -1
+
     override func onAfterDataSetChanged() {
         super.onAfterDataSetChanged()
 
         applyExtraOffsets()
 
-        // clear zoom after applied, but keep visibleRange
-        if let visibleRange = savedVisibleRange {
-            updateVisibleRange(visibleRange)
+        let entryCount = Int(barLineChart.data?.entryCount ?? 0)
+        let dataChanged = entryCount != lastAppliedDataEntryCount
+        if dataChanged {
+            lastAppliedDataEntryCount = entryCount
         }
 
-        // Deferred only when setZoom ran before data existed — never re-apply absolute zoom here.
+        // Fabric: onAfterDataSetChanged runs on every prop tick — only re-apply viewport when data changes.
+        if dataChanged, let visibleRange = savedVisibleRange {
+            updateVisibleRange(visibleRange)
+        } else if savedVisibleRange == nil, dataChanged {
+            restoreInitialXAxisLabelMode(barLineChart)
+        }
+
         if let zoom = savedZoom, barLineChart.data != nil {
             applyZoomFromConfig(zoom)
             savedZoom = nil
@@ -379,6 +388,8 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             self.restoreInitialXAxisLabelMode(self.barLineChart)
+            self.applyExtraOffsets()
+            self.barLineChart.setNeedsDisplay()
             self.emitChartLoadCompleteIfReady()
         }
     }
