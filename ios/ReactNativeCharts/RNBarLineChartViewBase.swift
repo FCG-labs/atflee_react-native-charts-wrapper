@@ -41,6 +41,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             setCommonAxisConfig(rightAxis, config: json["right"]);
             setYAxisConfig(rightAxis, config: json["right"]);
         }
+        markLoadCompleteForResendIfNeeded()
     }
 
     func setOnYaxisMinMaxChange(_ callback: RCTDirectEventBlock?) {
@@ -158,10 +159,9 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
                 barLineChart.zoom(scaleX: relative, scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
             }
             // zoom prop이 명시적으로 있으면 auto-zoom 건너뜀
-        } else if let saved = savedVisibleRange,
-                  let xMap = saved["x"] as? NSDictionary,
-                  let visibleMin = xMap["min"] as? CGFloat,
-                  visibleMin > 0 {
+        } else if x["min"].double != nil {
+            let visibleMin = x["min"].doubleValue
+            if visibleMin > 0 {
             let rawDataXMin = barLineChart.data?.xMin ?? barLineChart.chartXMin
             let rawDataXMax = barLineChart.data?.xMax ?? barLineChart.chartXMax
             let effectiveXMin = min(rawDataXMin, barLineChart.chartXMin)
@@ -179,12 +179,13 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
                 let axis = barLineChart.getAxis(.left).isEnabled ? YAxis.AxisDependency.left : YAxis.AxisDependency.right
                 barLineChart.zoom(scaleX: CGFloat(relative), scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
             }
+            }
         }
 
         // Fire after one run-loop so viewPortHandler has updated with new visible range.
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            self.updateValueVisibility(self.barLineChart)
+            self.restoreInitialXAxisLabelMode(self.barLineChart)
             self.sendEvent("visibleRangeChanged")
         }
     }
@@ -287,7 +288,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             // Dispatch asynchronously to ensure matrix is updated before we read values.
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
-                self.updateValueVisibility(self.barLineChart)
+                self.restoreInitialXAxisLabelMode(self.barLineChart)
                 self.sendEvent("zoomChanged")
             }
         }
@@ -325,6 +326,9 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         }
         if edgeLabelEnabled {
             bottom += max(edgeLabelHeight(), barLineChart.xAxis.labelFont.lineHeight) + barLineChart.xAxis.yOffset
+        } else if barLineChart.xAxis.drawLabelsEnabled {
+            // Fabric: bottom offset가 너무 작으면 xAxis 날짜 라벨이 clip 된다.
+            bottom = max(bottom, barLineChart.xAxis.labelFont.lineHeight + barLineChart.xAxis.yOffset + 4)
         }
         if let marker = barLineChart.marker as? AtfleeMarker {
             top = max(top, marker.fixedTopReservedOffset)
@@ -347,12 +351,12 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         if let zoom = savedZoom {
             updateZoom(zoom)
             savedZoom = nil
-        } else if savedVisibleRange == nil {
-            updateValueVisibility(barLineChart)
         }
 
         DispatchQueue.main.async { [weak self] in
-            self?.emitChartLoadCompleteIfReady()
+            guard let self = self else { return }
+            self.restoreInitialXAxisLabelMode(self.barLineChart)
+            self.emitChartLoadCompleteIfReady()
         }
     }
 

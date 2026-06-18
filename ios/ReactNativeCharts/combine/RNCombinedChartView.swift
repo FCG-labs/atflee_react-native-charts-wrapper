@@ -28,6 +28,10 @@ class RNCombinedChartView: RNBarLineChartViewBase {
         super.init(frame: frame)
 
         self._chart.delegate = self
+        self.isUserInteractionEnabled = true
+        self._chart.isUserInteractionEnabled = true
+        self._chart.highlightPerTapEnabled = true
+        self._chart.highlightPerDragEnabled = true
         self.addSubview(_chart)
     }
 

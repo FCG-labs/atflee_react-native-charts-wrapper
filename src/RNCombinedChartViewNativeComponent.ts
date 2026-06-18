@@ -57,7 +57,7 @@ export interface NativeProps extends ViewProps {
   noDataText?: string;
   noDataTextColor?: Int32;
   touchEnabled?: WithDefault<boolean, true>;
-  highlightPerTapEnabled?: boolean;
+  highlightPerTapEnabled?: WithDefault<boolean, true>;
   dragDecelerationEnabled?: boolean;
   dragDecelerationFrictionCoef?: Double;
   animation?: UnsafeMixed;
@@ -90,7 +90,7 @@ export interface NativeProps extends ViewProps {
   scaleXEnabled?: boolean;
   scaleYEnabled?: boolean;
   pinchZoom?: boolean;
-  highlightPerDragEnabled?: boolean;
+  highlightPerDragEnabled?: WithDefault<boolean, true>;
   doubleTapToZoomEnabled?: boolean;
   zoom?: UnsafeMixed;
   viewPortOffsets?: UnsafeMixed;

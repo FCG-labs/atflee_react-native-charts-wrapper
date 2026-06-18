@@ -77,6 +77,10 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     private  var syncY = false
 
     private var hasSentLoadComplete = false
+    /// Android `loadCompleteMap` invalidation parity — `setData` / axis prop updates.
+    private var loadCompleteResendPending = false
+    /// Fabric: emit before `onChange` is wired; retry when EventEmitter attaches.
+    private var loadCompleteEmitPending = false
 
     // Throttle 관련 프로퍼티
     @objc var eventThrottle: Int = 100 // 기본값 100ms
@@ -173,6 +177,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         let extractedChartData: ChartData? = dataExtract.extract(json)
 
         guard let chartData = extractedChartData else { return }
+        // Android ChartBaseManager.setData → loadCompleteMap=false parity (Fabric + Paper).
+        hasSentLoadComplete = false
         onBeforeDataSetChanged(data)
 
         // https://github.com/danielgindi/Charts/issues/4690
@@ -326,6 +332,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     }
 
     func setTouchEnabled(_ touchEnabled: Bool) {
+        isUserInteractionEnabled = touchEnabled
         chart.isUserInteractionEnabled = touchEnabled
     }
 
@@ -413,6 +420,10 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         }
         xAxis.drawLabelsEnabled = !enable
         configureEdgeLabels(enable)
+        if let barLine = chart as? BarLineChartViewBase, barLine.data != nil {
+            restoreInitialXAxisLabelMode(barLine)
+        }
+        markLoadCompleteForResendIfNeeded()
     }
 
     func setCommonAxisConfig(_ axis: AxisBase, config: JSON) {
@@ -629,6 +640,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             )
             chart.marker = marker
             marker.chartView = chart
+            chart.drawMarkers = true
             if let bar = self as? RNBarLineChartViewBase {
                 bar.applyExtraOffsets()
             }
@@ -656,6 +668,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
             chart.marker = marker
             marker.chartView = chart
+            chart.drawMarkers = true
             if let bar = self as? RNBarLineChartViewBase {
                 bar.applyExtraOffsets()
             }
@@ -668,6 +681,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             )
             chart.marker = marker
             marker.chartView = chart
+            chart.drawMarkers = true
             if let bar = self as? RNBarLineChartViewBase {
                 bar.applyExtraOffsets()
             }
@@ -755,7 +769,19 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     }
 
     // MARK: - Value text / Edge label visibility based on zoom
+
+    /// Android `restoreInitialXAxisLabelMode` parity — viewport/zoom settle 직후 1회.
+    /// gesture 경로(`updateValueVisibility`)와 label mode 규칙이 다르다.
+    func restoreInitialXAxisLabelMode(_ chartView: ChartViewBase) {
+        applyAxisLabelVisibility(chartView, forViewportSettle: true)
+    }
+
+    /// Android `RNOnChartGestureListener.adjustValueAndEdgeLabels` parity — scroll/zoom 중.
     func updateValueVisibility(_ chartView: ChartViewBase) {
+        applyAxisLabelVisibility(chartView, forViewportSettle: false)
+    }
+
+    private func applyAxisLabelVisibility(_ chartView: ChartViewBase, forViewportSettle: Bool) {
         guard let barLine = chartView as? BarLineChartViewBase else { return }
 
         let isLandscape = landscapeOrientationOverride ?? (barLine.bounds.width > barLine.bounds.height)
@@ -806,10 +832,14 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             showAxis = false
         } else if let explicit = edgeLabelExplicit {
             desiredEdge = explicit
-            showAxis = desiredEdge ? false : showValues
+            showAxis = desiredEdge ? false : (forViewportSettle ? true : showValues)
         } else if usesAutoEdgeLabels {
             desiredEdge = !showValues
             showAxis = !desiredEdge
+        } else if forViewportSettle {
+            // Android restoreInitialXAxisLabelMode: edge off, axis labels on after settle.
+            desiredEdge = false
+            showAxis = true
         } else {
             desiredEdge = !showValues
             showAxis = showValues
@@ -829,7 +859,19 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             barLine.notifyDataSetChanged()
         }
 
+        // Android adjustValueAndEdgeLabels: edge ON이면 gesture마다 text 갱신.
+        if desiredEdge {
+            updateEdgeLabels(left: barLine.lowestVisibleX, right: barLine.highestVisibleX)
+        }
+
         barLine.setNeedsDisplay()
+    }
+
+    /// Paper didSetProps whitelist(data/xAxis/yAxis) + Fabric setter-path parity.
+    func markLoadCompleteForResendIfNeeded() {
+        if hasSentLoadComplete {
+            loadCompleteResendPending = true
+        }
     }
 
     func shouldApplyInitialEdgeLabelMode() -> Bool {
@@ -892,6 +934,9 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             rightEdgeLabel = nil
             leftEdgeConstraint = nil
             rightEdgeConstraint = nil
+            if let barLine = chart as? BarLineChartViewBase {
+                restoreInitialXAxisLabelMode(barLine)
+            }
             if let bar = self as? RNBarLineChartViewBase { bar.applyExtraOffsets() }
         }
     }
@@ -990,27 +1035,39 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     }
 
     /// Paper `didSetProps` emits chartLoadComplete; Fabric calls `onAfterDataSetChanged` instead.
-    /// Only mark complete when onChange is wired — otherwise a later retry can still deliver the event.
+    /// `onChange` 미연결 시 pending으로 보관 — Fabric EventEmitter wiring 후 재시도.
     func emitChartLoadCompleteIfReady(forceResend: Bool = false) {
         guard bounds.width > 0 && bounds.height > 0 else { return }
         guard chart.data != nil else { return }
-        guard onChange != nil else { return }
+
+        let shouldEmit = forceResend || loadCompleteResendPending || loadCompleteEmitPending || !hasSentLoadComplete
+        guard shouldEmit else { return }
+
+        guard onChange != nil else {
+            loadCompleteEmitPending = true
+            return
+        }
 
         DispatchQueue.main.async {
             CATransaction.flush()
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
-                guard self.onChange != nil else { return }
-                if forceResend || !self.hasSentLoadComplete {
-                    self.sendEvent("chartLoadComplete")
-                    self.hasSentLoadComplete = true
+                guard self.onChange != nil else {
+                    self.loadCompleteEmitPending = true
+                    return
                 }
+                let resend = forceResend || self.loadCompleteResendPending || self.loadCompleteEmitPending || !self.hasSentLoadComplete
+                guard resend else { return }
+                self.sendEvent("chartLoadComplete")
+                self.hasSentLoadComplete = true
+                self.loadCompleteResendPending = false
+                self.loadCompleteEmitPending = false
             }
         }
     }
 
     @objc func emitChartLoadCompleteIfReadyFromObjC() {
-        emitChartLoadCompleteIfReady(forceResend: false)
+        emitChartLoadCompleteIfReady(forceResend: loadCompleteResendPending || loadCompleteEmitPending)
     }
 
     func sendEvent(_ action:String) {
@@ -1033,45 +1090,54 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 let leftBottom = barLineChart.valueForTouchPoint(point: CGPoint(x: handler.contentLeft, y: handler.contentBottom), axis: YAxis.AxisDependency.left)
                 let rightTop = barLineChart.valueForTouchPoint(point: CGPoint(x: handler.contentRight, y: handler.contentTop), axis: YAxis.AxisDependency.left)
 
-                let minX = barLineChart.chartXMin
-                let maxX = barLineChart.chartXMax
-                // let dragOffset = handler.dragOffsetX
-
-                let spaceMin = barLineChart.xAxis.spaceMin
-                let spaceMax = barLineChart.xAxis.spaceMax
-                
-                let allowedMin = minX - spaceMin
-                let allowedMax = maxX + spaceMax
-
-                let originalWidth = rightTop.x - leftBottom.x
-                var leftValue = leftBottom.x
-                var rightValue = rightTop.x
-
-                if leftValue < allowedMin {
-                    leftValue = allowedMin
-                    rightValue = leftValue + originalWidth
-                }
-
-                if rightValue > allowedMax {
-                    rightValue = allowedMax
-                    leftValue = rightValue - originalWidth
-                }
-
-                if leftValue < allowedMin { leftValue = allowedMin }
-                if rightValue > allowedMax { rightValue = allowedMax }
-
-                if leftValue < 0 {
-                    leftValue = 0
-                }
-                
-                dict["left"] = leftValue
                 dict["bottom"] = leftBottom.y
-                let rightRounded = rightValue.rounded()
-                dict["right"] = rightRounded // 정확히.
-                // dict["right"] = rightValue
                 dict["top"] = rightTop.y
 
-                // 🔧 버그 수정: 일관성을 위해 반올림된 값을 Edge Label에도 전달
+                let leftValue: Double
+                let rightRounded: Double
+
+                if action == "chartLoadComplete" {
+                    // Android sendLoadCompleteEvent parity — chart API visible X bounds.
+                    leftValue = Double(barLineChart.lowestVisibleX)
+                    rightRounded = Double(barLineChart.highestVisibleX).rounded()
+                } else {
+                    let minX = barLineChart.chartXMin
+                    let maxX = barLineChart.chartXMax
+
+                    let spaceMin = barLineChart.xAxis.spaceMin
+                    let spaceMax = barLineChart.xAxis.spaceMax
+
+                    let allowedMin = minX - spaceMin
+                    let allowedMax = maxX + spaceMax
+
+                    let originalWidth = rightTop.x - leftBottom.x
+                    var clampedLeft = leftBottom.x
+                    var clampedRight = rightTop.x
+
+                    if clampedLeft < allowedMin {
+                        clampedLeft = allowedMin
+                        clampedRight = clampedLeft + originalWidth
+                    }
+
+                    if clampedRight > allowedMax {
+                        clampedRight = allowedMax
+                        clampedLeft = clampedRight - originalWidth
+                    }
+
+                    if clampedLeft < allowedMin { clampedLeft = allowedMin }
+                    if clampedRight > allowedMax { clampedRight = allowedMax }
+
+                    if clampedLeft < 0 {
+                        clampedLeft = 0
+                    }
+
+                    leftValue = clampedLeft
+                    rightRounded = clampedRight.rounded()
+                }
+
+                dict["left"] = leftValue
+                dict["right"] = rightRounded
+
                 updateEdgeLabels(left: leftValue, right: rightRounded)
 
             }
