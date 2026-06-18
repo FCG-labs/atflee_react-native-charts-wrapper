@@ -1007,12 +1007,6 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         emitChartLoadCompleteIfReady(forceResend: false)
     }
 
-    /// Fabric data/xAxis refresh after initial load (Paper `didSetProps` parity).
-    func emitChartLoadCompleteAfterDataSetChanged() {
-        guard chart.data != nil, hasSentLoadComplete else { return }
-        emitChartLoadCompleteIfReady(forceResend: true)
-    }
-
     func sendEvent(_ action:String) {
         var dict = [AnyHashable: Any]()
 
