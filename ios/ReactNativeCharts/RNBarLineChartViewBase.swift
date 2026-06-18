@@ -84,6 +84,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
                     self.barLineChart.alpha = self.alphaBeforeReveal
                     self.revealPending = false
                     self.debugViewportState("reveal.after")
+                    self.emitChartLoadCompleteIfReady()
                 }
             }
         }
@@ -248,11 +249,10 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         // Fire after one run-loop so viewPortHandler has updated with new visible range.
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
-            if self.shouldApplyInitialEdgeLabelMode() {
-                self.updateValueVisibility(self.barLineChart)
-            }
+            self.updateValueVisibility(self.barLineChart)
             self.sendEvent("visibleRangeChanged")
             self.revealAfterViewportSettled()
+            self.emitChartLoadCompleteIfReady()
         }
     }
 
@@ -355,11 +355,10 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             // Dispatch asynchronously to ensure matrix is updated before we read values.
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
-                if self.shouldApplyInitialEdgeLabelMode() {
-                    self.updateValueVisibility(self.barLineChart)
-                }
+                self.updateValueVisibility(self.barLineChart)
                 self.sendEvent("zoomChanged")
                 self.revealAfterViewportSettled()
+                self.emitChartLoadCompleteIfReady()
             }
         }
     }
@@ -427,11 +426,11 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             updateZoom(zoom)
             savedZoom = nil
         } else if savedVisibleRange == nil {
-            if shouldApplyInitialEdgeLabelMode() {
-                updateValueVisibility(barLineChart)
-            }
+            updateValueVisibility(barLineChart)
             revealAfterViewportSettled()
+            emitChartLoadCompleteIfReady()
         }
+        emitChartLoadCompleteAfterDataSetChanged()
         debugForceRevealIfStuck("after")
     }
 

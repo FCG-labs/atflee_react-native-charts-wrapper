@@ -47,7 +47,7 @@ using namespace facebook::react;
 {
   [super layoutSubviews];
   if (!CGRectEqualToRect(_swiftView.frame, self.bounds)) {
-    _swiftView.frame = self.bounds;
+    RNCInvokeReactSetFrame(_swiftView, self.bounds);
   }
 }
 
@@ -110,7 +110,7 @@ using namespace facebook::react;
   RNC_DISPATCH_BOOL(highlightPerDragEnabled);
   RNC_DISPATCH_BOOL(doubleTapToZoomEnabled);
 
-  [super updateProps:props oldProps:oldProps];
+  RNC_FINISH_BARLINE_UPDATE_PROPS();
 }
 
 @end

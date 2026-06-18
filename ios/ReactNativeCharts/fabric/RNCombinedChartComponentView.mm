@@ -220,6 +220,8 @@ static inline void RNCInvokeReactSetFrame(UIView *view, CGRect frame)
     };
     chartEventEmitter->onYaxisMinMaxChange(payload);
   } copy] forKey:@"onYaxisMinMaxChange"];
+
+  RNCInvokeSelectorWithoutObject(_swiftView, @selector(emitChartLoadCompleteIfReadyFromObjC));
 }
 
 - (void)handleCommand:(const NSString *)commandName args:(const NSArray *)args

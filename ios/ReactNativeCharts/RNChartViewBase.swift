@@ -138,16 +138,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             bar.applyExtraOffsets()
         }
 
-        if !hasSentLoadComplete && bounds.width > 0 && bounds.height > 0 {
-            DispatchQueue.main.async {
-                CATransaction.flush()
-                DispatchQueue.main.async { [weak self] in
-                    guard let self = self else { return }
-                    self.sendEvent("chartLoadComplete")
-                    self.hasSentLoadComplete = true
-                }
-            }
-        }
+        emitChartLoadCompleteIfReady()
     }
 
     override open func reactSetFrame(_ frame: CGRect)
@@ -684,6 +675,10 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     }
 
     func setHighlights(_ config: Any?) {
+        // Fabric: unset highlights prop arrives as NSNull — do not clear native tap highlight.
+        if config == nil || config is NSNull {
+            return
+        }
         guard let config = config as? NSArray else {
             chart.highlightValues([])
             return
@@ -989,6 +984,35 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         (self as? RNBarLineChartViewBase)?.applyExtraOffsets()
     }
 
+    /// Paper `didSetProps` emits chartLoadComplete; Fabric calls `onAfterDataSetChanged` instead.
+    /// Only mark complete when onChange is wired — otherwise a later retry can still deliver the event.
+    func emitChartLoadCompleteIfReady(forceResend: Bool = false) {
+        guard bounds.width > 0 && bounds.height > 0 else { return }
+        guard onChange != nil else { return }
+
+        DispatchQueue.main.async {
+            CATransaction.flush()
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self else { return }
+                guard self.onChange != nil else { return }
+                if forceResend || !self.hasSentLoadComplete {
+                    self.sendEvent("chartLoadComplete")
+                    self.hasSentLoadComplete = true
+                }
+            }
+        }
+    }
+
+    @objc func emitChartLoadCompleteIfReadyFromObjC() {
+        emitChartLoadCompleteIfReady(forceResend: false)
+    }
+
+    /// Fabric data/xAxis refresh after initial load (Paper `didSetProps` parity).
+    func emitChartLoadCompleteAfterDataSetChanged() {
+        guard chart.data != nil, hasSentLoadComplete else { return }
+        emitChartLoadCompleteIfReady(forceResend: true)
+    }
+
     func sendEvent(_ action:String) {
         var dict = [AnyHashable: Any]()
 
@@ -1086,16 +1110,10 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
         if hasSentLoadComplete {
             if changedProps.contains("data") || changedProps.contains("xAxis") || changedProps.contains("yAxis") || changedProps.contains("valueFormatter") {
-                DispatchQueue.main.async { [weak self] in
-                    self?.sendEvent("chartLoadComplete")
-                }
+                emitChartLoadCompleteIfReady(forceResend: true)
             }
-        } else if bounds.width > 0 && bounds.height > 0 {
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }
-                self.sendEvent("chartLoadComplete")
-                self.hasSentLoadComplete = true
-            }
+        } else {
+            emitChartLoadCompleteIfReady()
         }
 
         if self.group != nil && self.identifier != nil && chart is BarLineChartViewBase {

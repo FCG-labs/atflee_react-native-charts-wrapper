@@ -14,6 +14,30 @@
 #ifdef RCT_NEW_ARCH_ENABLED
 
 #import <React/RCTConversions.h>
+#import <objc/message.h>
+
+static inline void RNCInvokeSelectorWithoutObject(UIView *view, SEL selector)
+{
+  if ([view respondsToSelector:selector]) {
+    ((void (*)(id, SEL))objc_msgSend)(view, selector);
+  }
+}
+
+static inline void RNCInvokeReactSetFrame(UIView *view, CGRect frame)
+{
+  SEL selector = @selector(reactSetFrame:);
+  if ([view respondsToSelector:selector]) {
+    ((void (*)(id, SEL, CGRect))objc_msgSend)(view, selector, frame);
+  } else {
+    view.frame = frame;
+  }
+}
+
+#define RNC_FINISH_BARLINE_UPDATE_PROPS()                                      \
+  do {                                                                         \
+    [super updateProps:props oldProps:oldProps];                                 \
+    RNCInvokeSelectorWithoutObject(_swiftView, @selector(onAfterDataSetChanged)); \
+  } while (0)
 
 static inline UIView *RNCInstantiateView(NSString *className, CGRect frame)
 {
