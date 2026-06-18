@@ -262,36 +262,58 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             return
         }
 
-        self.savedZoom = config
-
         if json["scaleX"].float != nil {
             self.zoomScaleX = CGFloat(json["scaleX"].floatValue)
+        }
+
+        // Android setZoom parity: apply immediately with relative scale (not deferred absolute zoom).
+        guard barLineChart.data != nil else {
+            self.savedZoom = config
+            return
+        }
+
+        self.savedZoom = nil
+        applyZoomFromConfig(config)
+    }
+
+    /// Android `BarLineChartBaseManager.setZoom` parity — MPAndroidChart uses relative scale factors.
+    private func applyZoomFromConfig(_ config: NSDictionary) {
+        let json = BridgeUtils.toJson(config)
+
+        guard json["scaleX"].float != nil,
+              json["scaleY"].float != nil,
+              json["xValue"].double != nil,
+              json["yValue"].double != nil else {
+            return
+        }
+
+        let targetScaleX = CGFloat(json["scaleX"].floatValue)
+        let targetScaleY = CGFloat(json["scaleY"].floatValue)
+        let currentScaleX = max(barLineChart.scaleX, 0.00001)
+        let currentScaleY = max(barLineChart.scaleY, 0.00001)
+
+        var axisDependency = YAxis.AxisDependency.left
+        if json["axisDependency"].string != nil && json["axisDependency"].stringValue == "RIGHT" {
+            axisDependency = YAxis.AxisDependency.right
+        }
+
+        barLineChart.zoom(
+            scaleX: targetScaleX / currentScaleX,
+            scaleY: targetScaleY / currentScaleY,
+            xValue: json["xValue"].doubleValue,
+            yValue: json["yValue"].doubleValue,
+            axis: axisDependency
+        )
+
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.restoreInitialXAxisLabelMode(self.barLineChart)
+            self.sendEvent("zoomChanged")
         }
     }
 
     func updateZoom(_ config: NSDictionary) {
-        let json = BridgeUtils.toJson(config)
-
-        if json["scaleX"].float != nil && json["scaleY"].float != nil && json["xValue"].double != nil && json["yValue"].double != nil {
-            var axisDependency = YAxis.AxisDependency.left
-
-            if json["axisDependency"].string != nil && json["axisDependency"].stringValue == "RIGHT" {
-                axisDependency = YAxis.AxisDependency.right
-            }
-
-            barLineChart.zoom(scaleX: CGFloat(json["scaleX"].floatValue),
-                    scaleY: CGFloat(json["scaleY"].floatValue),
-                    xValue: json["xValue"].doubleValue,
-                    yValue: json["yValue"].doubleValue,
-                    axis: axisDependency)
-
-            // Dispatch asynchronously to ensure matrix is updated before we read values.
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }
-                self.restoreInitialXAxisLabelMode(self.barLineChart)
-                self.sendEvent("zoomChanged")
-            }
-        }
+        applyZoomFromConfig(config)
     }
 
     func setViewPortOffsets(_ config: NSDictionary) {
@@ -348,8 +370,9 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             updateVisibleRange(visibleRange)
         }
 
-        if let zoom = savedZoom {
-            updateZoom(zoom)
+        // Deferred only when setZoom ran before data existed — never re-apply absolute zoom here.
+        if let zoom = savedZoom, barLineChart.data != nil {
+            applyZoomFromConfig(zoom)
             savedZoom = nil
         }
 
