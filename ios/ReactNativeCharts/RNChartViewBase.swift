@@ -779,24 +779,58 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
 
     // MARK: - Value text / Edge label visibility based on zoom
 
-    /// Android `restoreInitialXAxisLabelMode` parity — viewport/zoom settle 직후 1회.
-    /// gesture 경로(`updateValueVisibility`)와 label mode 규칙이 다르다.
+    /// Android `RNOnChartGestureListener.adjustValueAndEdgeLabels` parity.
+    /// Viewport settle and gesture paths must converge on the same label mode.
     func restoreInitialXAxisLabelMode(_ chartView: ChartViewBase) {
-        applyAxisLabelVisibility(chartView, forViewportSettle: true)
+        applyAxisLabelVisibility(chartView)
     }
 
     /// Android `RNOnChartGestureListener.adjustValueAndEdgeLabels` parity — scroll/zoom 중.
     func updateValueVisibility(_ chartView: ChartViewBase) {
-        applyAxisLabelVisibility(chartView, forViewportSettle: false)
+        applyAxisLabelVisibility(chartView)
     }
 
-    private func applyAxisLabelVisibility(_ chartView: ChartViewBase, forViewportSettle: Bool) {
+    private func visibleXSpanForLabelMode(_ barLine: BarLineChartViewBase) -> Double {
+        guard let data = barLine.data else { return 0 }
+
+        let totalEntries = max(Double(data.xMax - data.xMin + 1), 1)
+        let handler = barLine.viewPortHandler
+        let leftBottom = barLine.valueForTouchPoint(
+            point: CGPoint(x: handler.contentLeft, y: handler.contentBottom),
+            axis: YAxis.AxisDependency.left
+        )
+        let rightTop = barLine.valueForTouchPoint(
+            point: CGPoint(x: handler.contentRight, y: handler.contentTop),
+            axis: YAxis.AxisDependency.left
+        )
+
+        let originalWidth = rightTop.x - leftBottom.x
+        var leftValue = leftBottom.x
+        var rightValue = rightTop.x
+        let allowedMin = Double(data.xMin - barLine.xAxis.spaceMin)
+        let allowedMax = Double(data.xMax + barLine.xAxis.spaceMax)
+
+        if leftValue < allowedMin {
+            leftValue = allowedMin
+            rightValue = leftValue + originalWidth
+        }
+        if rightValue > allowedMax {
+            rightValue = allowedMax
+            leftValue = rightValue - originalWidth
+        }
+        if leftValue < allowedMin { leftValue = allowedMin }
+        if rightValue > allowedMax { rightValue = allowedMax }
+
+        return min(max(rightValue - leftValue, 1), totalEntries)
+    }
+
+    private func applyAxisLabelVisibility(_ chartView: ChartViewBase) {
         guard let barLine = chartView as? BarLineChartViewBase else { return }
 
         let isLandscape = landscapeOrientationOverride ?? (barLine.bounds.width > barLine.bounds.height)
 
         // 1. Decide whether to display value texts based on visible X span.
-        let visibleXSpan = max(barLine.highestVisibleX - barLine.lowestVisibleX, 0)
+        let visibleXSpan = visibleXSpanForLabelMode(barLine)
 
         let threshold = maxVisibleValueCountOverride ?? (isLandscape ? 15 : 8)
         let showValues = visibleXSpan <= threshold
@@ -841,14 +875,10 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             showAxis = false
         } else if let explicit = edgeLabelExplicit {
             desiredEdge = explicit
-            showAxis = desiredEdge ? false : (forViewportSettle ? true : showValues)
+            showAxis = desiredEdge ? false : showValues
         } else if usesAutoEdgeLabels {
             desiredEdge = !showValues
             showAxis = !desiredEdge
-        } else if forViewportSettle {
-            // Android restoreInitialXAxisLabelMode: edge off, axis labels on after settle.
-            desiredEdge = false
-            showAxis = true
         } else {
             desiredEdge = !showValues
             showAxis = showValues
@@ -944,9 +974,6 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             rightEdgeLabel = nil
             leftEdgeConstraint = nil
             rightEdgeConstraint = nil
-            if let barLine = chart as? BarLineChartViewBase {
-                restoreInitialXAxisLabelMode(barLine)
-            }
             if let bar = self as? RNBarLineChartViewBase { bar.applyExtraOffsets() }
         }
     }

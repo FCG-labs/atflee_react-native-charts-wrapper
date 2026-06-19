@@ -125,20 +125,11 @@ static inline void RNCInvokeSelectorWithObject(UIView *view, SEL selector, id ar
 - (void)layoutSubviews
 {
   [super layoutSubviews];
-#if DEBUG
-  NSLog(@"[RNChartsLayoutPoC] Combined componentBounds=%@ swiftFrameBefore=%@",
-        NSStringFromCGRect(self.bounds),
-        NSStringFromCGRect(_swiftView.frame));
-#endif
   // autoresizingMask covers bounds change, but explicit assign is cheap insurance
   // when the parent layout uses non-standard frame propagation.
   if (!CGRectEqualToRect(_swiftView.frame, self.bounds)) {
     RNCInvokeReactSetFrame(_swiftView, self.bounds);
   }
-#if DEBUG
-  NSLog(@"[RNChartsLayoutPoC] Combined swiftFrameAfter=%@",
-        NSStringFromCGRect(_swiftView.frame));
-#endif
 }
 
 - (void)updateEventEmitter:(const EventEmitter::Shared &)eventEmitter

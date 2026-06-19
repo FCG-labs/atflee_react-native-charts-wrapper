@@ -385,13 +385,8 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             savedZoom = nil
         }
 
-        DispatchQueue.main.async { [weak self] in
-            guard let self = self else { return }
-            self.restoreInitialXAxisLabelMode(self.barLineChart)
-            self.applyExtraOffsets()
-            self.barLineChart.setNeedsDisplay()
-            self.emitChartLoadCompleteIfReady()
-        }
+        barLineChart.setNeedsDisplay()
+        emitChartLoadCompleteIfReady()
     }
 
     func setDataAndLockIndex(_ data: NSDictionary) {
