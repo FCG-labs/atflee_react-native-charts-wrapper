@@ -79,6 +79,11 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
     }
 
     func setMaxHighlightDistance(_  maxHighlightDistance: CGFloat) {
+        // Fabric: 초기 마운트(oldProps=nil)에서 JS 미설정 prop이 0으로 강제 dispatch된다.
+        // maxHighlightDistance=0이면 closestSelectionDetailByPixel의 cDistance<0 비교가 항상 거짓이라
+        // 탭 highlight를 못 잡는다(chartValueNothingSelected). 0/음수는 무시하고
+        // DGCharts 기본값(500)을 유지한다(Paper parity).
+        guard maxHighlightDistance > 0 else { return }
         barLineChart.maxHighlightDistance = maxHighlightDistance;
     }
 
@@ -266,14 +271,33 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             self.zoomScaleX = CGFloat(json["scaleX"].floatValue)
         }
 
-        // Android setZoom parity: apply immediately with relative scale (not deferred absolute zoom).
-        guard barLineChart.data != nil else {
+        // Fabric: data가 있어도 viewport/chart dimens가 아직 0이면 zoom()이 무시될 수 있다.
+        // 이 시점에 savedZoom을 소비해버리면 초기 렌더가 fit-all(scaleX=1)로 남는다.
+        // viewport 준비 전에는 저장만 하고, layoutSubviews/onAfterDataSetChanged에서 1회 적용한다.
+        guard isReadyToApplyZoom() else {
             self.savedZoom = config
             return
         }
 
         self.savedZoom = nil
         applyZoomFromConfig(config)
+    }
+
+    private func isReadyToApplyZoom() -> Bool {
+        let handler = barLineChart.viewPortHandler
+        return barLineChart.data != nil
+            && barLineChart.bounds.width > 0
+            && barLineChart.bounds.height > 0
+            && handler.chartWidth > 0
+            && handler.chartHeight > 0
+            && handler.contentWidth > 0
+            && handler.contentHeight > 0
+    }
+
+    func applySavedZoomIfReady() {
+        guard let zoom = savedZoom, isReadyToApplyZoom() else { return }
+        savedZoom = nil
+        applyZoomFromConfig(zoom)
     }
 
     /// Android `BarLineChartBaseManager.setZoom` parity — MPAndroidChart uses relative scale factors.
@@ -385,10 +409,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             restoreInitialXAxisLabelMode(barLineChart)
         }
 
-        if let zoom = savedZoom, barLineChart.data != nil {
-            applyZoomFromConfig(zoom)
-            savedZoom = nil
-        }
+        applySavedZoomIfReady()
 
         barLineChart.setNeedsDisplay()
         emitChartLoadCompleteIfReady()
