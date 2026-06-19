@@ -319,6 +319,14 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
     func setViewPortOffsets(_ config: NSDictionary) {
         let json = BridgeUtils.toJson(config)
 
+        // Fabric: 초기 마운트(oldProps=nil)에서는 JS가 주지 않은 viewPortOffsets({})도 강제 dispatch된다.
+        // 빈 값으로 setViewPortOffsets를 호출하면 DGCharts가 _customViewPortEnabled=true로 잠겨
+        // calculateOffsets(축 라벨/extraOffsets 여백)가 통째로 skip되고, offset이 0으로 고정되어
+        // x축·우측 y축 라벨이 사라진다. 키가 하나도 없으면 customViewPort를 켜지 않는다(Paper parity).
+        let hasAny = json["left"].double != nil || json["top"].double != nil
+            || json["right"].double != nil || json["bottom"].double != nil
+        guard hasAny else { return }
+
         var left = json["left"].double != nil ? CGFloat(json["left"].doubleValue) : 0
         if left < 0 { left = 0 }
         let top = json["top"].double != nil ? CGFloat(json["top"].doubleValue) : 0
@@ -348,9 +356,6 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         }
         if edgeLabelEnabled {
             bottom += max(edgeLabelHeight(), barLineChart.xAxis.labelFont.lineHeight) + barLineChart.xAxis.yOffset
-        } else if barLineChart.xAxis.drawLabelsEnabled {
-            // Fabric: bottom offset가 너무 작으면 xAxis 날짜 라벨이 clip 된다.
-            bottom = max(bottom, barLineChart.xAxis.labelFont.lineHeight + barLineChart.xAxis.yOffset + 4)
         }
         if let marker = barLineChart.marker as? AtfleeMarker {
             top = max(top, marker.fixedTopReservedOffset)

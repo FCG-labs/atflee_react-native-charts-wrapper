@@ -403,6 +403,16 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             xAxis.labelPosition = BridgeUtils.parseXAxisLabelPosition(json["position"].stringValue)
         }
 
+        if json["yOffset"].number == nil {
+            switch xAxis.labelPosition {
+            case .bottom, .bottomInside, .bothSided:
+                // Common chart/date spacing policy for both regular xAxis labels and edge-label mode.
+                xAxis.yOffset = 10.0
+            default:
+                break
+            }
+        }
+
         if json["edgeValueFormatter"].array != nil {
             edgeValueFormatter = IndexAxisValueFormatter(values: json["edgeValueFormatter"].arrayValue.map({ $0.stringValue }))
         } else {
