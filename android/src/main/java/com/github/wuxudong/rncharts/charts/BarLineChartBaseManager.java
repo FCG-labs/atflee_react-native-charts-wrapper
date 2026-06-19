@@ -527,6 +527,42 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         super.receiveCommand(root, commandId, args);
     }
 
+    // Fabric(New Architecture) dispatches view manager commands by their string name,
+    // not the legacy integer id. Without this overload every imperative command
+    // (highlights / moveViewToX / centerViewTo / fitScreen ...) is silently dropped on
+    // Fabric Android. Route the string command back to the existing integer handler.
+    @Override
+    public void receiveCommand(T root, String commandId, @Nullable ReadableArray args) {
+        switch (commandId) {
+            case "moveViewTo":
+                receiveCommand(root, MOVE_VIEW_TO, args);
+                return;
+            case "moveViewToX":
+                receiveCommand(root, MOVE_VIEW_TO_X, args);
+                return;
+            case "moveViewToAnimated":
+                receiveCommand(root, MOVE_VIEW_TO_ANIMATED, args);
+                return;
+            case "centerViewTo":
+                receiveCommand(root, CENTER_VIEW_TO, args);
+                return;
+            case "centerViewToAnimated":
+                receiveCommand(root, CENTER_VIEW_TO_ANIMATED, args);
+                return;
+            case "fitScreen":
+                receiveCommand(root, FIT_SCREEN, args);
+                return;
+            case "highlights":
+                receiveCommand(root, HIGHLIGHTS, args);
+                return;
+            case "setDataAndLockIndex":
+                receiveCommand(root, SET_DATA_AND_LOCK_INDEX, args);
+                return;
+        }
+
+        super.receiveCommand(root, commandId, args);
+    }
+
     private void setDataAndLockIndex(T root, ReadableMap map) {
         YAxis.AxisDependency axisDependency = root.getAxisLeft().isEnabled() ? YAxis.AxisDependency.LEFT : YAxis.AxisDependency.RIGHT;
         Transformer transformer = root.getTransformer(axisDependency);

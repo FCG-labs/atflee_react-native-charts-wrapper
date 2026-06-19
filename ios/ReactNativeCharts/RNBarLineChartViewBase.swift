@@ -19,7 +19,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
     var savedZoom : NSDictionary?
 
-    var zoomScaleX: CGFloat?
+    var persistedZoom: NSDictionary?
 
     var savedExtraOffsets: NSDictionary?
 
@@ -156,37 +156,6 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             barLineChart.setVisibleYRangeMaximum(y["right"]["max"].doubleValue, axis: YAxis.AxisDependency.right)
         }
 
-        if let target = zoomScaleX, target > 0 {
-            if barLineChart.scaleX != target {
-                let relative = target / barLineChart.scaleX
-                let centerX = barLineChart.data?.xMax ?? 0
-                let axis = barLineChart.getAxis(.left).isEnabled ? YAxis.AxisDependency.left : YAxis.AxisDependency.right
-                barLineChart.zoom(scaleX: relative, scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
-            }
-            // zoom prop이 명시적으로 있으면 auto-zoom 건너뜀
-        } else if x["min"].double != nil {
-            let visibleMin = x["min"].doubleValue
-            if visibleMin > 0 {
-            let rawDataXMin = barLineChart.data?.xMin ?? barLineChart.chartXMin
-            let rawDataXMax = barLineChart.data?.xMax ?? barLineChart.chartXMax
-            let effectiveXMin = min(rawDataXMin, barLineChart.chartXMin)
-            let effectiveXMax = max(rawDataXMax, barLineChart.chartXMax)
-            let totalRange = Double(effectiveXMax - effectiveXMin)
-
-            if totalRange > Double(visibleMin) {
-                let relative = totalRange / Double(visibleMin)
-                let centerX: Double = effectiveXMax
-                let axis = barLineChart.getAxis(.left).isEnabled ? YAxis.AxisDependency.left : YAxis.AxisDependency.right
-                barLineChart.zoom(scaleX: relative, scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
-            } else if totalRange > 0 {
-                let relative = Double(visibleMin) / totalRange
-                let centerX: Double = effectiveXMax
-                let axis = barLineChart.getAxis(.left).isEnabled ? YAxis.AxisDependency.left : YAxis.AxisDependency.right
-                barLineChart.zoom(scaleX: CGFloat(relative), scaleY: 1.0, xValue: centerX, yValue: 0.0, axis: axis)
-            }
-            }
-        }
-
         // Fire after one run-loop so viewPortHandler has updated with new visible range.
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
@@ -248,8 +217,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
     func setZoom(_ config: NSDictionary) {
         if config == NSNull() || config.count == 0 {
-            // zoom 해제 → zoomScaleX 초기화
-            self.zoomScaleX = nil
+            self.persistedZoom = nil
             self.savedZoom = nil
             return
         }
@@ -262,14 +230,12 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             json["yValue"].double != nil
 
         guard hasCompleteZoomConfig else {
-            self.zoomScaleX = nil
+            self.persistedZoom = nil
             self.savedZoom = nil
             return
         }
 
-        if json["scaleX"].float != nil {
-            self.zoomScaleX = CGFloat(json["scaleX"].floatValue)
-        }
+        self.persistedZoom = config
 
         // Fabric: data가 있어도 viewport/chart dimens가 아직 0이면 zoom()이 무시될 수 있다.
         // 이 시점에 savedZoom을 소비해버리면 초기 렌더가 fit-all(scaleX=1)로 남는다.
@@ -407,6 +373,10 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             updateVisibleRange(visibleRange)
         } else if savedVisibleRange == nil, dataChanged {
             restoreInitialXAxisLabelMode(barLineChart)
+        }
+
+        if dataChanged, let zoom = persistedZoom {
+            savedZoom = zoom
         }
 
         applySavedZoomIfReady()
