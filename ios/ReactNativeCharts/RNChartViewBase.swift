@@ -445,6 +445,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         if let barLine = chart as? BarLineChartViewBase {
             barLine.notifyDataSetChanged()
             (self as? RNBarLineChartViewBase)?.applyExtraOffsets()
+            (self as? RNBarLineChartViewBase)?.reapplySavedVisibleRangeViewport()
             barLine.setNeedsDisplay()
         }
     }
@@ -1109,6 +1110,10 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 }
                 let resend = forceResend || self.loadCompleteResendPending || self.loadCompleteEmitPending || !self.hasSentLoadComplete
                 guard resend else { return }
+                if let bar = self as? RNBarLineChartViewBase {
+                    bar.applySavedZoomIfReady()
+                    bar.applyVisibleRangeWhenReady()
+                }
                 self.sendEvent("chartLoadComplete")
                 self.hasSentLoadComplete = true
                 self.loadCompleteResendPending = false

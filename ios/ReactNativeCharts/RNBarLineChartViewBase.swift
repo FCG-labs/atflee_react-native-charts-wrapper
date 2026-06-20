@@ -234,7 +234,13 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             axis: axis
         )
         barLineChart.moveViewToX(max(effectiveXMax - visibleMin, effectiveXMin))
-        autoZoomPending = false
+        let expectedScale = targetScale
+        if abs(barLineChart.scaleX - expectedScale) > max(expectedScale * 0.05, 0.01) {
+            // viewport/layout 레이스 — layoutSubviews 에서 재시도
+            autoZoomPending = true
+        } else {
+            autoZoomPending = false
+        }
     }
 
     func applyVisibleRangeWhenReady() {
@@ -440,6 +446,15 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         barLineChart.notifyDataSetChanged()
     }
 
+    /// Android `BarLineChartBaseManager.onAfterDataSetChanged` — savedVisibleRange 가 있으면 매 prop tick viewport 재적용.
+    func reapplySavedVisibleRangeViewport() {
+        guard let config = savedVisibleRange else { return }
+        if persistedZoomScaleX == nil {
+            autoZoomPending = true
+        }
+        updateVisibleRange(config)
+    }
+
     private var lastAppliedDataEntryCount: Int = -1
 
     override func onAfterDataSetChanged() {
@@ -453,11 +468,9 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             lastAppliedDataEntryCount = entryCount
         }
 
-        // Fabric: onAfterDataSetChanged runs on every prop tick — only re-apply viewport when data changes.
-        if dataChanged, let visibleRange = savedVisibleRange {
-            autoZoomPending = true
-            updateVisibleRange(visibleRange)
-        } else if savedVisibleRange == nil, dataChanged {
+        if savedVisibleRange != nil {
+            reapplySavedVisibleRangeViewport()
+        } else if dataChanged {
             restoreInitialXAxisLabelMode(barLineChart)
         }
 
