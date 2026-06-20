@@ -148,6 +148,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             }
             bar.applySavedZoomIfReady()
             bar.applyVisibleRangeWhenReady()
+            bar.refreshValueLabelVisibility()
         }
 
         emitChartLoadCompleteIfReady()
@@ -1113,6 +1114,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 if let bar = self as? RNBarLineChartViewBase {
                     bar.applySavedZoomIfReady()
                     bar.applyVisibleRangeWhenReady()
+                    bar.refreshValueLabelVisibility()
                 }
                 self.sendEvent("chartLoadComplete")
                 self.hasSentLoadComplete = true

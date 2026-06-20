@@ -192,6 +192,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
                 )
             }
             autoZoomPending = false
+            refreshValueLabelVisibility()
             return
         }
 
@@ -241,14 +242,23 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         } else {
             autoZoomPending = false
         }
+        refreshValueLabelVisibility()
+    }
+
+    /// Android `RNOnChartGestureListener.adjustValueAndEdgeLabels` — programmatic zoom 후 chartScaled 미발화 보정.
+    func refreshValueLabelVisibility() {
+        restoreInitialXAxisLabelMode(barLineChart)
     }
 
     func applyVisibleRangeWhenReady() {
         guard let config = savedVisibleRange else { return }
         guard barLineChart.data != nil else { return }
         if !isReadyToApplyZoom() { return }
-        if !autoZoomPending && persistedZoomScaleX == nil { return }
-        applyVisibleRangeZoomPolicy(BridgeUtils.toJson(config))
+        if autoZoomPending || persistedZoomScaleX != nil {
+            applyVisibleRangeZoomPolicy(BridgeUtils.toJson(config))
+        } else {
+            refreshValueLabelVisibility()
+        }
     }
 
     func setMaxScale(_ config: NSDictionary) {
