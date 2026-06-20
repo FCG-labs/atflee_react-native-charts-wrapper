@@ -147,6 +147,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 bar.applyExtraOffsets()
             }
             bar.applySavedZoomIfReady()
+            bar.applyVisibleRangeWhenReady()
         }
 
         emitChartLoadCompleteIfReady()

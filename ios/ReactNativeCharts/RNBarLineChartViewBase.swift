@@ -21,6 +21,12 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
     var persistedZoom: NSDictionary?
 
+    /// Android `ChartExtraProperties.zoomScaleX` parity — explicit zoom prop scaleX SSOT.
+    var persistedZoomScaleX: CGFloat?
+
+    /// Android `ChartExtraProperties.autoZoomPending` — visibleRange 변경 후 auto-zoom 1회.
+    var autoZoomPending: Bool = false
+
     var savedExtraOffsets: NSDictionary?
 
     var _onYaxisMinMaxChange : RCTDirectEventBlock?
@@ -120,6 +126,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
     func setVisibleRange(_ config: NSDictionary) {
         // delay visibleRange handling until chart data is set
         savedVisibleRange = config
+        autoZoomPending = true
         // execute on next run-loop to ensure layout is finished
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
@@ -156,12 +163,86 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             barLineChart.setVisibleYRangeMaximum(y["right"]["max"].doubleValue, axis: YAxis.AxisDependency.right)
         }
 
+        applyVisibleRangeZoomPolicy(json)
+
         // Fire after one run-loop so viewPortHandler has updated with new visible range.
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
             self.restoreInitialXAxisLabelMode(self.barLineChart)
             self.sendEvent("visibleRangeChanged")
         }
+    }
+
+    /// Android `BarLineChartBaseManager.updateVisibleRange` zoom branches — explicit scaleX 우선, 없으면 visibleRange.x.min auto-zoom.
+    private func applyVisibleRangeZoomPolicy(_ json: JSON) {
+        guard isReadyToApplyZoom() else { return }
+
+        let axis: YAxis.AxisDependency = barLineChart.leftAxis.enabled ? .left : .right
+
+        if let targetScale = persistedZoomScaleX, targetScale > 0 {
+            let currentScale = max(barLineChart.scaleX, 0.00001)
+            if abs(barLineChart.scaleX - targetScale) > 0.0001 {
+                let centerX = barLineChart.data?.xMax ?? barLineChart.chartXMax
+                barLineChart.zoom(
+                    scaleX: targetScale / currentScale,
+                    scaleY: 1,
+                    xValue: centerX,
+                    yValue: 0,
+                    axis: axis
+                )
+            }
+            autoZoomPending = false
+            return
+        }
+
+        guard autoZoomPending else { return }
+
+        let visibleMin = json["x"]["min"].double
+        guard let visibleMin, visibleMin > 0 else {
+            autoZoomPending = false
+            return
+        }
+
+        let rawDataXMin = barLineChart.data?.xMin ?? barLineChart.chartXMin
+        let rawDataXMax = barLineChart.data?.xMax ?? barLineChart.chartXMax
+        let effectiveXMin = min(rawDataXMin, barLineChart.chartXMin)
+        let effectiveXMax = max(rawDataXMax, barLineChart.chartXMax)
+        let totalRange = effectiveXMax - effectiveXMin
+        guard totalRange > 0 else {
+            autoZoomPending = false
+            return
+        }
+
+        barLineChart.xAxis.axisMinimum = effectiveXMin
+        barLineChart.xAxis.axisMaximum = effectiveXMax
+        barLineChart.setVisibleXRangeMinimum(visibleMin)
+        if json["x"]["max"].double != nil {
+            barLineChart.setVisibleXRangeMaximum(json["x"]["max"].doubleValue)
+        }
+
+        let targetScale = totalRange > visibleMin
+            ? CGFloat(totalRange / visibleMin)
+            : CGFloat(visibleMin / totalRange)
+        let currentScale = max(barLineChart.scaleX, 0.00001)
+        let relativeScale = targetScale / currentScale
+        let centerX = effectiveXMax - visibleMin / 2.0
+        barLineChart.zoom(
+            scaleX: relativeScale,
+            scaleY: 1,
+            xValue: centerX,
+            yValue: 0,
+            axis: axis
+        )
+        barLineChart.moveViewToX(max(effectiveXMax - visibleMin, effectiveXMin))
+        autoZoomPending = false
+    }
+
+    func applyVisibleRangeWhenReady() {
+        guard let config = savedVisibleRange else { return }
+        guard barLineChart.data != nil else { return }
+        if !isReadyToApplyZoom() { return }
+        if !autoZoomPending && persistedZoomScaleX == nil { return }
+        applyVisibleRangeZoomPolicy(BridgeUtils.toJson(config))
     }
 
     func setMaxScale(_ config: NSDictionary) {
@@ -219,6 +300,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         if config == NSNull() || config.count == 0 {
             self.persistedZoom = nil
             self.savedZoom = nil
+            self.persistedZoomScaleX = nil
             return
         }
 
@@ -232,10 +314,12 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         guard hasCompleteZoomConfig else {
             self.persistedZoom = nil
             self.savedZoom = nil
+            self.persistedZoomScaleX = nil
             return
         }
 
         self.persistedZoom = config
+        self.persistedZoomScaleX = CGFloat(json["scaleX"].floatValue)
 
         // Fabric: data가 있어도 viewport/chart dimens가 아직 0이면 zoom()이 무시될 수 있다.
         // 이 시점에 savedZoom을 소비해버리면 초기 렌더가 fit-all(scaleX=1)로 남는다.
@@ -294,6 +378,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             yValue: json["yValue"].doubleValue,
             axis: axisDependency
         )
+        persistedZoomScaleX = targetScaleX
 
         DispatchQueue.main.async { [weak self] in
             guard let self = self else { return }
@@ -370,6 +455,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
         // Fabric: onAfterDataSetChanged runs on every prop tick — only re-apply viewport when data changes.
         if dataChanged, let visibleRange = savedVisibleRange {
+            autoZoomPending = true
             updateVisibleRange(visibleRange)
         } else if savedVisibleRange == nil, dataChanged {
             restoreInitialXAxisLabelMode(barLineChart)
@@ -380,6 +466,7 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         }
 
         applySavedZoomIfReady()
+        applyVisibleRangeWhenReady()
 
         barLineChart.setNeedsDisplay()
         emitChartLoadCompleteIfReady()
