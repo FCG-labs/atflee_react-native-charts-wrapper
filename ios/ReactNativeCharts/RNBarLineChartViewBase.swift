@@ -182,11 +182,10 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         let axis: YAxis.AxisDependency = barLineChart.leftAxis.enabled ? .left : .right
 
         if let targetScale = persistedZoomScaleX, targetScale > 0 {
-            let currentScale = max(barLineChart.scaleX, 0.00001)
             if abs(barLineChart.scaleX - targetScale) > 0.0001 {
                 let centerX = barLineChart.data?.xMax ?? barLineChart.chartXMax
                 barLineChart.zoom(
-                    scaleX: targetScale / currentScale,
+                    scaleX: targetScale,
                     scaleY: 1,
                     xValue: centerX,
                     yValue: 0,
@@ -226,11 +225,9 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         let targetScale = totalRange > visibleMin
             ? CGFloat(totalRange / visibleMin)
             : CGFloat(visibleMin / totalRange)
-        let currentScale = max(barLineChart.scaleX, 0.00001)
-        let relativeScale = targetScale / currentScale
         let centerX = effectiveXMax - visibleMin / 2.0
         barLineChart.zoom(
-            scaleX: relativeScale,
+            scaleX: targetScale,
             scaleY: 1,
             xValue: centerX,
             yValue: 0,
@@ -401,8 +398,6 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
         let targetScaleX = CGFloat(json["scaleX"].floatValue)
         let targetScaleY = CGFloat(json["scaleY"].floatValue)
-        let currentScaleX = max(barLineChart.scaleX, 0.00001)
-        let currentScaleY = max(barLineChart.scaleY, 0.00001)
 
         var axisDependency = YAxis.AxisDependency.left
         if json["axisDependency"].string != nil && json["axisDependency"].stringValue == "RIGHT" {
@@ -410,8 +405,8 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         }
 
         barLineChart.zoom(
-            scaleX: targetScaleX / currentScaleX,
-            scaleY: targetScaleY / currentScaleY,
+            scaleX: targetScaleX,
+            scaleY: targetScaleY,
             xValue: json["xValue"].doubleValue,
             yValue: json["yValue"].doubleValue,
             axis: axisDependency
