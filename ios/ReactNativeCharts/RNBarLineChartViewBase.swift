@@ -26,6 +26,8 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
     /// Android `ChartExtraProperties.autoZoomPending` — visibleRange 변경 후 auto-zoom 1회.
     var autoZoomPending: Bool = false
+    private var isHandlingLayoutSubviews = false
+    private var hasQueuedValueLabelVisibilityRefresh = false
 
     var savedExtraOffsets: NSDictionary?
 
@@ -247,7 +249,27 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
 
     /// Android `RNOnChartGestureListener.adjustValueAndEdgeLabels` — programmatic zoom 후 chartScaled 미발화 보정.
     func refreshValueLabelVisibility() {
+        if isHandlingLayoutSubviews {
+            queueValueLabelVisibilityRefresh()
+            return
+        }
         restoreInitialXAxisLabelMode(barLineChart)
+    }
+
+    func performLayoutSubviewsUpdates(_ updates: () -> Void) {
+        isHandlingLayoutSubviews = true
+        defer { isHandlingLayoutSubviews = false }
+        updates()
+    }
+
+    private func queueValueLabelVisibilityRefresh() {
+        guard !hasQueuedValueLabelVisibilityRefresh else { return }
+        hasQueuedValueLabelVisibilityRefresh = true
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.hasQueuedValueLabelVisibilityRefresh = false
+            self.refreshValueLabelVisibility()
+        }
     }
 
     func applyVisibleRangeWhenReady() {

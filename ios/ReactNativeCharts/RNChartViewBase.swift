@@ -143,12 +143,14 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         super.layoutSubviews()
 
         if let bar = self as? RNBarLineChartViewBase {
-            if edgeLabelEnabled {
-                bar.applyExtraOffsets()
+            bar.performLayoutSubviewsUpdates {
+                if edgeLabelEnabled {
+                    bar.applyExtraOffsets()
+                }
+                bar.applySavedZoomIfReady()
+                bar.applyVisibleRangeWhenReady()
+                bar.refreshValueLabelVisibility()
             }
-            bar.applySavedZoomIfReady()
-            bar.applyVisibleRangeWhenReady()
-            bar.refreshValueLabelVisibility()
         }
 
         emitChartLoadCompleteIfReady()
