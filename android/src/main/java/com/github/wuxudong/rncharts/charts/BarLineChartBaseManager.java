@@ -39,9 +39,6 @@ class ChartExtraProperties {
     // changes so the auto-zoom path can never override an explicit zoom. Cleared only when the
     // zoom prop is removed (setZoom(null)). Charts that pass no scaleX keep this null → auto-zoom.
     public Float zoomScaleX = null;
-    public boolean revealPending = false;
-    public float alphaBeforeReveal = 1f;
-    public int revealGeneration = 0;
 }
 
 class ExtraPropertiesHolder {
@@ -60,43 +57,7 @@ class ExtraPropertiesHolder {
 
 public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U extends Entry> extends YAxisChartBase<T, U> {
 
-    private static final long VIEWPORT_REVEAL_DELAY_MS = 80L;
     private ExtraPropertiesHolder extraPropertiesHolder = new ExtraPropertiesHolder();
-
-    private void hideUntilViewportSettled(BarLineChartBase chart) {
-        ChartExtraProperties extra = extraPropertiesHolder.getExtraProperties(chart);
-        if (!extra.revealPending) {
-            extra.alphaBeforeReveal = chart.getAlpha();
-        }
-        extra.revealPending = true;
-        extra.revealGeneration++;
-        chart.setAlpha(0f);
-    }
-
-    private void revealAfterViewportSettled(BarLineChartBase chart) {
-        ChartExtraProperties extra = extraPropertiesHolder.getExtraProperties(chart);
-        if (!extra.revealPending) return;
-        final int generation = extra.revealGeneration;
-        chart.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                chart.postOnAnimation(new Runnable() {
-                    @Override
-                    public void run() {
-                        chart.postOnAnimation(new Runnable() {
-                            @Override
-                            public void run() {
-                                ChartExtraProperties latest = extraPropertiesHolder.getExtraProperties(chart);
-                                if (!latest.revealPending || latest.revealGeneration != generation) return;
-                                chart.setAlpha(latest.alphaBeforeReveal);
-                                latest.revealPending = false;
-                            }
-                        });
-                    }
-                });
-            }
-        }, VIEWPORT_REVEAL_DELAY_MS);
-    }
 
     @Override
     public void setYAxis(Chart chart, ReadableMap propMap) {
@@ -157,7 +118,6 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
          ChartExtraProperties props = extraPropertiesHolder.getExtraProperties(chart);
          props.savedVisibleRange = propMap;
          props.autoZoomPending = true;
-         hideUntilViewportSettled(chart);
          chart.post(new Runnable() {
              @Override
              public void run() {
@@ -225,7 +185,6 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
             }
             restoreInitialXAxisLabelMode(chart);
             extra.autoZoomPending = false;
-            revealAfterViewportSettled(chart);
         } else if (extra.autoZoomPending) {
             // Auto-zoom based on visibleRange.x.min (mirrors iOS behavior)
             if (BridgeUtils.validate(propMap, ReadableType.Map, "x")) {
@@ -264,7 +223,6 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
             }
             restoreInitialXAxisLabelMode(chart);
             extra.autoZoomPending = false;
-            revealAfterViewportSettled(chart);
         }
     }
 
@@ -371,8 +329,6 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
                 BridgeUtils.validate(propMap, ReadableType.Number, "scaleY") &&
                 BridgeUtils.validate(propMap, ReadableType.Number, "xValue") &&
                 BridgeUtils.validate(propMap, ReadableType.Number, "yValue")) {
-            hideUntilViewportSettled(chart);
-
             YAxis.AxisDependency axisDependency = YAxis.AxisDependency.LEFT;
             if (propMap.hasKey("axisDependency") &&
                     propMap.getString("axisDependency").equalsIgnoreCase("RIGHT")) {
@@ -388,7 +344,6 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
             );
 
             extra.zoomScaleX = (float) propMap.getDouble("scaleX");
-            revealAfterViewportSettled(chart);
         }
     }
 
@@ -623,7 +578,6 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
     @Override
     protected void onBeforeDataSetChanged(T chart, ReadableMap propMap) {
         super.onBeforeDataSetChanged(chart, propMap);
-        hideUntilViewportSettled(chart);
     }
 
     @Override
@@ -633,11 +587,8 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
         ChartExtraProperties extraProperties = extraPropertiesHolder.getExtraProperties(chart);
 
         if (extraProperties.savedVisibleRange != null) {
-            hideUntilViewportSettled(chart);
             extraProperties.autoZoomPending = true;
             updateVisibleRange(chart, extraProperties.savedVisibleRange);
-        } else {
-            revealAfterViewportSettled(chart);
         }
 
 
