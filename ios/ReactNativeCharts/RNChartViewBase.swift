@@ -150,6 +150,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 bar.applySavedZoomIfReady()
                 bar.applyVisibleRangeWhenReady()
                 bar.refreshValueLabelVisibility()
+                bar.requestChartDisplay()
             }
         }
 
@@ -1094,6 +1095,21 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     func emitChartLoadCompleteIfReady(forceResend: Bool = false) {
         guard bounds.width > 0 && bounds.height > 0 else { return }
         guard chart.data != nil else { return }
+        guard window != nil && chart.window != nil else {
+            loadCompleteEmitPending = true
+            setNeedsLayout()
+            chart.setNeedsLayout()
+            return
+        }
+        if let bar = self as? RNBarLineChartViewBase {
+            guard bar.isReadyForChartLoadComplete() else {
+                loadCompleteEmitPending = true
+                setNeedsLayout()
+                chart.setNeedsLayout()
+                chart.setNeedsDisplay()
+                return
+            }
+        }
 
         let shouldEmit = forceResend || loadCompleteResendPending || loadCompleteEmitPending || !hasSentLoadComplete
         guard shouldEmit else { return }
@@ -1114,10 +1130,23 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 let resend = forceResend || self.loadCompleteResendPending || self.loadCompleteEmitPending || !self.hasSentLoadComplete
                 guard resend else { return }
                 if let bar = self as? RNBarLineChartViewBase {
+                    guard bar.isReadyForChartLoadComplete() else {
+                        self.loadCompleteEmitPending = true
+                        self.setNeedsLayout()
+                        self.chart.setNeedsLayout()
+                        self.chart.setNeedsDisplay()
+                        return
+                    }
                     bar.applySavedZoomIfReady()
                     bar.applyVisibleRangeWhenReady()
                     bar.refreshValueLabelVisibility()
+                    bar.requestChartDisplay()
+                } else {
+                    self.chart.setNeedsDisplay()
                 }
+                self.layoutIfNeeded()
+                self.chart.layoutIfNeeded()
+                self.chart.layer.displayIfNeeded()
                 self.sendEvent("chartLoadComplete")
                 self.hasSentLoadComplete = true
                 self.loadCompleteResendPending = false

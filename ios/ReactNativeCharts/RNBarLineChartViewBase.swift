@@ -379,6 +379,14 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             && handler.contentHeight > 0
     }
 
+    func isReadyForChartLoadComplete() -> Bool {
+        return isReadyToApplyZoom()
+    }
+
+    func requestChartDisplay() {
+        barLineChart.setNeedsDisplay()
+    }
+
     func applySavedZoomIfReady() {
         guard let zoom = savedZoom, isReadyToApplyZoom() else { return }
         savedZoom = nil
