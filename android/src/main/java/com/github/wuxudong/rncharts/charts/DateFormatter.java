@@ -32,3 +32,14 @@ public class DateFormatter extends ValueFormatter {
         return mFormat.format(new Date(since + timeUnit.toMillis((long) value)));
     }
 }
+
+class DurationFormatter extends ValueFormatter {
+    @Override
+    public String getFormattedValue(float value) {
+        float safeValue = Float.isNaN(value) || Float.isInfinite(value) ? 0f : value;
+        int totalSeconds = Math.max(0, Math.round(safeValue));
+        int totalMinutes = totalSeconds / 60;
+        int remainingSeconds = totalSeconds % 60;
+        return totalMinutes + ":" + String.format(Locale.US, "%02d", remainingSeconds);
+    }
+}

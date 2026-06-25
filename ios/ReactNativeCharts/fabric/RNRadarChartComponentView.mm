@@ -47,7 +47,7 @@ using namespace facebook::react;
 {
   [super layoutSubviews];
   if (!CGRectEqualToRect(_swiftView.frame, self.bounds)) {
-    _swiftView.frame = self.bounds;
+    RNCInvokeReactSetFrame(_swiftView, self.bounds);
   }
 }
 

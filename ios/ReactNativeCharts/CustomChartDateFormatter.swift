@@ -62,3 +62,22 @@ open class CustomChartDateFormatter: NSObject, ValueFormatter, AxisValueFormatte
     }
 
 }
+
+open class DurationAxisValueFormatter: NSObject, ValueFormatter, AxisValueFormatter {
+    fileprivate func format(_ value: Double) -> String
+    {
+        let safeValue = value.isFinite ? value : 0
+        let totalSeconds = max(0, Int(safeValue.rounded()))
+        let totalMinutes = totalSeconds / 60
+        let remainingSeconds = totalSeconds % 60
+        return "\(totalMinutes):\(String(format: "%02d", remainingSeconds))"
+    }
+
+    open func stringForValue(_ value: Double, axis: AxisBase?) -> String {
+        return format(value)
+    }
+
+    open func stringForValue(_ value: Double, entry: ChartDataEntry, dataSetIndex: Int, viewPortHandler: ViewPortHandler?) -> String {
+        return format(value)
+    }
+}

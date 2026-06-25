@@ -139,8 +139,33 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         ChartGroupHolder.sync(group: group, identifier: identifier, scaleX: barLineChart.scaleX, scaleY: barLineChart.scaleY, centerX: center.x, centerY: center.y, performImmediately: true)
     }
 
+    @discardableResult
+    private func syncChartFrameToBoundsIfNeeded() -> Bool {
+        let chartFrame = CGRect(x: 0, y: 0, width: bounds.width, height: bounds.height)
+        guard !chart.frame.equalTo(chartFrame) else { return false }
+
+        chart.reactSetFrame(chartFrame)
+        return true
+    }
+
+    override open func didMoveToWindow() {
+        super.didMoveToWindow()
+
+        guard window != nil && chart.window != nil else { return }
+        syncChartFrameToBoundsIfNeeded()
+        guard loadCompleteEmitPending || loadCompleteResendPending else { return }
+
+        setNeedsLayout()
+        chart.setNeedsLayout()
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.emitChartLoadCompleteIfReady(forceResend: self.loadCompleteResendPending || self.loadCompleteEmitPending)
+        }
+    }
+
     override open func layoutSubviews() {
         super.layoutSubviews()
+        syncChartFrameToBoundsIfNeeded()
 
         if let bar = self as? RNBarLineChartViewBase {
             bar.performLayoutSubviewsUpdates {
@@ -161,7 +186,6 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
     {
         super.reactSetFrame(frame);
 
-        let chartFrame = CGRect(x: 0, y: 0, width: frame.width, height: frame.height)
         // Ensure bar charts have half-bar spacing so first/last bars are fully visible.
         if let barProvider = chart as? BarChartDataProvider,
            let barData = barProvider.barData {
@@ -172,7 +196,7 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             chart.xAxis.spaceMin = 0.75
             chart.xAxis.spaceMax = 0.75
         }
-        chart.reactSetFrame(chartFrame)
+        syncChartFrameToBoundsIfNeeded()
     }
 
     var chart: ChartViewBase {
@@ -625,6 +649,8 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
               let timeUnit = config["timeUnit"].string != nil ? config["timeUnit"].stringValue : "MILLISECONDS"
               let locale = config["locale"].string;
               axis.valueFormatter = CustomChartDateFormatter(pattern: valueFormatterPattern, since: since, timeUnit: timeUnit, locale: locale);
+            } else if "duration" == valueFormatter.stringValue {
+              axis.valueFormatter = DurationAxisValueFormatter();
             } else {
               let customFormatter = NumberFormatter()
               customFormatter.positiveFormat = valueFormatter.stringValue
@@ -1097,16 +1123,16 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
         guard chart.data != nil else { return }
         guard window != nil && chart.window != nil else {
             loadCompleteEmitPending = true
-            setNeedsLayout()
-            chart.setNeedsLayout()
             return
         }
         if let bar = self as? RNBarLineChartViewBase {
             guard bar.isReadyForChartLoadComplete() else {
                 loadCompleteEmitPending = true
-                setNeedsLayout()
-                chart.setNeedsLayout()
-                chart.setNeedsDisplay()
+                if syncChartFrameToBoundsIfNeeded() {
+                    setNeedsLayout()
+                    chart.setNeedsLayout()
+                    chart.setNeedsDisplay()
+                }
                 return
             }
         }
@@ -1123,6 +1149,10 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             CATransaction.flush()
             DispatchQueue.main.async { [weak self] in
                 guard let self = self else { return }
+                guard self.window != nil && self.chart.window != nil else {
+                    self.loadCompleteEmitPending = true
+                    return
+                }
                 guard self.onChange != nil else {
                     self.loadCompleteEmitPending = true
                     return
@@ -1132,9 +1162,11 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
                 if let bar = self as? RNBarLineChartViewBase {
                     guard bar.isReadyForChartLoadComplete() else {
                         self.loadCompleteEmitPending = true
-                        self.setNeedsLayout()
-                        self.chart.setNeedsLayout()
-                        self.chart.setNeedsDisplay()
+                        if self.syncChartFrameToBoundsIfNeeded() {
+                            self.setNeedsLayout()
+                            self.chart.setNeedsLayout()
+                            self.chart.setNeedsDisplay()
+                        }
                         return
                     }
                     bar.applySavedZoomIfReady()

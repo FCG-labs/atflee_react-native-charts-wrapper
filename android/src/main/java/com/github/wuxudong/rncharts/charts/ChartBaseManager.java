@@ -711,6 +711,8 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
                 }
 
                 axis.setValueFormatter(new DateFormatter(valueFormatterPattern, since, timeUnit, locale));
+            } else if ("duration".equals(valueFormatter)) {
+                axis.setValueFormatter(new DurationFormatter());
             } else {
                 axis.setValueFormatter(new CustomFormatter(valueFormatter));
             }
