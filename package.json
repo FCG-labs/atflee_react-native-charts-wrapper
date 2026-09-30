@@ -1,10 +1,10 @@
 {
-  "name": "react-native-charts-wrapper",
+  "name": "@fcg-labs/react-native-charts-wrapper",
   "repository": {
     "type": "git",
-    "url": "https://github.com/wuxudong/react-native-charts-wrapper.git"
+    "url": "https://github.com/FCG-labs/atflee_react-native-charts-wrapper.git"
   },
-  "version": "2.5.66",
+  "version": "2.5.67-fabric.45",
   "description": "A react-native charts support both android and iOS.",
   "author": "wuxudong",
   "license": "MIT",
@@ -60,5 +60,8 @@
         "RNRadarChart": "RNRadarChartComponentView"
       }
     }
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
