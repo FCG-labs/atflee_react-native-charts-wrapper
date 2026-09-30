@@ -9,6 +9,7 @@ import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.interfaces.datasets.IDataSet;
 import com.github.wuxudong.rncharts.charts.ConfigurableMinimumLinePositionFillFormatter;
+import com.github.wuxudong.rncharts.charts.DensityStyledLineDataSet;
 import com.github.wuxudong.rncharts.utils.BridgeUtils;
 import com.github.wuxudong.rncharts.utils.ChartDataSetConfigUtils;
 import com.github.wuxudong.rncharts.utils.ConversionUtil;
@@ -32,7 +33,8 @@ public class LineDataExtract extends DataExtract<LineData, Entry> {
 
     @Override
     IDataSet<Entry> createDataSet(ArrayList<Entry> entries, String label) {
-        return new LineDataSet(entries, label);
+        // densityStyle 이 없으면 LineDataSet 과 똑같이 동작한다(DensityStyledLineDataSet 주석).
+        return new DensityStyledLineDataSet(entries, label);
     }
 
     @Override
@@ -96,6 +98,26 @@ public class LineDataExtract extends DataExtract<LineData, Entry> {
             }
             lineDataSet.setFillFormatter(new ConfigurableMinimumLinePositionFillFormatter(min));
         }
+        if (lineDataSet instanceof DensityStyledLineDataSet) {
+            ((DensityStyledLineDataSet) lineDataSet).setDensityStyle(parseDensityStyle(config));
+        }
+    }
+
+    /** 보이는 점 개수에 따른 점·선 조형 — 빠진 값은 DensityStyle 기본값을 쓴다. 키가 없으면 끈다. */
+    private static DensityStyledLineDataSet.DensityStyle parseDensityStyle(ReadableMap config) {
+        if (!BridgeUtils.validate(config, ReadableType.Map, "densityStyle")) return null;
+        ReadableMap m = config.getMap("densityStyle");
+        DensityStyledLineDataSet.DensityStyle style = new DensityStyledLineDataSet.DensityStyle();
+        if (BridgeUtils.validate(m, ReadableType.Number, "referenceCount")) style.referenceCount = (float) m.getDouble("referenceCount");
+        if (BridgeUtils.validate(m, ReadableType.Number, "circleRadius")) style.circleRadius = (float) m.getDouble("circleRadius");
+        if (BridgeUtils.validate(m, ReadableType.Number, "lineWidth")) style.lineWidth = (float) m.getDouble("lineWidth");
+        if (BridgeUtils.validate(m, ReadableType.Number, "minLineWidth")) style.minLineWidth = (float) m.getDouble("minLineWidth");
+        if (BridgeUtils.validate(m, ReadableType.Number, "lineWidthExponent")) style.lineWidthExponent = (float) m.getDouble("lineWidthExponent");
+        if (BridgeUtils.validate(m, ReadableType.Number, "endsOnlyAbove")) style.endsOnlyAbove = (float) m.getDouble("endsOnlyAbove");
+        if (BridgeUtils.validate(m, ReadableType.Number, "endsOnlyReleaseAbove")) style.endsOnlyReleaseAbove = (float) m.getDouble("endsOnlyReleaseAbove");
+        if (BridgeUtils.validate(m, ReadableType.Number, "endCircleRadiusRatio")) style.endCircleRadiusRatio = (float) m.getDouble("endCircleRadiusRatio");
+        if (BridgeUtils.validate(m, ReadableType.Number, "minEndCircleRadius")) style.minEndCircleRadius = (float) m.getDouble("minEndCircleRadius");
+        return style;
     }
 
     @Override

@@ -25,6 +25,18 @@ open class NoClipLineChartRenderer: LineChartRenderer {
     // DGCharts' internal saveGState/restoreGState preserves our settings,
     // ensuring the line never produces miter spikes at sharp angles.
     open override func drawDataSet(context: CGContext, dataSet: LineChartDataSetProtocol) {
+        // 밀도 조형: 선을 그리기 전에 지금 보이는 구간으로 이번 프레임의 선 굵기·점 반지름을 정한다.
+        // 같은 프레임의 점(drawCirclesOverlay)·값 라벨(drawValues)이 이 값을 읽는다.
+        // 레이아웃 전(내용 영역이 없을 때)의 보이는 구간은 의미가 없다 — 그 프레임은 직전 조형을 둔다(Android 와 같다).
+        if let styled = dataSet as? DensityStyledLineChartDataSet,
+           styled.densityStyle != nil,
+           viewPortHandler.contentRect.width >= 2, viewPortHandler.contentRect.height >= 2,
+           let dataProvider = dataProvider {
+            styled.applyDensityStyle(
+                lowestVisibleX: dataProvider.lowestVisibleX,
+                highestVisibleX: dataProvider.highestVisibleX
+            )
+        }
         context.saveGState()
         context.clip(to: viewPortHandler.contentRect)
         context.setLineJoin(.round)
@@ -257,8 +269,12 @@ open class NoClipLineChartRenderer: LineChartRenderer {
             let trans   = dataProvider.getTransformer(forAxis: dataSet.axisDependency)
             let matrix  = trans.valueToPixelMatrix
             var pt      = CGPoint()
+            // 중간 점을 숨기는 프레임이면 보이는 양 끝 점만 그린다(반지름은 applyDensityStyle 이 끝 점 값으로 둔다).
+            let styled = dataSet as? DensityStyledLineChartDataSet
+            let endsOnlyFrame = (styled?.densityStyle != nil) ? styled?.densityFrame.flatMap { $0.endsOnly ? $0 : nil } : nil
 
             for j in 0..<entryCount {
+                if let frame = endsOnlyFrame, j != frame.firstVisibleIndex, j != frame.lastVisibleIndex { continue }
                 guard let e = dataSet.entryForIndex(j) else { continue }
                 if !isEntryYWithinAxisBounds(e, dataSet: dataSet, dataProvider: dataProvider) { continue }
 
@@ -281,8 +297,11 @@ open class NoClipLineChartRenderer: LineChartRenderer {
                 context.setFillColor(dataSet.getCircleColor(atIndex: j)!.cgColor)
                 context.fillEllipse(in: circleRect)
 
+                // 밀도 조형 점은 작아질 수 있어, 그 데이터셋은 구멍이 점보다 작을 때만 덧칠한다(부모 LineChartRenderer 와
+                // 같은 조건). 밀도 조형이 없는 데이터셋은 지금처럼 그린다.
                 if dataSet.isDrawCircleHoleEnabled,
-                   let holeColor = dataSet.circleHoleColor {
+                   let holeColor = dataSet.circleHoleColor,
+                   styled?.densityStyle == nil || CGFloat(dataSet.circleHoleRadius) < radius {
                     let holeRadius = CGFloat(dataSet.circleHoleRadius)
                     circleRect = CGRect(
                         x: pt.x - holeRadius,

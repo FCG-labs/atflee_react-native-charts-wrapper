@@ -14,7 +14,8 @@ class LineDataExtract : DataExtract {
     }
 
     override func createDataSet(_ entries: [ChartDataEntry], label: String) -> ChartDataSetProtocol {
-        let dataSet = LineChartDataSet(entries: entries, label: label)
+        // densityStyle 이 없으면 LineChartDataSet 과 똑같이 동작한다(DensityStyledLineChartDataSet 주석).
+        let dataSet = DensityStyledLineChartDataSet(entries: entries, label: label)
         dataSet.lineCapType = .round
         return dataSet
     }
@@ -96,6 +97,26 @@ class LineDataExtract : DataExtract {
             }
             lineDataSet.fillFormatter = ConfigurableMinimumLinePositionFillFormatter(min);
         }
+
+        if let styled = lineDataSet as? DensityStyledLineChartDataSet {
+            styled.densityStyle = LineDataExtract.parseDensityStyle(config["densityStyle"])
+        }
+    }
+
+    /// 보이는 점 개수에 따른 점·선 조형 — 빠진 값은 DensityStyle 기본값을 쓴다. 키가 없으면 끈다.
+    static func parseDensityStyle(_ json: JSON) -> DensityStyledLineChartDataSet.DensityStyle? {
+        guard json.dictionary != nil else { return nil }
+        var style = DensityStyledLineChartDataSet.DensityStyle()
+        if let v = json["referenceCount"].double { style.referenceCount = v }
+        if let v = json["circleRadius"].double { style.circleRadius = v }
+        if let v = json["lineWidth"].double { style.lineWidth = v }
+        if let v = json["minLineWidth"].double { style.minLineWidth = v }
+        if let v = json["lineWidthExponent"].double { style.lineWidthExponent = v }
+        if let v = json["endsOnlyAbove"].double { style.endsOnlyAbove = v }
+        if let v = json["endsOnlyReleaseAbove"].double { style.endsOnlyReleaseAbove = v }
+        if let v = json["endCircleRadiusRatio"].double { style.endCircleRadiusRatio = v }
+        if let v = json["minEndCircleRadius"].double { style.minEndCircleRadius = v }
+        return style
     }
 
     override func createEntry(_ values: [JSON], index: Int) -> ChartDataEntry {

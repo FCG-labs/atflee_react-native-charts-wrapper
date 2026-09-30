@@ -4,10 +4,15 @@ import android.content.Context;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.ViewTreeObserver;
+
+import java.util.ArrayList;
 
 import com.github.mikephil.charting.charts.CombinedChart;
 import com.github.mikephil.charting.highlight.CombinedHighlighter;
 // import com.github.mikephil.charting.highlight.Highlight;
+import com.github.wuxudong.rncharts.charts.helpers.EdgeLabelHelper;
+import com.github.wuxudong.rncharts.listener.RNOnChartGestureListener;
 import com.github.wuxudong.rncharts.markers.RNAtfleeMarkerView;
 
 public class AtfleeCombinedChart extends CombinedChart {
@@ -54,6 +59,55 @@ public class AtfleeCombinedChart extends CombinedChart {
     }
 
     // Note: keep default highlight behavior (no Y clamping/logging)
+
+    /**
+     * 크기가 정해지기 전에 걸린 뷰포트 작업(zoom prop 의 줌·이동)을 첫 그리기 전에 돌린다.
+     *
+     * MPAndroidChart 3.1.0 은 크기가 없을 때 걸린 작업을 mJobs 에 쌓았다가 onSizeChanged 에서 post 한다 —
+     * 그래서 새로 만든 차트의 첫 프레임은 줌이 걸리기 전(전 구간)으로 그려졌다(앳플리 「변화 전체」
+     * 「전체→최근」에서 전 구간에 7칸용 큰 점이 번쩍인 원인, 2026-10-01). 부모가 post 하기 전에 가로채,
+     * 크기·축이 정해진 직후(부모 onSizeChanged 뒤) 바로 돌린다. mJobs 안의 순서는 post 때와 같고,
+     * prop 트랜잭션이 chart.post 로 건 러너블(visibleRange 등)보다는 먼저 돈다. 크기가 여전히 0 이면
+     * 버리지 않고(부모는 그래도 post 했다) 다음 onSizeChanged 까지 둔다. 모든 CombinedChart 에 걸린다.
+     * x축 라벨 모드·값 라벨은 prop 트랜잭션이 줌 전 배율로 정해 두었으므로, 첫 그리기 직전에 다시 맞춘다.
+     */
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        ArrayList<Runnable> pending = new ArrayList<>(mJobs);
+        mJobs.clear();
+        super.onSizeChanged(w, h, oldw, oldh);
+        if (pending.isEmpty()) return;
+        if (!mViewPortHandler.hasChartDimens()) {
+            // 크기가 여전히 없으면 다음 onSizeChanged 까지 그대로 둔다.
+            mJobs.addAll(pending);
+            return;
+        }
+        for (Runnable job : pending) {
+            job.run();
+        }
+        refreshLabelsBeforeNextDraw();
+    }
+
+    private void refreshLabelsBeforeNextDraw() {
+        if (!(getOnChartGestureListener() instanceof RNOnChartGestureListener)) return;
+        // 초기 판정(매니저 restoreInitialXAxisLabelMode)과 제스처 판정이 같은 규칙인 차트 — 가장자리 날짜를 자동으로
+        // 켜고 끄는 차트 — 에서만 다시 맞춘다. 다른 차트는 첫 화면 라벨이 지금과 달라질 수 있어 건드리지 않는다.
+        Boolean autoEdge = EdgeLabelHelper.hasEdgeValueFormatter(this);
+        if (autoEdge == null || !autoEdge || EdgeLabelHelper.getExplicitFlag(this) != null) return;
+        final RNOnChartGestureListener listener = (RNOnChartGestureListener) getOnChartGestureListener();
+        final ViewTreeObserver observer = getViewTreeObserver();
+        observer.addOnPreDrawListener(new ViewTreeObserver.OnPreDrawListener() {
+            @Override
+            public boolean onPreDraw() {
+                ViewTreeObserver current = getViewTreeObserver();
+                if (current.isAlive()) current.removeOnPreDrawListener(this);
+                listener.refreshLabelsForViewport();
+                // 라벨 모드가 바뀌면 여백(extraOffsets)도 바뀐다 — 첫 그리기 전에 내용 영역을 다시 잡는다.
+                calculateOffsets();
+                return true;
+            }
+        });
+    }
 
     public void setRadius(float radius) {
         if (mRenderer instanceof AtfleeCombinedChartRenderer) {

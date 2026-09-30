@@ -199,6 +199,26 @@
 | ------ | -------------------- | ------- | ---- |
 | `data` | `DataTypes.lineData` |         |      |
 
+### Line dataset `config.densityStyle` (FCG fork)
+
+보이는 점 개수(n)로 점 반지름·선 굵기·중간 점 표시를 **네이티브 렌더러가 매 프레임** 정한다. JS 는 기준값만 한 번 넘긴다 — 줌·끌기·탭 전환 때 JS 가 보이는 구간을 추측해 조형을 다시 보낼 필요가 없다. **CombinedChart 의 선 데이터셋**(양 플랫폼)에 쓴다. LineChart 는 Android 만 — iOS LineChart 는 기본 렌더러라 키가 무시된다. 키가 없으면 지금 동작 그대로다(`circleRadius`·`lineWidth`·`drawCircles` 가 그대로 쓰인다). 크기 단위는 iOS pt / Android dp. 반지름은 Android 가 1 미만을 받지 않아 1 에서 멈춘다. 레이아웃 전 첫 프레임(내용 영역이 없을 때)에는 config 의 `circleRadius`·`lineWidth` 가 쓰이므로 기준값과 같게 넣어 둔다.
+
+| Key | Default | Note |
+| --- | ------- | ---- |
+| `referenceCount` | `7` | 이 개수(n0)가 보일 때의 반지름·굵기가 기준값이자 상한 |
+| `circleRadius` | `4` | n0 에서의 점 반지름 R0. r(n) = min(R0, R0·√((n0−1)/(n−1))) |
+| `lineWidth` | `3` | n0 에서의 선 굵기 W0. w(n) = min(W0, max(Wmin, W0·(√((n0−1)/(n−1)))^e)) |
+| `minLineWidth` | `1.4` | Wmin |
+| `lineWidthExponent` | `0.6` | e — 선은 점보다 덜 줄인다 |
+| `endsOnlyAbove` | `30` | 보이는 점이 이 수를 넘으면 중간 점을 숨기고 **보이는 구간의 양 끝 점만** 그린다 |
+| `endsOnlyReleaseAbove` | `28` | 숨긴 뒤에는 이 수를 넘는 동안 계속 숨긴다(경계 떨림 방지) |
+| `endCircleRadiusRatio` | `0.85` | 양 끝 점 반지름 = max(minEndCircleRadius, R0·ratio·w(n)/W0) |
+| `minEndCircleRadius` | `2` | 양 끝 점 반지름 하한 |
+
+`drawCircles: false` 면 점은 그리지 않는다(선 굵기만 따른다). 걸쇠 상태는 데이터가 새로 심길 때마다 처음부터 판정한다 — 보이는 구간이 바뀔 때 data 를 다시 보내지 않는다(조형은 네이티브가 정한다). 점이 작아지므로 `drawCircleHole: false` 와 함께 쓰는 것을 권한다(켜 두면 구멍이 점보다 작을 때만 그린다).
+
+Android CombinedChart 는 크기가 정해지기 전에 걸린 `zoom`(뷰포트 작업)을 첫 그리기 전에 적용한다 — 새로 만든 차트의 첫 프레임이 전 구간으로 그려졌다가 줌되는 일이 없다(iOS 는 원래 그렇다). `xAxis.edgeValueFormatter` 로 가장자리 날짜를 자동으로 켜고 끄는 차트는 그 첫 줌에 맞춰 x축 라벨 모드·값 라벨도 첫 그리기 전에 다시 정한다.
+
 ## ScatterChart
 
 #### _BarLineChartBase props plus props listed below_.

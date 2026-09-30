@@ -249,6 +249,14 @@ public class RNOnChartGestureListener implements OnChartGestureListener {
         }
     }
 
+    /**
+     * 프로그램이 뷰포트를 바꾼 뒤(새 차트의 첫 줌 등) 제스처 때와 같은 판정으로 값 라벨·x축 라벨 모드를 맞춘다.
+     * 호출처: AtfleeCombinedChart.onSizeChanged 의 첫 그리기 직전.
+     */
+    public void refreshLabelsForViewport() {
+        adjustValueAndEdgeLabels();
+    }
+
     private void adjustValueAndEdgeLabels() {
         Chart base = mWeakChart.get();
         if (!(base instanceof BarLineChartBase)) return;

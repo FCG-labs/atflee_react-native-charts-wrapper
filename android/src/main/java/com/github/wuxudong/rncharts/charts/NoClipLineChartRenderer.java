@@ -113,6 +113,7 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
 
     @Override
     public void drawData(Canvas c) {
+        applyDensityStyles();
         mRenderPaint.setStrokeJoin(Paint.Join.ROUND);
         mRenderPaint.setStrokeCap(Paint.Cap.ROUND);
         mRenderPaint.setStrokeMiter(1f);
@@ -342,10 +343,57 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
         }
     }
 
+    /**
+     * 밀도 조형: 선을 그리기 전에 지금 보이는 구간으로 이번 프레임의 선 굵기·점 반지름을 정한다.
+     * 같은 프레임의 점(drawCirclesOverlay)·값 라벨(drawValues)이 이 값을 읽는다.
+     */
+    private void applyDensityStyles() {
+        LineDataProvider provider = mChart;
+        if (provider == null) return;
+        LineData lineData = provider.getLineData();
+        if (lineData == null) return;
+        // 레이아웃 전(내용 영역이 없을 때)의 보이는 구간은 의미가 없다 — 이번 프레임은 직전 조형을 둔다.
+        float minDim = Utils.convertDpToPixel(2f);
+        if ((mViewPortHandler.contentRight() - mViewPortHandler.contentLeft()) < minDim
+                || (mViewPortHandler.contentBottom() - mViewPortHandler.contentTop()) < minDim) {
+            return;
+        }
+        float lowestVisibleX = provider.getLowestVisibleX();
+        float highestVisibleX = provider.getHighestVisibleX();
+        for (int i = 0; i < lineData.getDataSetCount(); i++) {
+            ILineDataSet dataSet = lineData.getDataSetByIndex(i);
+            if (dataSet instanceof DensityStyledLineDataSet && ((DensityStyledLineDataSet) dataSet).hasDensityStyle()) {
+                ((DensityStyledLineDataSet) dataSet).applyDensityStyle(lowestVisibleX, highestVisibleX);
+            }
+        }
+    }
+
     // Draw circles without Y in-bounds rejection so edge points remain visible
     @Override
     public void drawExtras(Canvas c) {
-        super.drawExtras(c);
+        // 밀도 조형 데이터셋의 점은 drawCirclesOverlay 가 이번 프레임 반지름으로 그린다. 부모(super.drawExtras)는
+        // 원 비트맵 캐시로 그리는데, 그 캐시는 반지름이 바뀌어도 다시 채워지지 않아(MPAndroidChart 3.1.0
+        // DataSetImageCache.init 은 원 색 개수만 본다) 옛 크기의 원이 밑에 남는다 — 그동안만 끈다.
+        List<DensityStyledLineDataSet> muted = new ArrayList<>();
+        LineData lineData = mChart != null ? mChart.getLineData() : null;
+        if (lineData != null) {
+            for (int i = 0; i < lineData.getDataSetCount(); i++) {
+                ILineDataSet dataSet = lineData.getDataSetByIndex(i);
+                if (dataSet instanceof DensityStyledLineDataSet
+                        && ((DensityStyledLineDataSet) dataSet).hasDensityStyle()
+                        && dataSet.isDrawCirclesEnabled()) {
+                    ((DensityStyledLineDataSet) dataSet).setDrawCircles(false);
+                    muted.add((DensityStyledLineDataSet) dataSet);
+                }
+            }
+        }
+        try {
+            super.drawExtras(c);
+        } finally {
+            for (DensityStyledLineDataSet dataSet : muted) {
+                dataSet.setDrawCircles(true);
+            }
+        }
         drawCirclesOverlay(c);
     }
 
@@ -374,7 +422,12 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
             if (dataSet == null || !dataSet.isVisible() || !dataSet.isDrawCirclesEnabled()) continue;
 
             final int entryCount = Math.min((int) Math.ceil(dataSet.getEntryCount() * phaseX), dataSet.getEntryCount());
+            // 중간 점을 숨기는 프레임이면 보이는 양 끝 점만 그린다(반지름은 applyDensityStyle 이 끝 점 값으로 둔다).
+            final DensityStyledLineDataSet endsOnlySet =
+                    (dataSet instanceof DensityStyledLineDataSet && ((DensityStyledLineDataSet) dataSet).isFrameEndsOnly())
+                            ? (DensityStyledLineDataSet) dataSet : null;
             for (int j = 0; j < entryCount; j++) {
+                if (endsOnlySet != null && !endsOnlySet.shouldDrawCircleAt(j)) continue;
                 Entry e = dataSet.getEntryForIndex(j);
                 if (e == null) continue;
                 if (!isEntryYWithinAxisBounds(provider, dataSet, e)) continue;
@@ -395,7 +448,12 @@ public class NoClipLineChartRenderer extends LineChartRenderer {
                 mRenderPaint.setColor(circleColor);
                 c.drawCircle(x, y, r, mRenderPaint);
 
-                if (dataSet.isDrawCircleHoleEnabled() && dataSet.getCircleHoleRadius() > 0f) {
+                // 밀도 조형 점은 작아질 수 있어, 그 데이터셋은 구멍이 점보다 작을 때만 덧칠한다(부모 LineChartRenderer 와
+                // 같은 조건). 밀도 조형이 없는 데이터셋은 지금처럼 그린다.
+                boolean densityStyled = dataSet instanceof DensityStyledLineDataSet
+                        && ((DensityStyledLineDataSet) dataSet).hasDensityStyle();
+                if (dataSet.isDrawCircleHoleEnabled() && dataSet.getCircleHoleRadius() > 0f
+                        && (!densityStyled || dataSet.getCircleHoleRadius() < r)) {
                     float hr = dataSet.getCircleHoleRadius();
                     Integer hole = dataSet.getCircleHoleColor();
                     if (hole != null) {
