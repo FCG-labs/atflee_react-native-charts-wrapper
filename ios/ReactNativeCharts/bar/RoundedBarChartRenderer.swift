@@ -19,8 +19,15 @@ class RoundedBarChartRenderer: BarChartRenderer {
     }
 
     override func drawHighlighted(context: CGContext, indices: [Highlight]) {
-        // 0) 바 사각형 하이라이트가 필요하면 유지
-        super.drawHighlighted(context: context, indices: indices)
+        // 0) 바 사각형 하이라이트(반투명 덧칠)는 단일 막대만 — 누적 막대는 선택하면 층 색이 탁해져 빼고 점선만 그린다
+        let plainIndices = indices.filter { hi in
+            guard let set = dataProvider?.barData?.dataSets[hi.dataSetIndex] as? BarChartDataSetProtocol
+            else { return true }
+            return !set.isStacked
+        }
+        if !plainIndices.isEmpty {
+            super.drawHighlighted(context: context, indices: plainIndices)
+        }
 
         guard
             let provider   = dataProvider,
