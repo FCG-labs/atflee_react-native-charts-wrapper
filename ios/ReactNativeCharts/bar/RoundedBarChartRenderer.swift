@@ -12,6 +12,8 @@ class RoundedBarChartRenderer: BarChartRenderer {
         super.init(dataProvider: dataProvider, animator: animator, viewPortHandler: viewPortHandler)
     }
 
+    private let stackGap: CGFloat = 1.5
+
     func setRadius(_ radius: CGFloat) {
         self.radius = radius
     }
@@ -60,9 +62,16 @@ class RoundedBarChartRenderer: BarChartRenderer {
             // context.setAlpha(CGFloat(set.highlightAlpha) / 255.0)
 
             // 5) 수직선 (절반)
-            let (yStart, yEnd) = verticalToTop
+            var (yStart, yEnd) = verticalToTop
                 ? (viewPortHandler.contentTop, markerY)
                 : (markerY, viewPortHandler.contentBottom)
+            // 누적 막대: 점선이 막대를 덮지 않게 막대 꼭대기(층 합계)에서 멈춘다 — 막대 뒤로 지나가는 모양
+            if !verticalToTop,
+               let stacked = set.entryForXValue(hi.x, closestToY: .nan) as? BarChartDataEntry,
+               stacked.isStacked {
+                let barTop = trans.pixelForValues(x: hi.x, y: stacked.y).y
+                if barTop < yEnd { yEnd = max(barTop, yStart) }
+            }
             context.move(to: CGPoint(x: pt.x, y: yStart))
             context.addLine(to: CGPoint(x: pt.x, y: yEnd))
 
@@ -170,6 +179,12 @@ class RoundedBarChartRenderer: BarChartRenderer {
             rect.origin.y = CGFloat(min(from, to) * phaseY)
             rect.size.height = CGFloat(abs(to - from) * phaseY)
             trans.rectValueToPixel(&rect)
+            // 누적 층 사이 틈 — 아래에 같은 방향 층이 있으면 그쪽 변을 stackGap 만큼 비워 배경이 보이게 한다
+            let hasBelow = stack[..<k].contains { value > 0 ? $0 > 0 : $0 < 0 }
+            if hasBelow {
+                let gap = min(stackGap, rect.height / 2)
+                if value > 0 { rect.size.height -= gap } else { rect.origin.y += gap; rect.size.height -= gap }
+            }
 
             var corners: UIRectCorner = []
             if value > 0 && k == topPositive { corners = [.topLeft, .topRight] }

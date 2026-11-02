@@ -32,6 +32,7 @@ public class AtfleeBarChartRenderer extends BarChartRenderer {
 
     // 라인·마커 여백(dp). iOS RoundedBarChartRenderer.markerPadDp(=10.0) 와 동일한 SSOT 값.
     private static final float MARKER_PAD_DP = 10.0f;
+    private static final float STACK_GAP_DP = 1.5f;
 
     private RectF mBarShadowRectBuffer = new RectF();
     protected Float mRadius = 50.f;
@@ -109,6 +110,12 @@ public class AtfleeBarChartRenderer extends BarChartRenderer {
             } else {                        // 아래쪽 절반
                 yStart = markerTop;
                 yEnd   = mViewPortHandler.contentBottom();
+                // 누적 막대: 점선이 막대를 덮지 않게 막대 꼭대기(층 합계)에서 멈춘다 — 막대 뒤로 지나가는 모양
+                BarEntry stacked = raw.getEntryForXValue(h.getX(), Float.NaN);
+                if (stacked != null && stacked.isStacked()) {
+                    float barTop = (float) t.getPixelForValues(h.getX(), stacked.getY()).y;
+                    if (barTop < yEnd) yEnd = Math.max(barTop, yStart);
+                }
             }
             c.drawLine((float) p.x, yStart, (float) p.x, yEnd, crossPaint);
 
@@ -274,6 +281,19 @@ public class AtfleeBarChartRenderer extends BarChartRenderer {
             final Path path = new Path();
             RectF rect = new RectF(buffer.buffer[j], buffer.buffer[j + 1], buffer.buffer[j + 2],
                     buffer.buffer[j + 3]);
+            if (stackIndex > 0) {
+                // 누적 층 사이 틈 — 아래에 같은 방향 층이 있으면 그쪽 변을 STACK_GAP_DP 만큼 비워 배경이 보이게 한다
+                float[] vals = entry.getYVals();
+                float v = vals[stackIndex];
+                boolean hasBelow = false;
+                for (int k = 0; k < stackIndex; k++) {
+                    if ((v > 0f && vals[k] > 0f) || (v < 0f && vals[k] < 0f)) hasBelow = true;
+                }
+                if (hasBelow) {
+                    float gap = Math.min(Utils.convertDpToPixel(STACK_GAP_DP), rect.height() / 2f);
+                    if (v > 0f) rect.bottom -= gap; else rect.top += gap;
+                }
+            }
             path.addRoundRect(rect, corners, Path.Direction.CW);
             c.drawPath(path, mRenderPaint);
 
