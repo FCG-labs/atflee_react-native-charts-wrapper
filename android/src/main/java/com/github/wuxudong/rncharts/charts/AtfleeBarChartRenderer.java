@@ -184,6 +184,20 @@ public class AtfleeBarChartRenderer extends BarChartRenderer {
             mRenderPaint.setColor(dataSet.getColor());
         }
 
+        // 버퍼의 사각형 → (막대, 층). 누적 막대는 막대 하나가 층 수만큼 사각형을 낸다(값 0 인 층 포함).
+        // 예전에는 getEntryForIndex(j / 4) 로 읽어 누적일 때 엉뚱한 막대의 부호로 모서리를 정했다.
+        final int rectCount = buffer.size() / 4;
+        final int[] entryOfRect = new int[rectCount];
+        final int[] stackOfRect = new int[rectCount];
+        for (int r = 0, i = 0; r < rectCount && i < dataSet.getEntryCount(); i++) {
+            float[] vals = dataSet.getEntryForIndex(i).getYVals();
+            int n = (vals == null || !dataSet.isStacked()) ? 1 : vals.length;
+            for (int k = 0; k < n && r < rectCount; k++, r++) {
+                entryOfRect[r] = i;
+                stackOfRect[r] = vals == null || !dataSet.isStacked() ? -1 : k;
+            }
+        }
+
         for (int j = 0; j < buffer.size(); j += 4) {
 
             if (!mViewPortHandler.isInBoundsLeft(buffer.buffer[j + 2]))
@@ -224,11 +238,24 @@ public class AtfleeBarChartRenderer extends BarChartRenderer {
 //            }
 
 
-            BarEntry entry = dataSet.getEntryForIndex(j / 4);
-            boolean isPositive = entry.getY() >= 0f;
-            // round top corners for positive values, bottom corners for negatives
+            BarEntry entry = dataSet.getEntryForIndex(entryOfRect[j / 4]);
+            int stackIndex = stackOfRect[j / 4];
             float[] corners;
-            if (isPositive) {
+            if (stackIndex >= 0) {
+                // 누적 막대: 값 0 인 층은 그리지 않고, 양수 맨 위 층·음수 맨 아래 층만 둥글게 — 층 경계는 곧게
+                float[] vals = entry.getYVals();
+                float v = vals[stackIndex];
+                if (v == 0f || buffer.buffer[j + 1] == buffer.buffer[j + 3]) continue;
+                int topPositive = -1, bottomNegative = -1;
+                for (int k = 0; k < vals.length; k++) {
+                    if (vals[k] > 0f) topPositive = k;
+                    if (vals[k] < 0f) bottomNegative = k;
+                }
+                float top = v > 0f && stackIndex == topPositive ? mRadius : 0f;
+                float bottom = v < 0f && stackIndex == bottomNegative ? mRadius : 0f;
+                corners = new float[]{top, top, top, top, bottom, bottom, bottom, bottom};
+            } else if (entry.getY() >= 0f) {
+                // round top corners for positive values, bottom corners for negatives
                 corners = new float[]{
                         mRadius, mRadius,     // Top left radius in px
                         mRadius, mRadius,     // Top right radius in px
@@ -257,6 +284,56 @@ public class AtfleeBarChartRenderer extends BarChartRenderer {
 //                c.drawRoundRect(buffer.buffer[j], buffer.buffer[j + 1], buffer.buffer[j + 2],
 //                        buffer.buffer[j + 3], mRadius, mRadius/2.0f, mBarBorderPaint);
 //            }
+        }
+    }
+
+    /**
+     * 누적 막대는 층마다 값을 쓰지 않고 층 합계(entry.getY()) 하나만 막대 위에 쓴다 — iOS
+     * RoundedBarChartRenderer.drawValues 와 같은 모양. 누적 데이터셋이 없으면 기존 그리기를 그대로 탄다.
+     */
+    @Override
+    public void drawValues(Canvas c) {
+        BarData barData = mChart.getBarData();
+        boolean anyStacked = false;
+        for (IBarDataSet set : barData.getDataSets()) {
+            if (set.isStacked() && shouldDrawValues(set)) anyStacked = true;
+        }
+        if (!anyStacked) {
+            super.drawValues(c);
+            return;
+        }
+        if (!isDrawingValuesAllowed(mChart)) return;
+
+        final float valueOffsetPlus = Utils.convertDpToPixel(4.5f);
+        final boolean drawValueAboveBar = mChart.isDrawValueAboveBarEnabled();
+        final float phaseX = mAnimator.getPhaseX();
+        final float phaseY = mAnimator.getPhaseY();
+
+        for (int i = 0; i < barData.getDataSetCount(); i++) {
+            IBarDataSet dataSet = barData.getDataSetByIndex(i);
+            if (!shouldDrawValues(dataSet)) continue;
+
+            applyValueTextStyle(dataSet);
+            final float valueTextHeight = Utils.calcTextHeight(mValuePaint, "8");
+            final float posOffset = drawValueAboveBar ? -valueOffsetPlus : valueTextHeight + valueOffsetPlus;
+            final float negOffset = drawValueAboveBar ? valueTextHeight + valueOffsetPlus : -valueOffsetPlus;
+            final Transformer trans = mChart.getTransformer(dataSet.getAxisDependency());
+            final int count = Math.min((int) Math.ceil(dataSet.getEntryCount() * phaseX), dataSet.getEntryCount());
+            final float[] pt = new float[2];
+
+            for (int j = 0; j < count; j++) {
+                BarEntry entry = dataSet.getEntryForIndex(j);
+                pt[0] = entry.getX();
+                pt[1] = entry.getY() * phaseY;
+                trans.pointValuesToPixel(pt);
+
+                if (!mViewPortHandler.isInBoundsRight(pt[0])) break;
+                if (!mViewPortHandler.isInBoundsLeft(pt[0])) continue;
+
+                float y = pt[1] + (entry.getY() >= 0f ? posOffset : negOffset);
+                drawValue(c, dataSet.getValueFormatter().getBarLabel(entry), pt[0], y,
+                        dataSet.getValueTextColor(j));
+            }
         }
     }
 }
