@@ -90,6 +90,19 @@ class RoundedBarChartRenderer: BarChartRenderer {
         for i in 0 ..< count {
             guard let e = dataSet.entryForIndex(i) as? BarChartDataEntry else { continue }
             let x = e.x
+
+            // 누적 막대(y 가 배열) — 층마다 따로 칠하고 바깥쪽 끝 층만 둥글게 한다.
+            // 예전에는 합계(e.y) 한 칸만 칠해 층 구분이 사라졌다.
+            if let stack = e.yValues, !stack.isEmpty {
+                var columnRect = CGRect(x: x - barWidthHalf, y: 0, width: barWidth, height: 0)
+                trans.rectValueToPixel(&columnRect)
+                if !viewPortHandler.isInBoundsLeft(columnRect.maxX) { continue }
+                if !viewPortHandler.isInBoundsRight(columnRect.minX) { break }
+                drawStack(context: context, dataSet: dataSet, stack: stack, x: x,
+                          barWidthHalf: barWidthHalf, phaseY: phaseY, trans: trans)
+                continue
+            }
+
             let y = e.y
 
             // Determine if the bar represents a positive or negative value
@@ -127,7 +140,53 @@ class RoundedBarChartRenderer: BarChartRenderer {
         }
     }
 
+    /// 누적 막대 한 개. 양수 층은 0 에서 위로, 음수 층은 0 에서 아래로 쌓는다(DGCharts 와 같은 순서).
+    /// 둥근 모서리는 양수 맨 위 층의 윗변, 음수 맨 아래 층의 아랫변에만 준다 — 층 경계는 곧게.
+    /// 색은 층 번호로 고른다(colors 를 층 수만큼 넘기면 모든 막대가 같은 층 색을 쓴다).
+    private func drawStack(context: CGContext, dataSet: BarChartDataSetProtocol, stack: [Double],
+                           x: Double, barWidthHalf: Double, phaseY: Double, trans: Transformer) {
+        let topPositive = stack.lastIndex(where: { $0 > 0 })
+        let bottomNegative = stack.lastIndex(where: { $0 < 0 })
+        var posY = 0.0
+        var negY = 0.0
+
+        for (k, value) in stack.enumerated() {
+            if value == 0 { continue }
+            let from: Double
+            let to: Double
+            if value > 0 {
+                from = posY
+                posY += value
+                to = posY
+            } else {
+                from = negY
+                negY += value
+                to = negY
+            }
+
+            var rect = CGRect()
+            rect.origin.x = CGFloat(x - barWidthHalf)
+            rect.size.width = CGFloat(barWidthHalf * 2)
+            rect.origin.y = CGFloat(min(from, to) * phaseY)
+            rect.size.height = CGFloat(abs(to - from) * phaseY)
+            trans.rectValueToPixel(&rect)
+
+            var corners: UIRectCorner = []
+            if value > 0 && k == topPositive { corners = [.topLeft, .topRight] }
+            if value < 0 && k == bottomNegative { corners = [.bottomLeft, .bottomRight] }
+
+            context.setFillColor(dataSet.color(atIndex: k).cgColor)
+            let path = corners.isEmpty
+                ? UIBezierPath(rect: rect)
+                : UIBezierPath(roundedRect: rect, byRoundingCorners: corners,
+                               cornerRadii: CGSize(width: radius, height: radius))
+            context.addPath(path.cgPath)
+            context.fillPath()
+        }
+    }
+
     // MARK: - Value Labels (no-clip override)
+    // 누적 막대도 e.y(층 합계) 하나만 막대 위에 쓴다 — 층별 값은 마커·범례가 보여 준다.
     override func drawValues(context: CGContext) {
         guard
             let dataProvider = dataProvider,
