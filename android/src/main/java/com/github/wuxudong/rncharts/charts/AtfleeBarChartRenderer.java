@@ -32,7 +32,7 @@ public class AtfleeBarChartRenderer extends BarChartRenderer {
 
     // 라인·마커 여백(dp). iOS RoundedBarChartRenderer.markerPadDp(=10.0) 와 동일한 SSOT 값.
     private static final float MARKER_PAD_DP = 10.0f;
-    private static final float STACK_GAP_DP = 1.5f;
+    private static final float STACK_GAP_DP = 2f;
 
     private RectF mBarShadowRectBuffer = new RectF();
     protected Float mRadius = 50.f;

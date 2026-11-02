@@ -12,7 +12,7 @@ class RoundedBarChartRenderer: BarChartRenderer {
         super.init(dataProvider: dataProvider, animator: animator, viewPortHandler: viewPortHandler)
     }
 
-    private let stackGap: CGFloat = 1.5
+    private let stackGap: CGFloat = 2
 
     func setRadius(_ radius: CGFloat) {
         self.radius = radius
