@@ -434,6 +434,13 @@ public abstract class ChartBaseManager<T extends Chart, U extends Entry> extends
         if (BridgeUtils.validate(propMap, ReadableType.Number, "textColor")) {
             marker.getTvContent().setTextColor(propMap.getInt("textColor"));
         }
+        boolean hasArrowBg = BridgeUtils.validate(propMap, ReadableType.Number, "arrowBgColor");
+        boolean hasArrow = BridgeUtils.validate(propMap, ReadableType.Number, "arrowColor");
+        if (hasArrowBg || hasArrow) {
+            marker.setArrowColors(
+                    hasArrowBg ? propMap.getInt("arrowBgColor") : 0xFFFAFAFA,
+                    hasArrow ? propMap.getInt("arrowColor") : 0xFFABABAB);
+        }
         if (BridgeUtils.validate(propMap, ReadableType.Number, "textSize")) {
             marker.getTvContent().setTextSize(
                     TypedValue.COMPLEX_UNIT_DIP,

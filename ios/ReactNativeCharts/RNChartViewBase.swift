@@ -719,6 +719,18 @@ open class RNChartViewBase: UIView, ChartViewDelegate {
             if json["fixedOnTop"].bool != nil {
                 marker.fixedOnTop = json["fixedOnTop"].boolValue
             }
+            if json["titleColor"].int != nil {
+                marker.titleTextColor = RCTConvert.uiColor(json["titleColor"].intValue)
+            }
+            if json["textColor"].int != nil {
+                marker.valueTextColor = RCTConvert.uiColor(json["textColor"].intValue)
+            }
+            if json["arrowBgColor"].int != nil {
+                marker.arrowBgColor = RCTConvert.uiColor(json["arrowBgColor"].intValue)
+            }
+            if json["arrowColor"].int != nil {
+                marker.arrowColor = RCTConvert.uiColor(json["arrowColor"].intValue)
+            }
 
             chart.marker = marker
             marker.chartView = chart

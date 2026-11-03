@@ -37,6 +37,12 @@ open class AtfleeMarker: MarkerView {
     open var arrowHidden: Bool = false
     /// y 위치를 무시하고 화면 상단에 고정할지 여부
     open var fixedOnTop: Bool = false
+    /// 날짜(제목)·값 글자색 — RN 이 넘기면 그 색, 안 넘기면 #434343 · #101010
+    open var titleTextColor: UIColor?
+    open var valueTextColor: UIColor?
+    /// 오른쪽 화살표 동그라미 바탕·화살표 색 — 안 넘기면 #FAFAFA · #ABABAB
+    open var arrowBgColor: UIColor?
+    open var arrowColor: UIColor?
 
     open var fixedTopReservedOffset: CGFloat {
         if !fixedOnTop { return 0 }
@@ -315,7 +321,7 @@ open class AtfleeMarker: MarkerView {
             _drawTitleAttributes[NSAttributedString.Key.font] = UIFont.systemFont(ofSize: 12.0, weight: .regular)
         }
         _drawTitleAttributes[NSAttributedString.Key.paragraphStyle] = _paragraphStyle
-        _drawTitleAttributes[NSAttributedString.Key.foregroundColor] = UIColor(red: 0.263, green: 0.263, blue: 0.263, alpha: 1.0)  // #434343
+        _drawTitleAttributes[NSAttributedString.Key.foregroundColor] = titleTextColor ?? UIColor(red: 0.263, green: 0.263, blue: 0.263, alpha: 1.0)  // #434343
         let titleSize = labelTitle?.size(withAttributes: _drawTitleAttributes) ?? CGSize.zero
         
         //
@@ -365,7 +371,7 @@ open class AtfleeMarker: MarkerView {
         _drawAttributes[NSAttributedString.Key.paragraphStyle] = paraStyle
         _drawAttributes[NSAttributedString.Key.kern] = -0.24  // letterSpacing
         // Figma: 값 색상 #101010 (Grayscale_1000)
-        _drawAttributes[NSAttributedString.Key.foregroundColor] = UIColor(red: 0.063, green: 0.063, blue: 0.063, alpha: 1.0)  // #101010
+        _drawAttributes[NSAttributedString.Key.foregroundColor] = valueTextColor ?? UIColor(red: 0.063, green: 0.063, blue: 0.063, alpha: 1.0)  // #101010
 
         let baseFont: UIFont = self.font ?? UIFont.systemFont(ofSize: 12.0)
         let fontSize = baseFont.pointSize
@@ -399,7 +405,11 @@ open class AtfleeMarker: MarkerView {
         }
 
         // Figma: 18x18 원형 화살표 SVG 직접 렌더링
-        arrowImage = arrowHidden ? nil : Self.drawArrowCircleImage(size: 18)
+        arrowImage = arrowHidden ? nil : Self.drawArrowCircleImage(
+            size: 18,
+            fill: arrowBgColor ?? UIColor(red: 0.98, green: 0.98, blue: 0.98, alpha: 1.0),  // #FAFAFA
+            stroke: arrowColor ?? UIColor(red: 0.671, green: 0.671, blue: 0.671, alpha: 1.0)  // #ABABAB
+        )
 
         switch emotionCode {
         case "1":
@@ -494,13 +504,13 @@ open class AtfleeMarker: MarkerView {
     // Figma SVG: 18x18 원형 + 오른쪽 화살표
     // <rect width="18" height="18" rx="9" fill="#FAFAFA"/>
     // <path d="M7.5 12.75L11.25 9L7.5 5.25" stroke="#ABABAB" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    private static func drawArrowCircleImage(size: CGFloat) -> UIImage {
+    private static func drawArrowCircleImage(size: CGFloat, fill: UIColor, stroke: UIColor) -> UIImage {
         let renderer = UIGraphicsImageRenderer(size: CGSize(width: size, height: size))
         return renderer.image { ctx in
             let rect = CGRect(x: 0, y: 0, width: size, height: size)
             // 배경 원형
             let circle = UIBezierPath(roundedRect: rect, cornerRadius: size / 2)
-            UIColor(red: 0.98, green: 0.98, blue: 0.98, alpha: 1.0).setFill()  // #FAFAFA
+            fill.setFill()
             circle.fill()
             // 화살표 패스
             let arrow = UIBezierPath()
@@ -510,7 +520,7 @@ open class AtfleeMarker: MarkerView {
             arrow.lineWidth = 1.5
             arrow.lineCapStyle = .round
             arrow.lineJoinStyle = .round
-            UIColor(red: 0.671, green: 0.671, blue: 0.671, alpha: 1.0).setStroke()  // #ABABAB
+            stroke.setStroke()
             arrow.stroke()
         }
     }

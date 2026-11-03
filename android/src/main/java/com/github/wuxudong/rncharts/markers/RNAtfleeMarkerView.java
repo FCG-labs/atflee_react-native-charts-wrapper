@@ -11,7 +11,14 @@ import android.widget.TextView;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.View.MeasureSpec;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.ColorFilter;
+import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.PixelFormat;
+import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.ReactContext;
 import com.facebook.react.bridge.WritableMap;
@@ -572,6 +579,71 @@ public class RNAtfleeMarkerView extends MarkerView {
             bg.setCornerRadius(8f * mMarkerContent.getResources().getDisplayMetrics().density);
             bg.setColor(color | 0xFF000000);
             mMarkerContent.setBackground(bg);
+        }
+    }
+
+    /** 오른쪽 화살표 동그라미 바탕·화살표 색 — RN 이 넘길 때만 그 색으로 그린다(안 넘기면 dropdown_circle_right 그대로) */
+    public void setArrowColors(int bgColor, int arrowColor) {
+        if (image_arrow != null) {
+            image_arrow.setImageDrawable(new ArrowCircleDrawable(bgColor, arrowColor));
+        }
+    }
+
+    /** dropdown_circle_right.xml 과 같은 모양(18 단위 원 + 꺾쇠)을 받은 색으로 */
+    private static final class ArrowCircleDrawable extends Drawable {
+        private final Paint fill = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Paint stroke = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Path chevron = new Path();
+
+        ArrowCircleDrawable(int bgColor, int arrowColor) {
+            fill.setColor(bgColor);
+            stroke.setColor(arrowColor);
+            stroke.setStyle(Paint.Style.STROKE);
+            stroke.setStrokeCap(Paint.Cap.ROUND);
+            stroke.setStrokeJoin(Paint.Join.ROUND);
+        }
+
+        @Override
+        public void draw(Canvas canvas) {
+            Rect b = getBounds();
+            float s = Math.min(b.width(), b.height()) / 18f;
+            canvas.save();
+            canvas.translate(b.left, b.top);
+            canvas.drawCircle(9f * s, 9f * s, 9f * s, fill);
+            stroke.setStrokeWidth(1.5f * s);
+            chevron.reset();
+            chevron.moveTo(7.5f * s, 12.75f * s);
+            chevron.lineTo(11.25f * s, 9f * s);
+            chevron.lineTo(7.5f * s, 5.25f * s);
+            canvas.drawPath(chevron, stroke);
+            canvas.restore();
+        }
+
+        @Override
+        public int getIntrinsicWidth() {
+            return Math.round(18f * android.content.res.Resources.getSystem().getDisplayMetrics().density);
+        }
+
+        @Override
+        public int getIntrinsicHeight() {
+            return getIntrinsicWidth();
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+            fill.setAlpha(alpha);
+            stroke.setAlpha(alpha);
+        }
+
+        @Override
+        public void setColorFilter(ColorFilter colorFilter) {
+            fill.setColorFilter(colorFilter);
+            stroke.setColorFilter(colorFilter);
+        }
+
+        @Override
+        public int getOpacity() {
+            return PixelFormat.TRANSLUCENT;
         }
     }
 
