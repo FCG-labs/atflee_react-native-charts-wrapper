@@ -1,5 +1,9 @@
 package com.github.wuxudong.rncharts.charts;
 
+import android.graphics.Path;
+import com.github.mikephil.charting.renderer.YAxisRenderer;
+import com.github.mikephil.charting.utils.Utils;
+import com.github.mikephil.charting.utils.ViewPortHandler;
 import android.graphics.RectF;
 
 import com.facebook.react.bridge.ReadableArray;
@@ -72,6 +76,43 @@ public abstract class BarLineChartBaseManager<T extends BarLineChartBase, U exte
             YAxis rightYAxis = barLineChart.getAxisRight();
             setCommonAxisConfig(chart, rightYAxis, propMap.getMap("right"));
             setYAxisConfig(rightYAxis, propMap.getMap("right"));
+            ReadableMap rightMap = propMap.getMap("right");
+            boolean hasStart = BridgeUtils.validate(rightMap, ReadableType.Number, "gridLineStartOffset");
+            boolean hasEnd = BridgeUtils.validate(rightMap, ReadableType.Number, "gridLineEndOffset");
+            if (hasStart || hasEnd) {
+                barLineChart.setRendererRightYAxis(new OffsetGridYAxisRenderer(
+                        barLineChart.getViewPortHandler(),
+                        rightYAxis,
+                        barLineChart.getTransformer(YAxis.AxisDependency.RIGHT),
+                        hasStart ? Utils.convertDpToPixel((float) rightMap.getDouble("gridLineStartOffset")) : 0f,
+                        hasEnd ? Utils.convertDpToPixel((float) rightMap.getDouble("gridLineEndOffset")) : 0f));
+            }
+        }
+    }
+
+    private static final class OffsetGridYAxisRenderer extends YAxisRenderer {
+        private final float startOffset;
+        private final float endOffset;
+
+        OffsetGridYAxisRenderer(ViewPortHandler viewPortHandler, YAxis yAxis, Transformer trans,
+                                float startOffset, float endOffset) {
+            super(viewPortHandler, yAxis, trans);
+            this.startOffset = startOffset;
+            this.endOffset = endOffset;
+        }
+
+        @Override
+        public RectF getGridClippingRect() {
+            RectF rect = super.getGridClippingRect();
+            rect.right += Math.max(endOffset, 0f);
+            return rect;
+        }
+
+        @Override
+        protected Path linePath(Path p, int i, float[] positions) {
+            p.moveTo(mViewPortHandler.offsetLeft() + startOffset, positions[i + 1]);
+            p.lineTo(mViewPortHandler.contentRight() + endOffset, positions[i + 1]);
+            return p;
         }
     }
 

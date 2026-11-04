@@ -48,6 +48,16 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
             let rightAxis = barLineChart.rightAxis
             setCommonAxisConfig(rightAxis, config: json["right"]);
             setYAxisConfig(rightAxis, config: json["right"]);
+            if json["right"]["gridLineStartOffset"].number != nil || json["right"]["gridLineEndOffset"].number != nil {
+                let renderer = OffsetGridYAxisRenderer(
+                    viewPortHandler: barLineChart.viewPortHandler,
+                    axis: rightAxis,
+                    transformer: barLineChart.getTransformer(forAxis: .right)
+                )
+                renderer.gridLineStartOffset = CGFloat(json["right"]["gridLineStartOffset"].doubleValue)
+                renderer.gridLineEndOffset = CGFloat(json["right"]["gridLineEndOffset"].doubleValue)
+                barLineChart.rightYAxisRenderer = renderer
+            }
         }
         markLoadCompleteForResendIfNeeded()
     }
@@ -624,4 +634,22 @@ class RNBarLineChartViewBase: RNYAxisChartViewBase {
         // Currently unused — layout for landscape mode is handled in JS.
         // Adding this setter prevents unknown-prop warnings on iOS.
     // }
+}
+
+final class OffsetGridYAxisRenderer: YAxisRenderer {
+    var gridLineStartOffset: CGFloat = 0
+    var gridLineEndOffset: CGFloat = 0
+
+    override var gridClippingRect: CGRect {
+        var rect = super.gridClippingRect
+        rect.size.width += max(gridLineEndOffset, 0)
+        return rect
+    }
+
+    override func drawGridLine(context: CGContext, position: CGPoint) {
+        context.beginPath()
+        context.move(to: CGPoint(x: viewPortHandler.contentLeft + gridLineStartOffset, y: position.y))
+        context.addLine(to: CGPoint(x: viewPortHandler.contentRight + gridLineEndOffset, y: position.y))
+        context.strokePath()
+    }
 }

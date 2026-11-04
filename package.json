@@ -4,7 +4,7 @@
     "type": "git",
     "url": "https://github.com/FCG-labs/atflee_react-native-charts-wrapper.git"
   },
-  "version": "2.5.67-fabric.49",
+  "version": "2.5.67-fabric.50",
   "description": "A react-native charts support both android and iOS.",
   "author": "wuxudong",
   "license": "MIT",

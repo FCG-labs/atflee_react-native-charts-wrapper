@@ -232,11 +232,11 @@ class RoundedBarChartRenderer: BarChartRenderer {
 
             // Offsets for positive / negative bars
             let posOffset = drawValueAboveBar
-                ? valueOffsetPlus
-                : -(valueFont.lineHeight + valueOffsetPlus)
-            let negOffset = drawValueAboveBar
                 ? -(valueFont.lineHeight + valueOffsetPlus)
                 : valueOffsetPlus
+            let negOffset = drawValueAboveBar
+                ? valueOffsetPlus
+                : -(valueFont.lineHeight + valueOffsetPlus)
 
             // Entry count adjusted for animation phase
             let entryCount = Int(min(ceil(Double(dataSet.entryCount) * animator.phaseX), Double(dataSet.entryCount)))
